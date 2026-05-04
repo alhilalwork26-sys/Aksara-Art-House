@@ -1341,7 +1341,7 @@ footer {
     <div class="nav-center">
       <button class="nav-link active" id="nl-home" onclick="goPage('home')">Beranda</button>
       <button class="nav-link" id="nl-gallery" onclick="goPage('gallery')">Galeri</button>
-      <button class="nav-link" id="nl-auction" onclick="goPage('auction')">Lelang <span class="nav-badge" id="auction-badge">3</span></button>
+      <button class="nav-link" id="nl-auction" onclick="goPage('auction')">Lelang <span class="nav-badge" id="auction-badge">0</span></button>
       <button class="nav-link" id="nl-about" onclick="goPage('about')">Tentang</button>
     </div>
     <div class="nav-right">
@@ -1905,6 +1905,7 @@ let timers = {};
 
 // ── HELPERS ──────────────────────────────────
 const fmt = n => 'Rp '+n.toLocaleString('id-ID');
+const jsArg = value => JSON.stringify(String(value));
 const fmtTime = s => {
   const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
@@ -1950,8 +1951,9 @@ async function fetchPaintingsFromDB(){
     if(!Array.isArray(rows) || !rows.length) return;
     PAINTINGS = rows.map(a => ({
       id: a.id, title: a.title, artist: a.artist,
-      cat: a.category, status: a.status === 'available' ? 'dijual' : a.status === 'auction' ? 'lelang' : a.status === 'sold' ? 'terjual' : a.status,
-      medium: a.medium, year: a.year, p: a.price,
+      cat: a.category, status: a.status === 'available' ? 'tersedia' : a.status === 'auction' ? 'lelang' : a.status === 'sold' ? 'terjual' : a.status,
+      medium: a.medium, year: a.year, price: a.price,
+      p: a.width_cm, t: a.height_cm, l: a.width_cm, k: a.depth_cm || 3,
       w: a.width_cm, h: a.height_cm, d: a.depth_cm,
       desc: a.description, image_url: a.image_url,
       colors: a.colors || [], tags: a.tags || [],
@@ -1978,7 +1980,9 @@ async function fetchAuctionsFromDB(){
       currentBid: a.current_bid,
       minStep: a.min_step,
       endsAt: a.ends_at,
-      bids: []
+      endsIn: Math.max(0, Math.floor((new Date(a.ends_at).getTime() - Date.now()) / 1000)),
+      bids: 0,
+      history: []
     }));
   } catch(e){ console.error('Gagal memuat lelang dari database:', e); }
 }
@@ -2011,7 +2015,7 @@ function paletteByCategory(cat){
 }
 
 function syncAuctionForPainting(p){
-  const idx = AUCTIONS.findIndex(a => a.id === p.id);
+  const idx = AUCTIONS.findIndex(a => (a.paintingId||a.id) === p.id);
   if(p.status !== 'lelang'){
     if(idx > -1) AUCTIONS.splice(idx, 1);
     return;
@@ -2021,6 +2025,7 @@ function syncAuctionForPainting(p){
   if(idx === -1){
     AUCTIONS.push({
       id:p.id,
+      paintingId:p.id,
       currentBid:basePrice,
       startBid:Math.max(basePrice - minStep, 0),
       minStep,
@@ -2032,7 +2037,8 @@ function syncAuctionForPainting(p){
   }
   AUCTIONS[idx] = {
     ...AUCTIONS[idx],
-    id:p.id,
+    id:AUCTIONS[idx].id || p.id,
+    paintingId:AUCTIONS[idx].paintingId || p.id,
     currentBid: Math.max(Number(AUCTIONS[idx].currentBid)||0, basePrice),
     startBid: Math.max(Math.min(Number(AUCTIONS[idx].startBid)||basePrice, basePrice), 0),
     minStep: minStep,
@@ -2050,8 +2056,14 @@ function syncArtworkCollections(){
     tags: Array.isArray(p.tags) && p.tags.length ? p.tags : buildArtworkTags(p)
   }));
   const ids = new Set(PAINTINGS.map(p => p.id));
-  AUCTIONS = AUCTIONS.filter(a => ids.has(a.id));
+  AUCTIONS = AUCTIONS.filter(a => ids.has(a.paintingId||a.id));
   PAINTINGS.forEach(syncAuctionForPainting);
+  updateAuctionBadge();
+}
+
+function updateAuctionBadge(){
+  const badge = document.getElementById('auction-badge');
+  if(badge) badge.textContent = String(AUCTIONS.length);
 }
 
 function syncCartWithPaintings(){
@@ -2158,13 +2170,13 @@ function cardHTML(p){
     : p.status==='terjual' ? `<span class="p-card-badge badge-sold">Terjual</span>`
     : `<span class="p-card-badge badge-avail">Tersedia</span>`;
   const inWish=state.wishlist.includes(p.id);
-  const auc=AUCTIONS.find(a=>a.id===p.id);
+  const auc=AUCTIONS.find(a=>(a.paintingId||a.id)===p.id);
   const priceHTML=p.status==='terjual' ? '' :
     p.status==='lelang' ? `<div class="p-card-price">Bid: ${fmt(auc?.currentBid||p.price)}</div>` :
     `<div class="p-card-price">${fmt(p.price)}</div>`;
-  return `<div class="p-card" onclick="openDetail(${p.id})">
+  return `<div class="p-card" onclick="openDetail(${jsArg(p.id)})">
     <div class="p-card-img-wrap">
-      <button class="p-card-wishlist ${inWish?'active':''}" onclick="event.stopPropagation();toggleWishlist(${p.id})" title="${inWish?'Hapus dari wishlist':'Simpan ke wishlist'}">${inWish?'&#9829;':'&#9825;'}</button>
+      <button class="p-card-wishlist ${inWish?'active':''}" onclick="event.stopPropagation();toggleWishlist(${jsArg(p.id)})" title="${inWish?'Hapus dari wishlist':'Simpan ke wishlist'}">${inWish?'&#9829;':'&#9825;'}</button>
       ${paintingSVG(p)}
       ${badge}
     </div>
@@ -2295,7 +2307,7 @@ function openDetail(id){
       : 'Setelah checkout, tim studio akan menghubungi Anda untuk konfirmasi pembayaran, pengiriman, dan detail penempatan karya bila diperlukan.';
 
   // Price & Actions
-  const auc=AUCTIONS.find(a=>a.id===id);
+  const auc=AUCTIONS.find(a=>(a.paintingId||a.id)===id);
   const pl=document.getElementById('d-price-lbl');
   const pv=document.getElementById('d-price-val');
   const acts=document.getElementById('d-actions');
@@ -2307,11 +2319,11 @@ function openDetail(id){
   } else if(p.status==='lelang'&&auc){
     pl.textContent='Penawaran Tertinggi Saat Ini';
     pv.textContent=fmt(auc.currentBid);
-    acts.innerHTML=`<button class="btn btn-primary" onclick="goPage('auction')">Ikut Lelang →</button><button class="btn btn-secondary" onclick="openContact('${p.title}')">Tanya via WhatsApp</button><button class="btn btn-ghost" onclick="toggleWishlist(${p.id})">&#9825; Simpan</button>`;
+    acts.innerHTML=`<button class="btn btn-primary" onclick="goPage('auction')">Ikut Lelang →</button><button class="btn btn-secondary" onclick="openContact('${p.title}')">Tanya via WhatsApp</button><button class="btn btn-ghost" onclick="toggleWishlist(${jsArg(p.id)})">&#9825; Simpan</button>`;
   } else {
     pl.textContent='Harga';
     pv.textContent=fmt(p.price);
-    acts.innerHTML=`<button class="btn btn-primary" onclick="buyNow(${p.id})">Beli Sekarang</button><button class="btn btn-secondary" onclick="addToCart(${p.id})">+ Keranjang</button><button class="btn btn-outline" onclick="openContact('${p.title}')">Tanya via WhatsApp</button>`;
+    acts.innerHTML=`<button class="btn btn-primary" onclick="buyNow(${jsArg(p.id)})">Beli Sekarang</button><button class="btn btn-secondary" onclick="addToCart(${jsArg(p.id)})">+ Keranjang</button><button class="btn btn-outline" onclick="openContact('${p.title}')">Tanya via WhatsApp</button>`;
   }
 
   goPage('detail');
@@ -2426,20 +2438,21 @@ function setRoom(room, btn){
 function renderAuction(){
   const grid=document.getElementById('auction-grid');
   grid.innerHTML=AUCTIONS.map(a=>{
-    const p=PAINTINGS.find(x=>x.id===a.id);
+    const p=PAINTINGS.find(x=>x.id===(a.paintingId||a.id));
     if(!p) return '';
+    const auctionId = jsArg(a.id);
     const minNext=a.currentBid+a.minStep;
     return `<div class="auction-card">
-      <div class="auction-card-img" onclick="openDetail(${p.id})">${paintingSVG(p)}</div>
+      <div class="auction-card-img" onclick="openDetail(${jsArg(p.id)})">${paintingSVG(p)}</div>
       <div class="auction-card-body">
-        <div class="auction-card-title" onclick="openDetail(${p.id})">${p.title}</div>
+        <div class="auction-card-title" onclick="openDetail(${jsArg(p.id)})">${p.title}</div>
         <div class="auction-card-meta">${p.artist} &middot; ${p.medium} &middot; ${p.year}</div>
         <div class="auction-dims">${p.p} &times; ${p.t} &times; ${p.k} cm</div>
         <div class="bid-row">
           <div class="bid-info-col">
             <div class="bid-lbl">Penawaran Tertinggi</div>
             <div class="bid-amt">${fmt(a.currentBid)}</div>
-            <div class="bid-cnt">${a.bids} penawaran &middot; Mulai ${fmt(a.startBid)}</div>
+            <div class="bid-cnt">${Number(a.bids)||0} penawaran &middot; Mulai ${fmt(a.startBid)}</div>
           </div>
           <div class="timer-col">
             <div class="timer-lbl">Berakhir dalam</div>
@@ -2448,15 +2461,15 @@ function renderAuction(){
         </div>
         <div class="bid-input-row" style="margin-bottom:10px">
           <input class="bid-input" type="number" id="bid-${a.id}" placeholder="${minNext.toLocaleString('id-ID')}" min="${minNext}" step="${a.minStep}">
-          <button class="btn btn-primary btn-sm" onclick="placeBid(${a.id})">Tawar</button>
+          <button class="btn btn-primary btn-sm" onclick="placeBid(${auctionId})">Tawar</button>
         </div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Min. penawaran: ${fmt(minNext)} (+${fmt(a.minStep)})</div>
       </div>
-      <button class="bid-history-toggle" onclick="toggleBidHistory(${a.id},this)">
+      <button class="bid-history-toggle" onclick="toggleBidHistory(${auctionId},this)">
         Riwayat Penawaran <span>&#9660;</span>
       </button>
       <div class="bid-history-list hidden" id="bh-${a.id}">
-        ${a.history.map(h=>`<div class="bid-history-item"><span class="bid-bidder">${h.name}</span><span class="bid-time-ago">${h.ago}</span><span class="bid-hist-amt">${fmt(h.amt)}</span></div>`).join('')}
+        ${(a.history||[]).map(h=>`<div class="bid-history-item"><span class="bid-bidder">${h.name}</span><span class="bid-time-ago">${h.ago}</span><span class="bid-hist-amt">${fmt(h.amt)}</span></div>`).join('')}
       </div>
     </div>`;
   }).join('');
@@ -2575,7 +2588,7 @@ function renderCartBody(){
         <div class="cart-item-meta">${c.medium}</div>
         <div class="cart-item-price">${fmt(c.price)}</div>
       </div>
-      <button class="cart-item-remove" onclick="removeFromCart(${c.id})" title="Hapus">&#10005;</button>
+      <button class="cart-item-remove" onclick="removeFromCart(${jsArg(c.id)})" title="Hapus">&#10005;</button>
     </div>`;
   }).join('');
   footer.innerHTML=`
@@ -2623,7 +2636,8 @@ function renderCkSteps(){
   }
 }
 
-function ckNext(){
+async function ckNext(){
+  const nextBtn=document.getElementById('ck-next-btn');
   if(state.ckStep===1){
     const n=document.getElementById('ck-nama').value;
     const e=document.getElementById('ck-email').value;
@@ -2635,38 +2649,57 @@ function ckNext(){
     if(!a||!k){ showToast('Mohon lengkapi alamat dan pilih pengiriman','error'); return; }
   }
   if(state.ckStep===3){
-    // Confirm
+    // Confirm & simpan pesanan ke Supabase
     const total=state.cart.reduce((s,c)=>s+c.price,0);
     const nama=document.getElementById('ck-nama').value;
+    const email=document.getElementById('ck-email').value;
+    const wa=document.getElementById('ck-wa').value;
+    const address=document.getElementById('ck-alamat').value;
+    const city=document.getElementById('ck-kota').value;
+    const postalCode=document.getElementById('ck-kodepos').value;
     const kurir=document.getElementById('ck-kurir');
     const kurirText=kurir.options[kurir.selectedIndex]?.text||'-';
     const payment=document.querySelector('input[name="payment"]:checked')?.value||'-';
+    if(!wa){ showToast('Mohon isi nomor WhatsApp','error'); return; }
+    if(nextBtn){ nextBtn.disabled=true; nextBtn.textContent='Menyimpan...'; }
+    let orderNumber = '';
+    try {
+      const res = await fetch('/api/orders', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          customerName: nama,
+          customerEmail: email,
+          customerPhone: wa,
+          shippingAddress: address,
+          shippingCity: city,
+          shippingPostalCode: postalCode,
+          courier: kurirText,
+          paymentMethod: payment,
+          items: state.cart.map(c=>({artworkId:String(c.id), title:c.title, price:c.price, quantity:1}))
+        })
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error||'Gagal membuat pesanan.');
+      orderNumber = data.orderNumber || '';
+    } catch(e) {
+      showToast(e.message||'Gagal membuat pesanan. Coba lagi.','error');
+      if(nextBtn){ nextBtn.disabled=false; nextBtn.textContent='Konfirmasi Pesanan'; }
+      return;
+    }
     document.getElementById('ck-confirm-detail').innerHTML=`
       <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
+        ${orderNumber ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Nomor Pesanan</span><span style="color:var(--brown)">${orderNumber}</span></div>` : ''}
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pemesan</span><span style="color:var(--brown)">${nama}</span></div>
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pengiriman</span><span style="color:var(--brown);font-size:12px;max-width:60%;text-align:right">${kurirText}</span></div>
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pembayaran</span><span style="color:var(--brown)">${payment}</span></div>
         <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid var(--border);font-weight:500"><span style="color:var(--muted)">Total</span><span style="color:var(--terra);font-size:16px">${fmt(total)}</span></div>
       </div>`;
-    // Save order to localStorage for admin
-    saveOrderToStorage({
-      name: nama,
-      email: document.getElementById('ck-email').value,
-      wa: document.getElementById('ck-wa').value,
-      address: document.getElementById('ck-alamat').value,
-      city: document.getElementById('ck-kota').value,
-      postalCode: document.getElementById('ck-kodepos').value,
-      courier: kurirText,
-      payment: payment,
-      items: state.cart.map(c=>({id:c.id,title:c.title,price:c.price})),
-      total: total,
-      status: 'pending',
-      date: new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})
-    });
     state.cart=[];
     updateCartCount();
     saveState();
     renderCartBody();
+    if(nextBtn){ nextBtn.disabled=false; }
   }
   if(state.ckStep<4) state.ckStep++;
   renderCkSteps();
@@ -2854,6 +2887,10 @@ async function init(){
   });
   // Muat data dari Supabase
   await Promise.all([fetchPaintingsFromDB(), fetchAuctionsFromDB()]);
+  syncArtworkCollections();
+  renderHome();
+  renderGallery();
+  renderAuction();
   // Restore session & wishlist dari Supabase
   await restoreSession();
   await fetchWishlistFromDB();

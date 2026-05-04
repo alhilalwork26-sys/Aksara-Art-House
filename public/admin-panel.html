@@ -237,7 +237,7 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
     </div>
     <button class="btn btn-primary btn-full" onclick="doAdminLogin()">Masuk ke Panel Admin</button>
     <div style="margin-top:1rem;text-align:center;font-size:12px;color:var(--muted)">
-      Default: <code>admin</code> / <code>admin123</code>
+      Gunakan kredensial admin yang dikonfigurasi di server.
       &nbsp;·&nbsp; <button class="user-link" onclick="window.open('index.html','_blank')">Buka Halaman User →</button>
     </div>
   </div>
@@ -338,7 +338,7 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
             <div class="img-upload-lbl">Klik untuk upload foto karya<br><span style="font-size:11px;opacity:.7">JPG, PNG, WEBP — maks 3MB</span></div>
           </div>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:5px">Foto disimpan sebagai base64 di localStorage. Untuk produksi, gunakan Cloudinary atau Supabase Storage.</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:5px">Foto disimpan ke database sebagai data gambar. Untuk produksi besar, gunakan Supabase Storage.</div>
       </div>
     </div>
     <div class="modal-foot">
@@ -388,7 +388,7 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
         <input type="text" id="set-uname" placeholder="admin">
       </div>
       <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:.5rem">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Berbagi data dengan halaman user via browser localStorage (key yang sama).</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Berbagi data dengan halaman user melalui database Supabase.</div>
         <button class="btn btn-danger btn-sm" onclick="confirmResetData()">Reset Semua Data ke Default</button>
       </div>
     </div>
@@ -562,7 +562,7 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
 
 <script>
 // ══════════════════════════════════════════
-// SHARED DATA LAYER (berbagi dengan user.html via localStorage)
+// SHARED DATA LAYER (berbagi dengan halaman user via Supabase)
 // ══════════════════════════════════════════
 const STORAGE_KEYS = {
   paintings: 'aksara-paintings',
@@ -579,7 +579,7 @@ const DEFAULT_SETTINGS = {
   studioName: 'Aksara Art House',
   wa: '6281234567890',
   adminUser: 'admin',
-  adminPass: 'admin123'
+  adminPass: ''
 };
 
 // ── HELPERS ──
@@ -623,8 +623,8 @@ async function fetchAllFromDB() {
       _paintings = rows.map(a => ({
         id: a.id, title: a.title, artist: a.artist,
         cat: a.category,
-        status: a.status === 'available' ? 'dijual' : a.status === 'auction' ? 'lelang' : a.status === 'sold' ? 'terjual' : a.status,
-        medium: a.medium, year: a.year, price: a.price, p: a.price,
+        status: a.status === 'available' ? 'tersedia' : a.status === 'auction' ? 'lelang' : a.status === 'sold' ? 'terjual' : a.status,
+        medium: a.medium, year: a.year, price: a.price, p: a.width_cm,
         t: a.height_cm, l: a.width_cm, k: a.depth_cm || 3,
         desc: a.description, image_url: a.image_url,
         colors: a.colors || paletteByCategory(a.category),
@@ -823,6 +823,7 @@ function renderDashboard() {
   const sold = paintings.filter(p=>p.status==='terjual').length;
   const pendingOrders = orders.filter(o=>o.status==='pending').length;
   const revenue = orders.filter(o=>o.status!=='cancelled').reduce((s,o)=>s+o.total,0);
+  const prices = paintings.map(p=>Number(p.price)||0).filter(Boolean);
 
   document.getElementById('stats-grid').innerHTML = `
     <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Total Karya</div><div class="stat-sub">${avail} tersedia · ${sold} terjual</div></div>
@@ -860,11 +861,11 @@ function renderDashboard() {
       </div>
       <div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:.75rem;border-bottom:1px solid var(--border)">
         <span style="color:var(--muted)">Harga Tertinggi</span>
-        <strong style="color:var(--terra)">${fmt(Math.max(...paintings.map(p=>p.price)))}</strong>
+        <strong style="color:var(--terra)">${prices.length ? fmt(Math.max(...prices)) : 'Rp 0'}</strong>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:13px">
         <span style="color:var(--muted)">Harga Terendah</span>
-        <strong style="color:var(--terra)">${fmt(Math.min(...paintings.map(p=>p.price)))}</strong>
+        <strong style="color:var(--terra)">${prices.length ? fmt(Math.min(...prices)) : 'Rp 0'}</strong>
       </div>
     </div>
   `;
@@ -1212,7 +1213,7 @@ document.querySelectorAll('.overlay').forEach(o => {
 });
 
 // ══════════════════════════════════════════
-// IMAGE UPLOAD (base64 — swap with Cloudinary for production)
+// IMAGE UPLOAD (base64 — gunakan Supabase Storage untuk katalog besar)
 // ══════════════════════════════════════════
 let _currentImageBase64 = null;
 
