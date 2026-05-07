@@ -596,7 +596,7 @@ function db_set(key, val) {
 }
 
 // ── IN-MEMORY CACHE (diisi dari Supabase) ──
-let _paintings = null, _auctions = null, _orders = null;
+let _paintings = null, _auctions = null, _orders = null, _settings = null;
 let adminToken = localStorage.getItem('aksara-admin-token') || null;
 
 function adminHeaders() {
@@ -653,10 +653,19 @@ async function fetchAllFromDB() {
         endsAt: a.ends_at, bids: []
       }));
     }
+    const settingsRes = await fetch('/api/settings');
+    if(settingsRes.ok) _settings = { ...DEFAULT_SETTINGS, ...(await settingsRes.json()) };
   } catch(e) { console.error('Gagal fetch dari DB:', e); }
 }
-function loadSettings() { return { ...DEFAULT_SETTINGS, ...(db_get(STORAGE_KEYS.settings, {})||{}) }; }
-function saveSettingsData(data) { db_set(STORAGE_KEYS.settings, data); }
+function loadSettings() { return { ...DEFAULT_SETTINGS, ...(db_get(STORAGE_KEYS.settings, {})||{}), ...(_settings||{}) }; }
+async function saveSettingsData(data) {
+  _settings = data;
+  db_set(STORAGE_KEYS.settings, data);
+  const res = await fetch('/api/settings', {
+    method:'PATCH', headers: adminHeaders(), body: JSON.stringify({ studioName:data.studioName, wa:data.wa })
+  });
+  if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal menyimpan pengaturan.'); }
+}
 
 // ── PALETTE ──
 function paletteByCategory(cat) {
@@ -834,7 +843,10 @@ function renderDashboard() {
 
   // Recent artworks
   const recent = [...paintings].sort((a,b)=>b.id-a.id).slice(0,5);
-  function dashThumb(p){ return p.image ? `<img src="${p.image}" style="width:48px;height:60px;object-fit:cover;border-radius:3px;border:1px solid var(--border)">` : paintingSVG(p,48,60); }
+  function dashThumb(p){
+    const imageUrl = p.image_url || p.image;
+    return imageUrl ? `<img src="${imageUrl}" style="width:48px;height:60px;object-fit:cover;border-radius:3px;border:1px solid var(--border)">` : paintingSVG(p,48,60);
+  }
   document.getElementById('dash-artworks-tbody').innerHTML = recent.map(p => `
     <tr>
       <td><div class="painting-thumb">${dashThumb(p)}</div></td>
@@ -1181,16 +1193,20 @@ function openSettings() {
   openModal('modal-settings');
 }
 
-function saveSettings() {
+async function saveSettings() {
   const s = loadSettings();
   s.studioName = document.getElementById('set-studio').value.trim() || s.studioName;
   s.wa = document.getElementById('set-wa').value.trim() || s.wa;
   s.adminUser = document.getElementById('set-uname').value.trim() || s.adminUser;
   const newPass = document.getElementById('set-pass-new').value;
   if(newPass) s.adminPass = newPass;
-  saveSettingsData(s);
-  closeModal('modal-settings');
-  showToast('Pengaturan disimpan ✓', 'success');
+  try {
+    await saveSettingsData(s);
+    closeModal('modal-settings');
+    showToast('Pengaturan disimpan ✓', 'success');
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
 }
 
 function confirmResetData() {
@@ -1234,7 +1250,7 @@ function handleImageUpload(event) {
 }
 
 function loadArtworkImagePreview(artwork) {
-  _currentImageBase64 = artwork?.image || null;
+  _currentImageBase64 = artwork?.image_url || artwork?.image || null;
   const wrap = document.getElementById('img-upload-preview-wrap');
   if(_currentImageBase64) {
     wrap.innerHTML = `<img src="${_currentImageBase64}" class="img-preview" alt="preview"><div style="font-size:11px;color:var(--muted);margin-top:5px;text-align:center">Foto sudah ada — klik untuk ganti</div>`;

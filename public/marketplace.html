@@ -1948,7 +1948,7 @@ async function fetchPaintingsFromDB(){
     const res = await fetch('/api/artworks');
     if(!res.ok) return;
     const rows = await res.json();
-    if(!Array.isArray(rows) || !rows.length) return;
+    if(!Array.isArray(rows)) return;
     PAINTINGS = rows.map(a => ({
       id: a.id, title: a.title, artist: a.artist,
       cat: a.category, status: a.status === 'available' ? 'tersedia' : a.status === 'auction' ? 'lelang' : a.status === 'sold' ? 'terjual' : a.status,
@@ -2823,6 +2823,18 @@ function updateUserUI(){
 
 // ── WHATSAPP / CONTACT ──────────────────────────────────
 const WA_NUMBER = '6281234567890'; // Ganti dengan nomor WA seniman
+let _publicSettings = null;
+
+async function getPublicSettings(){
+  if(_publicSettings) return _publicSettings;
+  try {
+    const res = await fetch('/api/settings');
+    if(res.ok) _publicSettings = await res.json();
+  } catch(e) {}
+  _publicSettings = { wa: WA_NUMBER, ...(_publicSettings || {}) };
+  return _publicSettings;
+}
+
 function openWA(){
   openModal('modal-contact');
 }
@@ -2831,12 +2843,13 @@ function openContact(topic){
   if(ti) ti.value=topic||'';
   openModal('modal-contact');
 }
-function sendWA(){
+async function sendWA(){
   const nama=document.getElementById('wa-nama').value||'Pengunjung';
   const topik=document.getElementById('wa-topik').value||'Informasi Umum';
   const pesan=document.getElementById('wa-pesan').value||'';
+  const settings = await getPublicSettings();
   const text=`Halo, saya ${nama} tertarik dengan "${topik}". ${pesan}`;
-  window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(text)}`,'_blank');
+  window.open(`https://wa.me/${settings.wa || WA_NUMBER}?text=${encodeURIComponent(text)}`,'_blank');
   closeModal('modal-contact');
   showToast('Mengarahkan ke WhatsApp...','success');
 }
@@ -2949,21 +2962,23 @@ async function renderMyOrders(){
 }
 
 function contactAboutOrder(orderId, items){
-  const settings = JSON.parse(localStorage.getItem('murni-admin-settings')||'{}');
-  const wa = settings.wa || '6281234567890';
-  const msg = `Halo, saya ingin menanyakan pesanan #${String(orderId).padStart(4,'0')} untuk "${items}".`;
-  window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, '_blank');
+  getPublicSettings().then(settings => {
+    const wa = settings.wa || '6281234567890';
+    const msg = `Halo, saya ingin menanyakan pesanan #${String(orderId).padStart(4,'0')} untuk "${items}".`;
+    window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, '_blank');
+  });
 }
 
 
 // ── REAL PHOTO SUPPORT ──────────────────────────────────
 const _origPaintingSVG = paintingSVG;
 function paintingSVG(p, w=300, h=400){
-  if(p && p.image) {
+  const imageUrl = p && (p.image_url || p.image);
+  if(imageUrl) {
     const ph = p.t||80, pw = p.p||80;
     const ratio = ph/pw;
     const svgH = Math.round(w*ratio);
-    return `<img src="${p.image}" style="width:100%;height:${svgH>0?svgH+'px':'100%'};object-fit:cover;display:block;aspect-ratio:3/4" alt="${p.title||''}">`;
+    return `<img src="${imageUrl}" style="width:100%;height:${svgH>0?svgH+'px':'100%'};object-fit:cover;display:block;aspect-ratio:3/4" alt="${p.title||''}">`;
   }
   return _origPaintingSVG(p, w, h);
 }

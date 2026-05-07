@@ -111,6 +111,31 @@ export async function deleteLegacyValue(key: string) {
   );
 }
 
+export async function readSiteSetting<T extends Record<string, unknown>>(key: string): Promise<T | null> {
+  const rows = await supabaseFetch<Array<{ value: T }>>(
+    `site_settings?select=value&key=eq.${encodeURIComponent(key)}&limit=1`
+  );
+  return rows[0]?.value ?? null;
+}
+
+export async function writeSiteSetting(key: string, value: Record<string, unknown>) {
+  await supabaseFetch(
+    "site_settings?on_conflict=key",
+    {
+      method: "POST",
+      headers: {
+        Prefer: "resolution=merge-duplicates,return=minimal"
+      },
+      body: JSON.stringify({
+        key,
+        value,
+        updated_at: new Date().toISOString()
+      })
+    },
+    { serviceRole: true }
+  );
+}
+
 export async function listArtworks(): Promise<Artwork[]> {
   return supabaseFetch<Artwork[]>(
     "artworks?select=*&status=in.(available,auction,sold)&order=is_featured.desc,created_at.desc"
