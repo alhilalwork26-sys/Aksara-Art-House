@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminToken, verifyAdminToken } from "@/lib/admin-auth";
-import { createArtwork, listAllArtworks } from "@/lib/supabase-rest";
+import { createArtwork, listAllArtworks, syncAuctionForArtwork } from "@/lib/supabase-rest";
 
 function unauthorized() {
   return NextResponse.json({ error: "Akses ditolak." }, { status: 401 });
@@ -20,6 +20,7 @@ export async function POST(request: Request) {
   try {
     const data = await request.json();
     const artwork = await createArtwork(data);
+    await syncAuctionForArtwork(artwork);
     return NextResponse.json(artwork, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Gagal membuat karya." }, { status: 500 });

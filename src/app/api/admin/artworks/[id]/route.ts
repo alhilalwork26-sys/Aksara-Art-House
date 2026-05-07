@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminToken, verifyAdminToken } from "@/lib/admin-auth";
-import { deleteArtwork, updateArtwork } from "@/lib/supabase-rest";
+import { deleteArtwork, syncAuctionForArtwork, updateArtwork } from "@/lib/supabase-rest";
 
 function unauthorized() {
   return NextResponse.json({ error: "Akses ditolak." }, { status: 401 });
@@ -12,6 +12,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { id } = await params;
     const data = await request.json();
     const artwork = await updateArtwork(id, data);
+    await syncAuctionForArtwork(artwork);
     return NextResponse.json(artwork);
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Gagal update karya." }, { status: 500 });

@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin — Aksara Art House</title>
-<script src="/legacy-db-shim.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -389,7 +388,7 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
       </div>
       <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:.5rem">
         <div style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Berbagi data dengan halaman user melalui database Supabase.</div>
-        <button class="btn btn-danger btn-sm" onclick="confirmResetData()">Reset Semua Data ke Default</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmRefreshData()">Muat Ulang Data</button>
       </div>
     </div>
     <div class="modal-foot">
@@ -564,14 +563,6 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
 // ══════════════════════════════════════════
 // SHARED DATA LAYER (berbagi dengan halaman user via Supabase)
 // ══════════════════════════════════════════
-const STORAGE_KEYS = {
-  paintings: 'aksara-paintings',
-  auctions:  'aksara-auctions',
-  orders:    'aksara-orders',
-  settings:  'murni-admin-settings',
-  adminAuth: 'murni-admin-auth'
-};
-
 const DEFAULT_PAINTINGS = [];
 const DEFAULT_AUCTIONS = [];
 
@@ -586,21 +577,11 @@ const DEFAULT_SETTINGS = {
 const fmt = n => 'Rp ' + Number(n).toLocaleString('id-ID');
 const clone = d => JSON.parse(JSON.stringify(d));
 
-function db_get(key, fallback) {
-  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
-  catch(e) { return fallback; }
-}
-function db_set(key, val) {
-  try { localStorage.setItem(key, JSON.stringify(val)); return true; }
-  catch(e) { return false; }
-}
-
 // ── IN-MEMORY CACHE (diisi dari Supabase) ──
 let _paintings = null, _auctions = null, _orders = null, _settings = null;
-let adminToken = localStorage.getItem('aksara-admin-token') || null;
 
 function adminHeaders() {
-  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (adminToken||'') };
+  return { 'Content-Type': 'application/json' };
 }
 
 function loadPaintings() { return _paintings || clone(DEFAULT_PAINTINGS); }
@@ -657,10 +638,9 @@ async function fetchAllFromDB() {
     if(settingsRes.ok) _settings = { ...DEFAULT_SETTINGS, ...(await settingsRes.json()) };
   } catch(e) { console.error('Gagal fetch dari DB:', e); }
 }
-function loadSettings() { return { ...DEFAULT_SETTINGS, ...(db_get(STORAGE_KEYS.settings, {})||{}), ...(_settings||{}) }; }
+function loadSettings() { return { ...DEFAULT_SETTINGS, ...(_settings||{}) }; }
 async function saveSettingsData(data) {
   _settings = data;
-  db_set(STORAGE_KEYS.settings, data);
   const res = await fetch('/api/settings', {
     method:'PATCH', headers: adminHeaders(), body: JSON.stringify({ studioName:data.studioName, wa:data.wa })
   });
@@ -709,8 +689,6 @@ async function doAdminLogin() {
     });
     const data = await res.json();
     if(!res.ok) throw new Error(data.error||'Login gagal.');
-    adminToken = data.token;
-    localStorage.setItem('aksara-admin-token', adminToken);
     isLoggedIn = true;
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('admin-name-display').textContent = u;
@@ -726,25 +704,26 @@ async function doAdminLogin() {
 }
 
 function doAdminLogout() {
-  adminToken = null;
-  localStorage.removeItem('aksara-admin-token');
+  fetch('/api/admin/token', { method:'DELETE' }).catch(()=>{});
   isLoggedIn = false;
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('admin-password').value = '';
 }
 
 // Check session on load
-(function() {
-  const token = localStorage.getItem('aksara-admin-token');
-  if(token) {
-    adminToken = token;
-    const u = 'Admin';
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('admin-name-display').textContent = u;
-    document.getElementById('admin-avatar-text').textContent = u[0].toUpperCase();
-    isLoggedIn = true;
-    setTimeout(initApp, 0);
-  }
+(async function() {
+  try {
+    const res = await fetch('/api/admin/token');
+    if(res.ok) {
+      const data = await res.json();
+      const u = data.username || 'Admin';
+      isLoggedIn = true;
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('admin-name-display').textContent = u;
+      document.getElementById('admin-avatar-text').textContent = u[0].toUpperCase();
+      setTimeout(initApp, 0);
+    }
+  } catch(e) {}
 })();
 
 // ══════════════════════════════════════════
@@ -1209,18 +1188,16 @@ async function saveSettings() {
   }
 }
 
-function confirmResetData() {
-  showConfirm('Reset Semua Data?', 'Semua karya, lelang, dan pesanan akan dikembalikan ke data default. Tindakan ini tidak bisa dibatalkan.', () => {
-    localStorage.removeItem(STORAGE_KEYS.paintings);
-    localStorage.removeItem(STORAGE_KEYS.auctions);
-    localStorage.removeItem(STORAGE_KEYS.orders);
+function confirmRefreshData() {
+  showConfirm('Muat Ulang Data?', 'Data terbaru akan diambil ulang dari database Supabase.', async () => {
+    await fetchAllFromDB();
     renderDashboard();
     renderArtworksTable();
     renderOrders();
     renderAuctionsAdmin();
     closeModal('modal-settings');
-    showToast('Data direset ke default ✓', 'success');
-  }, '⚠️');
+    showToast('Data berhasil dimuat ulang ✓', 'success');
+  }, '↻');
 }
 
 // ── Close modals on overlay click ──
@@ -1264,10 +1241,10 @@ function loadArtworkImagePreview(artwork) {
 
 // Patch openArtworkModal to also load image preview
 const _origOpenArtworkModal = openArtworkModal;
-function openArtworkModal(painting = null) {
+openArtworkModal = function(painting = null) {
   _origOpenArtworkModal(painting);
   loadArtworkImagePreview(painting);
-}
+};
 
 
 // ══════════════════════════════════════════

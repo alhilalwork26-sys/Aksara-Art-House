@@ -2,6 +2,7 @@ import { createHmac } from "crypto";
 
 const SECRET = process.env.ADMIN_PASSWORD || "changeme";
 const USERNAME = process.env.ADMIN_USERNAME || "admin";
+export const ADMIN_COOKIE_NAME = "aksara_admin_token";
 
 export function verifyAdminCredentials(username: string, password: string): boolean {
   return username === USERNAME && password === SECRET;
@@ -32,5 +33,10 @@ export function verifyAdminToken(token: string): boolean {
 export function getAdminToken(request: Request): string | null {
   const auth = request.headers.get("Authorization") || "";
   const token = auth.replace("Bearer ", "").trim();
-  return token || null;
+  if (token) return token;
+
+  const cookieHeader = request.headers.get("cookie") || "";
+  const cookies = cookieHeader.split(";").map((part) => part.trim());
+  const cookie = cookies.find((part) => part.startsWith(`${ADMIN_COOKIE_NAME}=`));
+  return cookie ? decodeURIComponent(cookie.slice(ADMIN_COOKIE_NAME.length + 1)) : null;
 }

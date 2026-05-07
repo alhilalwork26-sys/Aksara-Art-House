@@ -168,6 +168,50 @@ export async function updateArtwork(id: string, data: Partial<Artwork>): Promise
   return row;
 }
 
+export async function syncAuctionForArtwork(artwork: Artwork): Promise<void> {
+  if (artwork.status === "auction") {
+    const minStep = Math.max(100000, Math.round((artwork.price || 0) * 0.05));
+    const startBid = Math.max(0, (artwork.price || 0) - minStep);
+
+    await supabaseFetch(
+      "auctions?on_conflict=artwork_id",
+      {
+        method: "POST",
+        headers: {
+          Prefer: "resolution=merge-duplicates,return=minimal"
+        },
+        body: JSON.stringify({
+          artwork_id: artwork.id,
+          status: "active",
+          start_bid: startBid,
+          current_bid: Math.max(startBid, startBid),
+          min_step: minStep,
+          starts_at: new Date().toISOString(),
+          ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          updated_at: new Date().toISOString()
+        })
+      },
+      { serviceRole: true }
+    );
+    return;
+  }
+
+  await supabaseFetch(
+    `auctions?artwork_id=eq.${artwork.id}&status=in.(scheduled,active)`,
+    {
+      method: "PATCH",
+      headers: {
+        Prefer: "return=minimal"
+      },
+      body: JSON.stringify({
+        status: "ended",
+        updated_at: new Date().toISOString()
+      })
+    },
+    { serviceRole: true }
+  );
+}
+
 export async function deleteArtwork(id: string): Promise<void> {
   await supabaseFetch<null>(
     `artworks?id=eq.${id}`,
