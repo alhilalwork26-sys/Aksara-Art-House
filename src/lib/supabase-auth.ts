@@ -1,3 +1,16 @@
+export const USER_AUTH_COOKIE_NAME = "aksara_user_token";
+
+export function getUserAuthToken(request: Request): string | null {
+  const auth = request.headers.get("Authorization") || "";
+  const bearer = auth.replace("Bearer ", "").trim();
+  if (bearer) return bearer;
+
+  const cookieHeader = request.headers.get("cookie") || "";
+  const cookies = cookieHeader.split(";").map((part) => part.trim());
+  const cookie = cookies.find((part) => part.startsWith(`${USER_AUTH_COOKIE_NAME}=`));
+  return cookie ? decodeURIComponent(cookie.slice(USER_AUTH_COOKIE_NAME.length + 1)) : null;
+}
+
 function getAuthConfig() {
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

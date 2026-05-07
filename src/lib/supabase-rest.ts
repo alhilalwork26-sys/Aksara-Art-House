@@ -1,4 +1,4 @@
-import type { AdminOrder, Artwork, Auction, CheckoutInput } from "@/lib/types";
+import type { AdminOrder, Artwork, Auction, AuctionBid, CheckoutInput } from "@/lib/types";
 
 type SupabaseConfig = {
   url: string;
@@ -170,16 +170,27 @@ export async function updateArtwork(id: string, data: Partial<Artwork>): Promise
 
 export async function syncAuctionForArtwork(artwork: Artwork): Promise<void> {
   if (artwork.status === "auction") {
+    const existing = await supabaseFetch<Auction[]>(
+      `auctions?select=*&artwork_id=eq.${artwork.id}&limit=1`,
+      undefined,
+      { serviceRole: true }
+    );
+
+    if (existing[0]) {
+      if (existing[0].status !== "active") {
+        await updateAuction(existing[0].id, { status: "active", updated_at: new Date().toISOString() });
+      }
+      return;
+    }
+
     const minStep = Math.max(100000, Math.round((artwork.price || 0) * 0.05));
     const startBid = Math.max(0, (artwork.price || 0) - minStep);
 
     await supabaseFetch(
-      "auctions?on_conflict=artwork_id",
+      "auctions",
       {
         method: "POST",
-        headers: {
-          Prefer: "resolution=merge-duplicates,return=minimal"
-        },
+        headers: { Prefer: "return=minimal" },
         body: JSON.stringify({
           artwork_id: artwork.id,
           status: "active",
@@ -212,6 +223,16 @@ export async function syncAuctionForArtwork(artwork: Artwork): Promise<void> {
   );
 }
 
+export async function ensureAuctionRecords(): Promise<void> {
+  const auctionArtworks = await supabaseFetch<Artwork[]>(
+    "artworks?select=*&status=eq.auction",
+    undefined,
+    { serviceRole: true }
+  );
+
+  await Promise.all(auctionArtworks.map((artwork) => syncAuctionForArtwork(artwork)));
+}
+
 export async function deleteArtwork(id: string): Promise<void> {
   await supabaseFetch<null>(
     `artworks?id=eq.${id}`,
@@ -220,15 +241,17 @@ export async function deleteArtwork(id: string): Promise<void> {
   );
 }
 
-export async function listAuctions(): Promise<(Auction & { artworks: Artwork })[]> {
-  return supabaseFetch<(Auction & { artworks: Artwork })[]>(
-    "auctions?select=*,artworks(*)&status=in.(scheduled,active,ended)&order=ends_at.asc"
+export async function listAuctions(): Promise<(Auction & { artworks: Artwork; auction_bids?: AuctionBid[] })[]> {
+  await ensureAuctionRecords();
+  return supabaseFetch<(Auction & { artworks: Artwork; auction_bids?: AuctionBid[] })[]>(
+    "auctions?select=*,artworks(*),auction_bids(*)&status=in.(scheduled,active,ended)&order=ends_at.asc&auction_bids.order=amount.desc",
   );
 }
 
-export async function listAdminAuctions(): Promise<(Auction & { artworks: Artwork })[]> {
-  return supabaseFetch<(Auction & { artworks: Artwork })[]>(
-    "auctions?select=*,artworks(*)&order=created_at.desc",
+export async function listAdminAuctions(): Promise<(Auction & { artworks: Artwork; auction_bids?: AuctionBid[] })[]> {
+  await ensureAuctionRecords();
+  return supabaseFetch<(Auction & { artworks: Artwork; auction_bids?: AuctionBid[] })[]>(
+    "auctions?select=*,artworks(*),auction_bids(*)&order=created_at.desc&auction_bids.order=amount.desc",
     undefined,
     { serviceRole: true }
   );
@@ -250,6 +273,49 @@ export async function updateAuction(id: string, data: Partial<Auction>): Promise
     { serviceRole: true }
   );
   return row;
+}
+
+export async function placeAuctionBid(input: {
+  auctionId: string;
+  amount: number;
+  bidderId: string;
+  bidderName: string;
+}): Promise<{ auction: Auction; bid: AuctionBid }> {
+  const [auction] = await supabaseFetch<Auction[]>(
+    `auctions?select=*&id=eq.${encodeURIComponent(input.auctionId)}&limit=1`,
+    undefined,
+    { serviceRole: true }
+  );
+
+  if (!auction) throw new Error("Lelang tidak ditemukan.");
+  if (auction.status !== "active") throw new Error("Lelang ini tidak aktif.");
+  if (new Date(auction.ends_at).getTime() <= Date.now()) throw new Error("Waktu lelang sudah berakhir.");
+
+  const minNext = Number(auction.current_bid) + Number(auction.min_step);
+  if (input.amount < minNext) {
+    throw new Error(`Penawaran minimal Rp ${minNext.toLocaleString("id-ID")}.`);
+  }
+
+  const [bid] = await supabaseFetch<AuctionBid[]>(
+    "auction_bids",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        auction_id: input.auctionId,
+        bidder_id: input.bidderId,
+        bidder_name: input.bidderName,
+        amount: input.amount
+      })
+    },
+    { serviceRole: true }
+  );
+
+  const updatedAuction = await updateAuction(input.auctionId, {
+    current_bid: input.amount,
+    updated_at: new Date().toISOString()
+  });
+
+  return { auction: updatedAuction, bid };
 }
 
 export async function getUserOrders(userId: string, email: string): Promise<AdminOrder[]> {
@@ -352,7 +418,7 @@ export async function createOrder(input: CheckoutInput) {
       body: JSON.stringify(
         input.items.map((item) => ({
           order_id: order.id,
-          artwork_id: item.artworkId.startsWith("demo-") ? null : item.artworkId,
+          artwork_id: String(item.artworkId).startsWith("demo-") ? null : item.artworkId,
           title: item.title,
           price: item.price,
           quantity: item.quantity

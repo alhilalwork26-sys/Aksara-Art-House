@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { signUp } from "@/lib/supabase-auth";
+import { signUp, USER_AUTH_COOKIE_NAME } from "@/lib/supabase-auth";
 
 export async function POST(request: Request) {
   try {
@@ -25,8 +25,7 @@ export async function POST(request: Request) {
     // atau langsung user object jika email confirm aktif (tidak ada access_token)
     const userData = data.user ?? data;
 
-    return NextResponse.json({
-      accessToken,
+    const response = NextResponse.json({
       user: {
         id: userData.id || null,
         name: fullName,
@@ -35,6 +34,18 @@ export async function POST(request: Request) {
       },
       needsEmailConfirmation: !accessToken
     });
+    if (accessToken) {
+      response.cookies.set({
+        name: USER_AUTH_COOKIE_NAME,
+        value: accessToken,
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: Number(data.expires_in || 3600)
+      });
+    }
+    return response;
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Pendaftaran gagal." },

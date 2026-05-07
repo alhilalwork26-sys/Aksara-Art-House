@@ -35,6 +35,15 @@ export type Auction = {
   updated_at?: string;
 };
 
+export type AuctionBid = {
+  id: string;
+  auction_id: string;
+  bidder_id: string | null;
+  bidder_name: string;
+  amount: number;
+  created_at: string;
+};
+
 export type OrderItemInput = {
   artworkId: string;
   title: string;
@@ -67,6 +76,7 @@ export type AdminOrder = {
   payment_status: PaymentStatus;
   status: OrderStatus;
   total: number;
+  notes: string | null;
   created_at: string;
   order_items?: Array<{
     title: string;
@@ -74,4 +84,3 @@ export type AdminOrder = {
     quantity: number;
   }>;
 };
-

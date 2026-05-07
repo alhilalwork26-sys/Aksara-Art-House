@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/supabase-auth";
+import { getUser, getUserAuthToken } from "@/lib/supabase-auth";
 import { addToWishlist, getWishlist, removeFromWishlist } from "@/lib/supabase-rest";
 
 async function resolveUser(request: Request) {
-  const token = (request.headers.get("Authorization") || "").replace("Bearer ", "").trim();
+  const token = getUserAuthToken(request);
   if (!token) return null;
   return getUser(token);
 }

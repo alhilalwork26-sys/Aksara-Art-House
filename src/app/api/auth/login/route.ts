@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { signIn } from "@/lib/supabase-auth";
+import { signIn, USER_AUTH_COOKIE_NAME } from "@/lib/supabase-auth";
 
 export async function POST(request: Request) {
   try {
@@ -14,8 +14,7 @@ export async function POST(request: Request) {
     const fullName = data.user?.user_metadata?.full_name || data.user?.email?.split("@")[0] || "Kolektor";
     const phone = data.user?.user_metadata?.phone || null;
 
-    return NextResponse.json({
-      accessToken: data.access_token,
+    const response = NextResponse.json({
       user: {
         id: data.user?.id,
         name: fullName,
@@ -23,6 +22,16 @@ export async function POST(request: Request) {
         wa: phone
       }
     });
+    response.cookies.set({
+      name: USER_AUTH_COOKIE_NAME,
+      value: data.access_token,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: Number(data.expires_in || 3600)
+    });
+    return response;
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Login gagal." },

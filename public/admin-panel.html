@@ -576,6 +576,18 @@ const DEFAULT_SETTINGS = {
 // ── HELPERS ──
 const fmt = n => 'Rp ' + Number(n).toLocaleString('id-ID');
 const clone = d => JSON.parse(JSON.stringify(d));
+const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+  '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+})[ch]);
+function timeAgo(dateValue){
+  const diff = Math.max(0, Date.now() - new Date(dateValue).getTime());
+  const mins = Math.floor(diff / 60000);
+  if(mins < 1) return 'Baru saja';
+  if(mins < 60) return `${mins} mnt lalu`;
+  const hours = Math.floor(mins / 60);
+  if(hours < 24) return `${hours} jam lalu`;
+  return `${Math.floor(hours / 24)} hari lalu`;
+}
 
 // ── IN-MEMORY CACHE (diisi dari Supabase) ──
 let _paintings = null, _auctions = null, _orders = null, _settings = null;
@@ -619,8 +631,11 @@ async function fetchAllFromDB() {
         id: o.id, order_number: o.order_number,
         name: o.customer_name, email: o.customer_email, wa: o.customer_phone,
         address: o.shipping_address, city: o.shipping_city,
+        postalCode: o.shipping_postal_code,
         courier: o.courier, payment: o.payment_method,
+        paymentStatus: o.payment_status,
         status: o.status, total: o.total,
+        notes: o.notes,
         date: o.created_at ? o.created_at.slice(0,10) : '',
         items: (o.order_items||[])
       }));
@@ -631,7 +646,12 @@ async function fetchAllFromDB() {
         id: a.id, paintingId: a.artwork_id,
         status: a.status, currentBid: a.current_bid,
         startBid: a.start_bid, minStep: a.min_step,
-        endsAt: a.ends_at, bids: []
+        endsAt: a.ends_at,
+        bids: (a.auction_bids||[]).map(b => ({
+          name: b.bidder_name,
+          amount: b.amount,
+          ago: timeAgo(b.created_at)
+        }))
       }));
     }
     const settingsRes = await fetch('/api/settings');
@@ -881,6 +901,8 @@ function statusChip(status) {
 function orderStatusChip(status) {
   if(status==='pending') return '<span class="chip chip-pending">Menunggu</span>';
   if(status==='confirmed') return '<span class="chip chip-auction">Dikonfirmasi</span>';
+  if(status==='paid') return '<span class="chip chip-avail">Dibayar</span>';
+  if(status==='packed') return '<span class="chip chip-auction">Dikemas</span>';
   if(status==='shipped') return '<span class="chip" style="color:#1a5c8a;border-color:rgba(26,92,138,.25);background:rgba(26,92,138,.08)">Dikirim</span>';
   if(status==='done') return '<span class="chip chip-avail">Selesai</span>';
   if(status==='cancelled') return '<span class="chip chip-sold">Dibatalkan</span>';
@@ -1061,6 +1083,7 @@ function renderOrders() {
       </div>
       <div class="order-buyer">👤 ${o.name} · 📱 ${o.wa||'-'} · 📧 ${o.email||'-'}</div>
       <div class="order-items" style="margin:6px 0">${(o.items||[]).map(i=>i.title).join(', ')}</div>
+      ${o.notes ? `<div style="font-size:12px;color:var(--terra);margin:6px 0">Bukti pembayaran/catatan tersedia</div>` : ''}
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.6rem">
         <div class="order-total">${fmt(o.total)}</div>
         <div style="display:flex;gap:8px">
@@ -1068,6 +1091,8 @@ function renderOrders() {
           <select class="filter-select" style="font-size:11px;padding:5px 9px" onchange="updateOrderStatus('${o.id}',this.value)">
             <option value="pending" ${o.status==='pending'?'selected':''}>Menunggu</option>
             <option value="confirmed" ${o.status==='confirmed'?'selected':''}>Konfirmasi</option>
+            <option value="paid" ${o.status==='paid'?'selected':''}>Dibayar</option>
+            <option value="packed" ${o.status==='packed'?'selected':''}>Dikemas</option>
             <option value="shipped" ${o.status==='shipped'?'selected':''}>Dikirim</option>
             <option value="done" ${o.status==='done'?'selected':''}>Selesai</option>
             <option value="cancelled" ${o.status==='cancelled'?'selected':''}>Batalkan</option>
@@ -1105,7 +1130,13 @@ function viewOrder(id) {
       ${o.address?`<div style="background:var(--cream);border-radius:6px;padding:1rem"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">Alamat Pengiriman</div><div style="font-size:13px;color:var(--charcoal)">${o.address}</div><div style="font-size:12px;color:var(--muted)">${o.city||''} ${o.postalCode||''} · ${o.courier||''}</div></div>`:''}
       <div style="background:var(--cream);border-radius:6px;padding:1rem">
         <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">Pembayaran</div>
-        <div style="font-size:13px">${o.payment||'-'}</div>
+        <div style="font-size:13px">${o.payment||'-'} · ${o.paymentStatus||'waiting_confirmation'}</div>
+        ${o.notes ? `<div style="font-size:12px;color:var(--brown);line-height:1.7;margin-top:.5rem;white-space:pre-wrap">${escapeHtml(o.notes)}</div>` : '<div style="font-size:12px;color:var(--muted);margin-top:.5rem">Belum ada bukti/catatan pembayaran.</div>'}
+        <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="updateOrderPayment('${o.id}','paid')">Tandai Lunas</button>
+          <button class="btn btn-ghost btn-sm" onclick="updateOrderPayment('${o.id}','waiting_confirmation')">Menunggu Cek</button>
+          <button class="btn btn-danger btn-sm" onclick="updateOrderPayment('${o.id}','failed')">Tolak Pembayaran</button>
+        </div>
       </div>
     </div>
   `;
@@ -1134,6 +1165,23 @@ async function updateOrderStatus(id, status) {
   } catch(e) { showToast(e.message, 'error'); }
 }
 
+async function updateOrderPayment(id, payment_status) {
+  try {
+    const payload = { payment_status };
+    if(payment_status === 'paid') payload.status = 'paid';
+    const res = await fetch('/api/admin/orders/' + id, {
+      method:'PATCH', headers: adminHeaders(),
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal update pembayaran.'); }
+    await fetchAllFromDB();
+    renderOrders();
+    renderDashboard();
+    viewOrder(id);
+    showToast('Status pembayaran diperbarui ✓', 'success');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
 // ══════════════════════════════════════════
 // AUCTIONS
 // ══════════════════════════════════════════
@@ -1151,9 +1199,12 @@ function renderAuctionsAdmin() {
     return `<div class="auction-manage-item">
       <div class="painting-thumb" style="width:50px;height:64px">${paintingSVG(p,50,64)}</div>
       <div class="auction-manage-info">
-        <div class="auction-manage-title">${p.title}</div>
-        <div class="auction-manage-meta">${p.medium} · ${p.year} · ${(a.bids||[]).length} penawaran</div>
+        <div class="auction-manage-title">${escapeHtml(p.title)}</div>
+        <div class="auction-manage-meta">${escapeHtml(p.medium)} · ${p.year} · ${(a.bids||[]).length} penawaran</div>
         <div class="auction-price">Bid tertinggi: ${fmt(a.currentBid)} (min +${fmt(a.minStep)})</div>
+        <div style="margin-top:.45rem;font-size:12px;color:var(--muted);line-height:1.7">
+          ${(a.bids||[]).slice(0,3).map(b=>`${escapeHtml(b.name)} · ${fmt(b.amount)} · ${escapeHtml(b.ago)}`).join('<br>') || 'Belum ada bid masuk'}
+        </div>
       </div>
       <button class="btn btn-secondary btn-sm" onclick="editArtwork('${p.id}')">Edit Karya</button>
     </div>`;

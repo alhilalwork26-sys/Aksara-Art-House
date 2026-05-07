@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/supabase-auth";
+import { getUser, getUserAuthToken } from "@/lib/supabase-auth";
 
 export async function GET(request: Request) {
   try {
-    const authHeader = request.headers.get("Authorization") || "";
-    const token = authHeader.replace("Bearer ", "").trim();
+    const token = getUserAuthToken(request);
 
     if (!token) {
       return NextResponse.json({ user: null });

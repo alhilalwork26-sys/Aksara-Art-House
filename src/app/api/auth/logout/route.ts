@@ -1,18 +1,21 @@
 import { NextResponse } from "next/server";
-import { signOut } from "@/lib/supabase-auth";
+import { getUserAuthToken, signOut, USER_AUTH_COOKIE_NAME } from "@/lib/supabase-auth";
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get("Authorization") || "";
-    const token = authHeader.replace("Bearer ", "").trim();
+    const token = getUserAuthToken(request);
 
     if (token) {
       await signOut(token);
     }
 
-    return NextResponse.json({ ok: true });
+    const response = NextResponse.json({ ok: true });
+    response.cookies.set({ name: USER_AUTH_COOKIE_NAME, value: "", path: "/", maxAge: 0 });
+    return response;
   } catch {
     // Tetap anggap logout berhasil meski token sudah expired
-    return NextResponse.json({ ok: true });
+    const response = NextResponse.json({ ok: true });
+    response.cookies.set({ name: USER_AUTH_COOKIE_NAME, value: "", path: "/", maxAge: 0 });
+    return response;
   }
 }

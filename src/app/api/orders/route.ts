@@ -15,7 +15,7 @@ function validateCheckout(input: CheckoutInput) {
     return "Keranjang masih kosong.";
   }
 
-  if (input.items.some((item) => !item.title || item.price < 0 || item.quantity < 1)) {
+  if (input.items.some((item) => !item.artworkId || !item.title || item.price < 0 || item.quantity < 1)) {
     return "Item pesanan tidak valid.";
   }
 
@@ -44,4 +44,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

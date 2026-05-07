@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/supabase-auth";
+import { getUser, getUserAuthToken } from "@/lib/supabase-auth";
 import { getUserOrders } from "@/lib/supabase-rest";
 
 export async function GET(request: Request) {
   try {
-    const token = (request.headers.get("Authorization") || "").replace("Bearer ", "").trim();
+    const token = getUserAuthToken(request);
     if (!token) return NextResponse.json({ error: "Silakan masuk terlebih dahulu." }, { status: 401 });
 
     const user = await getUser(token);

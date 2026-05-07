@@ -1761,7 +1761,11 @@ footer {
             </label>
           </div>
         </div>
-        <div id="ck-summary" style="background:var(--cream);border-radius:4px;padding:1rem;border:1px solid var(--border)"></div>
+        <div id="ck-summary" style="background:var(--cream);border-radius:4px;padding:1rem;border:1px solid var(--border);margin-bottom:1rem"></div>
+        <div class="form-group">
+          <label>Link / Catatan Bukti Pembayaran</label>
+          <textarea id="ck-payment-proof" placeholder="Opsional: tempel link bukti transfer/QRIS, nama bank, atau catatan pembayaran. Admin akan melihat catatan ini."></textarea>
+        </div>
       </div>
       <!-- Step 4: Konfirmasi -->
       <div id="ckp-4" class="checkout-panel">
@@ -1916,22 +1920,24 @@ const fmtTime = s => {
   const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
 };
+function timeAgo(dateValue){
+  const diff = Math.max(0, Date.now() - new Date(dateValue).getTime());
+  const mins = Math.floor(diff / 60000);
+  if(mins < 1) return 'Baru saja';
+  if(mins < 60) return `${mins} mnt lalu`;
+  const hours = Math.floor(mins / 60);
+  if(hours < 24) return `${hours} jam lalu`;
+  return `${Math.floor(hours / 24)} hari lalu`;
+}
 
 function saveState(){
-  localStorage.setItem('aksara-cart', JSON.stringify(state.cart));
-  // wishlist & user disimpan di Supabase, tidak di localStorage
+  // State sensitif tidak disimpan di browser storage.
 }
 
 function loadState(){
-  try {
-    state.cart = JSON.parse(localStorage.getItem('aksara-cart')||'[]');
-    state.wishlist = [];
-    state.user = null;
-  } catch(e) {
-    state.cart = [];
-    state.wishlist = [];
-    state.user = null;
-  }
+  state.cart = [];
+  state.wishlist = [];
+  state.user = null;
 }
 
 function deepClone(data){
@@ -1988,17 +1994,20 @@ async function fetchAuctionsFromDB(){
       minStep: a.min_step,
       endsAt: a.ends_at,
       endsIn: Math.max(0, Math.floor((new Date(a.ends_at).getTime() - Date.now()) / 1000)),
-      bids: 0,
-      history: []
+      bids: (a.auction_bids||[]).length,
+      history: (a.auction_bids||[]).map(b => ({
+        name: b.bidder_name,
+        amt: b.amount,
+        ago: timeAgo(b.created_at)
+      }))
     }));
   } catch(e){ console.error('Gagal memuat lelang dari database:', e); }
 }
 
 async function fetchWishlistFromDB(){
-  const token = localStorage.getItem('aksara-auth-token');
-  if(!token) return;
+  if(!state.user) return;
   try {
-    const res = await fetch('/api/wishlist', { headers: { Authorization: 'Bearer ' + token } });
+    const res = await fetch('/api/wishlist');
     if(!res.ok) return;
     const rows = await res.json();
     if(!Array.isArray(rows)) return;
@@ -2238,7 +2247,6 @@ function sortGallery(v){ state.sort=v; renderGallery(); }
 // ── WISHLIST ──────────────────────────────────
 async function toggleWishlist(id){
   if(!state.user){ showToast('Silakan masuk untuk menyimpan wishlist','error'); openAuth('login'); return; }
-  const token = localStorage.getItem('aksara-auth-token');
   const idx = state.wishlist.indexOf(id);
   const removing = idx > -1;
   // Optimistic update
@@ -2248,10 +2256,10 @@ async function toggleWishlist(id){
   if(state.currentPage==='home') renderHome();
   try {
     if(removing){
-      await fetch('/api/wishlist?artworkId='+id, { method:'DELETE', headers:{ Authorization:'Bearer '+token } });
+      await fetch('/api/wishlist?artworkId='+id, { method:'DELETE' });
       showToast('Dihapus dari wishlist');
     } else {
-      await fetch('/api/wishlist', { method:'POST', headers:{ Authorization:'Bearer '+token, 'Content-Type':'application/json' }, body: JSON.stringify({artworkId: id}) });
+      await fetch('/api/wishlist', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({artworkId: id}) });
       showToast('Ditambahkan ke wishlist ♥','success');
     }
   } catch(e){
@@ -2476,11 +2484,11 @@ function renderAuction(){
         </div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Min. penawaran: ${fmt(minNext)} (+${fmt(a.minStep)})</div>
       </div>
-      <button class="bid-history-toggle" onclick="toggleBidHistory(${auctionId},this)">
+      <button class="bid-history-toggle" onclick='toggleBidHistory(${auctionId},this)'>
         Riwayat Penawaran <span>&#9660;</span>
       </button>
       <div class="bid-history-list hidden" id="bh-${a.id}">
-        ${(a.history||[]).map(h=>`<div class="bid-history-item"><span class="bid-bidder">${h.name}</span><span class="bid-time-ago">${h.ago}</span><span class="bid-hist-amt">${fmt(h.amt)}</span></div>`).join('')}
+        ${(a.history||[]).length ? (a.history||[]).map(h=>`<div class="bid-history-item"><span class="bid-bidder">${escapeHtml(h.name)}</span><span class="bid-time-ago">${escapeHtml(h.ago)}</span><span class="bid-hist-amt">${fmt(h.amt)}</span></div>`).join('') : '<div class="bid-history-item"><span class="bid-time-ago">Belum ada penawaran</span></div>'}
       </div>
     </div>`;
   }).join('');
@@ -2500,7 +2508,7 @@ function renderAuction(){
   });
 }
 
-function placeBid(auctionId){
+async function placeBid(auctionId){
   const a=AUCTIONS.find(x=>x.id===auctionId);
   if(!a) return;
   const input=document.getElementById('bid-'+auctionId);
@@ -2515,12 +2523,21 @@ function placeBid(auctionId){
     showToast('Silakan masuk atau daftar untuk ikut lelang','error');
     openAuth('login'); return;
   }
-  // Accept bid
-  a.history.unshift({name:state.user.name.slice(0,1)+'***', amt:val, ago:'Baru saja'});
-  if(a.history.length>5) a.history.pop();
-  a.currentBid=val; a.bids++; input.value='';
-  renderAuction();
-  showToast(`Penawaran ${fmt(val)} berhasil! Anda saat ini tertinggi. ✓`,'success');
+  try {
+    const res = await fetch('/api/auctions/' + encodeURIComponent(auctionId) + '/bids', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ amount: val })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error||'Gagal menyimpan penawaran.');
+    input.value='';
+    await fetchAuctionsFromDB();
+    renderAuction();
+    showToast(`Penawaran ${fmt(val)} berhasil tersimpan! ✓`,'success');
+  } catch(e) {
+    showToast(e.message||'Gagal menyimpan penawaran.','error');
+  }
 }
 
 function toggleBidHistory(id, btn){
@@ -2668,6 +2685,7 @@ async function ckNext(){
     const address=document.getElementById('ck-alamat').value;
     const city=document.getElementById('ck-kota').value;
     const postalCode=document.getElementById('ck-kodepos').value;
+    const proof=document.getElementById('ck-payment-proof').value.trim();
     const kurir=document.getElementById('ck-kurir');
     const kurirText=kurir.options[kurir.selectedIndex]?.text||'-';
     const payment=document.querySelector('input[name="payment"]:checked')?.value||'-';
@@ -2687,6 +2705,7 @@ async function ckNext(){
           shippingPostalCode: postalCode,
           courier: kurirText,
           paymentMethod: payment,
+          notes: proof ? `Bukti/catatan pembayaran: ${proof}` : '',
           items: state.cart.map(c=>({artworkId:String(c.id), title:c.title, price:c.price, quantity:1}))
         })
       });
@@ -2704,6 +2723,7 @@ async function ckNext(){
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pemesan</span><span style="color:var(--brown)">${nama}</span></div>
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pengiriman</span><span style="color:var(--brown);font-size:12px;max-width:60%;text-align:right">${kurirText}</span></div>
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pembayaran</span><span style="color:var(--brown)">${payment}</span></div>
+        ${proof ? `<div style="padding-top:6px;color:var(--muted);font-size:12px">Bukti/catatan: <span style="color:var(--brown)">${escapeHtml(proof)}</span></div>` : ''}
         <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid var(--border);font-weight:500"><span style="color:var(--muted)">Total</span><span style="color:var(--terra);font-size:16px">${fmt(total)}</span></div>
       </div>`;
     state.cart=[];
@@ -2741,7 +2761,6 @@ async function doLogin(){
     const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
     const data=await res.json();
     if(!res.ok) throw new Error(data.error||'Login gagal.');
-    localStorage.setItem('aksara-auth-token', data.accessToken);
     state.user={name:data.user.name, email:data.user.email, wa:data.user.wa||'', id:data.user.id};
     updateUserUI();
     saveState();
@@ -2774,7 +2793,6 @@ async function doRegister(){
       showToast('Akun dibuat! Cek email Anda untuk konfirmasi sebelum masuk.','success');
       return;
     }
-    localStorage.setItem('aksara-auth-token', data.accessToken);
     state.user={name:data.user.name, email:data.user.email, wa:data.user.wa||wa||'', id:data.user.id};
     updateUserUI();
     saveState();
@@ -2788,11 +2806,7 @@ async function doRegister(){
   }
 }
 async function doLogout(){
-  const token=localStorage.getItem('aksara-auth-token');
-  if(token){
-    try { await fetch('/api/auth/logout',{method:'POST',headers:{Authorization:'Bearer '+token}}); } catch(e){}
-    localStorage.removeItem('aksara-auth-token');
-  }
+  try { await fetch('/api/auth/logout',{method:'POST'}); } catch(e){}
   state.user=null;
   state.postAuthAction=null;
   updateUserUI();
@@ -2800,17 +2814,14 @@ async function doLogout(){
   showToast('Berhasil keluar');
 }
 async function restoreSession(){
-  const token=localStorage.getItem('aksara-auth-token');
-  if(!token) return;
   try {
-    const res=await fetch('/api/auth/session',{headers:{Authorization:'Bearer '+token}});
+    const res=await fetch('/api/auth/session');
     const data=await res.json();
     if(data.user){
       state.user={...data.user, wa:data.user.wa||''};
       updateUserUI();
       saveState();
     } else {
-      localStorage.removeItem('aksara-auth-token');
       state.user=null;
       updateUserUI();
       saveState();
@@ -2933,12 +2944,9 @@ async function renderMyOrders(){
   const body = document.getElementById('my-orders-body');
   body.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--muted)">Memuat pesanan...</div>`;
 
-  const token = localStorage.getItem('aksara-auth-token');
-  if(!token){ body.innerHTML = `<p style="text-align:center;color:var(--muted)">Silakan masuk untuk melihat pesanan.</p>`; return; }
-
   let myOrders = [];
   try {
-    const res = await fetch('/api/orders/my', { headers: { Authorization: 'Bearer ' + token } });
+    const res = await fetch('/api/orders/my');
     if(res.ok) myOrders = await res.json();
   } catch(e){}
 
