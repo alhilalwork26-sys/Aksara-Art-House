@@ -519,9 +519,10 @@ button { cursor:pointer; }
   overflow:hidden;
   margin-bottom:1.5rem;
 }
-.painting-display svg, .painting-display canvas {
+.painting-display svg, .painting-display canvas, .painting-display img {
   width:100%; display:block;
   aspect-ratio:3/4; max-height:480px;
+  object-fit:cover;
 }
 /* Room Preview */
 .room-section { margin-top:1.5rem; }
@@ -544,8 +545,9 @@ button { cursor:pointer; }
   position:absolute;
   transition:all .3s ease;
 }
-.room-painting-mount svg {
+.room-painting-mount svg, .room-painting-mount img {
   display:block; width:100%; height:100%;
+  object-fit:cover;
 }
 .room-frame {
   position:absolute; inset:-7px;
@@ -1906,6 +1908,10 @@ let timers = {};
 // ── HELPERS ──────────────────────────────────
 const fmt = n => 'Rp '+n.toLocaleString('id-ID');
 const jsArg = value => JSON.stringify(String(value));
+const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+  '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+})[ch]);
+const artworkImageUrl = p => p && (p.image_url || p.image || '');
 const fmtTime = s => {
   const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
@@ -1956,7 +1962,8 @@ async function fetchPaintingsFromDB(){
       p: a.width_cm, t: a.height_cm, l: a.width_cm, k: a.depth_cm || 3,
       w: a.width_cm, h: a.height_cm, d: a.depth_cm,
       desc: a.description, image_url: a.image_url,
-      colors: a.colors || [], tags: a.tags || [],
+      colors: (a.colors && a.colors.length) ? a.colors : paletteByCategory(a.category),
+      tags: (a.tags && a.tags.length) ? a.tags : buildArtworkTags({ cat:a.category, medium:a.medium, year:a.year }),
       featured: a.is_featured
     }));
     syncArtworkCollections();
@@ -2109,10 +2116,14 @@ function closeModal(id){ document.getElementById(id).classList.add('hidden'); }
 
 // ── PAINTING SVG (generated art) ──────────────
 function paintingSVG(p, w=300, h=400){
-  const c=p.colors;
-  const pw=p.p||80, ph=p.t||80;
+  const imageUrl = artworkImageUrl(p);
+  const pw=p.p||p.w||80, ph=p.t||p.h||80;
   const ratio=ph/pw;
   const svgH=Math.round(w*ratio);
+  if(imageUrl) {
+    return `<img src="${escapeHtml(imageUrl)}" style="width:100%;height:${svgH>0?svgH+'px':'100%'};object-fit:cover;display:block;aspect-ratio:${pw}/${ph}" alt="${escapeHtml(p.title||'Lukisan')}">`;
+  }
+  const c=(p.colors && p.colors.length) ? p.colors : paletteByCategory(p.cat);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${svgH}" style="width:100%;display:block">
     <rect width="${w}" height="${svgH}" fill="${c[0]}"/>
     <ellipse cx="${w*.27}" cy="${svgH*.25}" rx="${w*.42}" ry="${svgH*.25}" fill="${c[1]}" opacity=".72"/>
@@ -2174,15 +2185,15 @@ function cardHTML(p){
   const priceHTML=p.status==='terjual' ? '' :
     p.status==='lelang' ? `<div class="p-card-price">Bid: ${fmt(auc?.currentBid||p.price)}</div>` :
     `<div class="p-card-price">${fmt(p.price)}</div>`;
-  return `<div class="p-card" onclick="openDetail(${jsArg(p.id)})">
+  return `<div class="p-card" onclick='openDetail(${jsArg(p.id)})'>
     <div class="p-card-img-wrap">
-      <button class="p-card-wishlist ${inWish?'active':''}" onclick="event.stopPropagation();toggleWishlist(${jsArg(p.id)})" title="${inWish?'Hapus dari wishlist':'Simpan ke wishlist'}">${inWish?'&#9829;':'&#9825;'}</button>
+      <button class="p-card-wishlist ${inWish?'active':''}" onclick='event.stopPropagation();toggleWishlist(${jsArg(p.id)})' title="${inWish?'Hapus dari wishlist':'Simpan ke wishlist'}">${inWish?'&#9829;':'&#9825;'}</button>
       ${paintingSVG(p)}
       ${badge}
     </div>
     <div class="p-card-info">
-      <div class="p-card-title">${p.title}</div>
-      <div class="p-card-meta">${p.medium} &middot; ${p.year}</div>
+      <div class="p-card-title">${escapeHtml(p.title)}</div>
+      <div class="p-card-meta">${escapeHtml(p.medium)} &middot; ${escapeHtml(p.year)}</div>
       ${priceHTML}
     </div>
   </div>`;
@@ -2290,7 +2301,7 @@ function openDetail(id){
   document.getElementById('d-desc').textContent=p.desc;
   document.getElementById('d-medium').textContent=p.medium;
   document.getElementById('d-year').textContent=p.year;
-  document.getElementById('d-tags').innerHTML=p.tags.map(t=>`<span class="tag">${t}</span>`).join('');
+  document.getElementById('d-tags').innerHTML=(p.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('');
   const statusInfo=getStatusInfo(p);
   const statusEl=document.getElementById('d-status-chip');
   statusEl.textContent=statusInfo.label;
@@ -2315,15 +2326,15 @@ function openDetail(id){
   if(p.status==='terjual'){
     pl.textContent='Harga Terjual';
     pv.textContent=fmt(p.price);
-    acts.innerHTML=`<button class="btn btn-ghost" style="opacity:.6" disabled>Sudah Terjual</button><button class="btn btn-secondary" onclick="openContact('${p.title}')">Pesan Karya Serupa</button>`;
+    acts.innerHTML=`<button class="btn btn-ghost" style="opacity:.6" disabled>Sudah Terjual</button><button class="btn btn-secondary" onclick='openContact(${jsArg(p.title)})'>Pesan Karya Serupa</button>`;
   } else if(p.status==='lelang'&&auc){
     pl.textContent='Penawaran Tertinggi Saat Ini';
     pv.textContent=fmt(auc.currentBid);
-    acts.innerHTML=`<button class="btn btn-primary" onclick="goPage('auction')">Ikut Lelang →</button><button class="btn btn-secondary" onclick="openContact('${p.title}')">Tanya via WhatsApp</button><button class="btn btn-ghost" onclick="toggleWishlist(${jsArg(p.id)})">&#9825; Simpan</button>`;
+    acts.innerHTML=`<button class="btn btn-primary" onclick="goPage('auction')">Ikut Lelang →</button><button class="btn btn-secondary" onclick='openContact(${jsArg(p.title)})'>Tanya via WhatsApp</button><button class="btn btn-ghost" onclick='toggleWishlist(${jsArg(p.id)})'>&#9825; Simpan</button>`;
   } else {
     pl.textContent='Harga';
     pv.textContent=fmt(p.price);
-    acts.innerHTML=`<button class="btn btn-primary" onclick="buyNow(${jsArg(p.id)})">Beli Sekarang</button><button class="btn btn-secondary" onclick="addToCart(${jsArg(p.id)})">+ Keranjang</button><button class="btn btn-outline" onclick="openContact('${p.title}')">Tanya via WhatsApp</button>`;
+    acts.innerHTML=`<button class="btn btn-primary" onclick='buyNow(${jsArg(p.id)})'>Beli Sekarang</button><button class="btn btn-secondary" onclick='addToCart(${jsArg(p.id)})'>+ Keranjang</button><button class="btn btn-outline" onclick='openContact(${jsArg(p.title)})'>Tanya via WhatsApp</button>`;
   }
 
   goPage('detail');
@@ -2443,9 +2454,9 @@ function renderAuction(){
     const auctionId = jsArg(a.id);
     const minNext=a.currentBid+a.minStep;
     return `<div class="auction-card">
-      <div class="auction-card-img" onclick="openDetail(${jsArg(p.id)})">${paintingSVG(p)}</div>
+      <div class="auction-card-img" onclick='openDetail(${jsArg(p.id)})'>${paintingSVG(p)}</div>
       <div class="auction-card-body">
-        <div class="auction-card-title" onclick="openDetail(${jsArg(p.id)})">${p.title}</div>
+        <div class="auction-card-title" onclick='openDetail(${jsArg(p.id)})'>${escapeHtml(p.title)}</div>
         <div class="auction-card-meta">${p.artist} &middot; ${p.medium} &middot; ${p.year}</div>
         <div class="auction-dims">${p.p} &times; ${p.t} &times; ${p.k} cm</div>
         <div class="bid-row">
@@ -2461,7 +2472,7 @@ function renderAuction(){
         </div>
         <div class="bid-input-row" style="margin-bottom:10px">
           <input class="bid-input" type="number" id="bid-${a.id}" placeholder="${minNext.toLocaleString('id-ID')}" min="${minNext}" step="${a.minStep}">
-          <button class="btn btn-primary btn-sm" onclick="placeBid(${auctionId})">Tawar</button>
+          <button class="btn btn-primary btn-sm" onclick='placeBid(${auctionId})'>Tawar</button>
         </div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Min. penawaran: ${fmt(minNext)} (+${fmt(a.minStep)})</div>
       </div>
@@ -2588,7 +2599,7 @@ function renderCartBody(){
         <div class="cart-item-meta">${c.medium}</div>
         <div class="cart-item-price">${fmt(c.price)}</div>
       </div>
-      <button class="cart-item-remove" onclick="removeFromCart(${jsArg(c.id)})" title="Hapus">&#10005;</button>
+      <button class="cart-item-remove" onclick='removeFromCart(${jsArg(c.id)})' title="Hapus">&#10005;</button>
     </div>`;
   }).join('');
   footer.innerHTML=`
@@ -2969,19 +2980,6 @@ function contactAboutOrder(orderId, items){
   });
 }
 
-
-// ── REAL PHOTO SUPPORT ──────────────────────────────────
-const _origPaintingSVG = paintingSVG;
-paintingSVG = function(p, w=300, h=400){
-  const imageUrl = p && (p.image_url || p.image);
-  if(imageUrl) {
-    const ph = p.t||80, pw = p.p||80;
-    const ratio = ph/pw;
-    const svgH = Math.round(w*ratio);
-    return `<img src="${imageUrl}" style="width:100%;height:${svgH>0?svgH+'px':'100%'};object-fit:cover;display:block;aspect-ratio:3/4" alt="${p.title||''}">`;
-  }
-  return _origPaintingSVG(p, w, h);
-};
 
 </script>
 
