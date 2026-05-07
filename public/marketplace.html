@@ -2972,7 +2972,7 @@ function contactAboutOrder(orderId, items){
 
 // ── REAL PHOTO SUPPORT ──────────────────────────────────
 const _origPaintingSVG = paintingSVG;
-function paintingSVG(p, w=300, h=400){
+paintingSVG = function(p, w=300, h=400){
   const imageUrl = p && (p.image_url || p.image);
   if(imageUrl) {
     const ph = p.t||80, pw = p.p||80;
@@ -2981,7 +2981,7 @@ function paintingSVG(p, w=300, h=400){
     return `<img src="${imageUrl}" style="width:100%;height:${svgH>0?svgH+'px':'100%'};object-fit:cover;display:block;aspect-ratio:3/4" alt="${p.title||''}">`;
   }
   return _origPaintingSVG(p, w, h);
-}
+};
 
 </script>
 
