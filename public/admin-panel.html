@@ -700,18 +700,7 @@ async function fetchAllFromDB() {
       fetch('/api/admin/auctions',  { headers: adminHeaders() })
     ]);
     if(artRes.ok) {
-      const rows = await artRes.json();
-      _paintings = rows.map(a => ({
-        id: a.id, title: a.title, artist: a.artist,
-        cat: a.category,
-        status: a.status === 'available' ? 'tersedia' : a.status === 'auction' ? 'lelang' : a.status === 'sold' ? 'terjual' : a.status,
-        medium: a.medium, year: a.year, price: a.price, p: a.width_cm,
-        t: a.height_cm, l: a.width_cm, k: a.depth_cm || 3, stock: a.stock ?? 1,
-        desc: a.description, image_url: a.image_url,
-        colors: a.colors || paletteByCategory(a.category),
-        tags: a.tags || buildTags({cat:a.category, medium:a.medium, year:a.year}),
-        featured: a.is_featured
-      }));
+      _paintings = normalizeArtworks(await artRes.json());
     }
     if(ordRes.ok) {
       _orders = normalizeOrders(await ordRes.json());
@@ -744,6 +733,34 @@ async function fetchAllFromDB() {
     if(promoRes.ok) _promos = await promoRes.json();
     if(reviewRes.ok) _reviews = await reviewRes.json();
   } catch(e) { console.error('Gagal fetch dari DB:', e); }
+}
+
+function normalizeArtworks(rows) {
+  return (Array.isArray(rows) ? rows : []).map(a => ({
+    id: a.id, title: a.title, artist: a.artist,
+    cat: a.category,
+    status: a.status === 'available' ? 'tersedia' : a.status === 'auction' ? 'lelang' : a.status === 'sold' ? 'terjual' : a.status,
+    medium: a.medium, year: a.year, price: a.price, p: a.width_cm,
+    t: a.height_cm, l: a.width_cm, k: a.depth_cm || 3, stock: a.stock ?? 1,
+    desc: a.description, image_url: a.image_url,
+    colors: a.colors || paletteByCategory(a.category),
+    tags: a.tags || buildTags({cat:a.category, medium:a.medium, year:a.year}),
+    featured: a.is_featured
+  }));
+}
+
+async function fetchArtworksFromDB(showLoading = false) {
+  const tbody = document.getElementById('artworks-tbody');
+  if(showLoading && tbody) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-msg">Memuat karya terbaru...</div></div></td></tr>`;
+  }
+  const res = await fetch('/api/admin/artworks', { headers: adminHeaders(), cache: 'no-store' });
+  if(!res.ok) {
+    const errData = await res.json().catch(()=>({}));
+    throw new Error(errData.error || `Gagal memuat karya (${res.status}).`);
+  }
+  _paintings = normalizeArtworks(await res.json());
+  return _paintings;
 }
 
 function normalizeOrders(rows) {
@@ -873,7 +890,7 @@ function doAdminLogout() {
 async function initApp() {
   await fetchAllFromDB();
   renderDashboard();
-  renderArtworksTable();
+  await renderArtworksTable();
   await renderOrders();
   renderAuctionsAdmin();
   renderPromos();
@@ -882,6 +899,7 @@ async function initApp() {
   setInterval(async () => {
     await fetchAllFromDB();
     renderDashboard();
+    await renderArtworksTable();
     await renderOrders();
     renderAuctionsAdmin();
     renderPromos();
@@ -921,6 +939,7 @@ function showSection(id, btn) {
   if(btn) btn.classList.add('active');
   document.getElementById('topbar-title').textContent = SECTION_TITLES[id] || id;
   document.getElementById('sidebar').classList.remove('open');
+  if(id === 'artworks') renderArtworksTable(true);
   if(id === 'orders') renderOrders(true);
 }
 
@@ -1038,7 +1057,21 @@ function orderStatusChip(status) {
 // ══════════════════════════════════════════
 // ARTWORKS
 // ══════════════════════════════════════════
-function renderArtworksTable() {
+async function renderArtworksTable(forceRefresh = false) {
+  const tbody = document.getElementById('artworks-tbody');
+  const countLabel = document.getElementById('artworks-count-lbl');
+  if(!tbody) return;
+
+  if(forceRefresh || !_paintings) {
+    try {
+      await fetchArtworksFromDB(true);
+    } catch(e) {
+      if(countLabel) countLabel.textContent = '';
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-msg" style="color:var(--danger)">${escapeHtml(e.message || 'Gagal memuat karya.')}</div></div></td></tr>`;
+      return;
+    }
+  }
+
   const paintings = loadPaintings();
   const q = (document.getElementById('art-search')?.value||'').toLowerCase();
   const filterStatus = document.getElementById('art-filter-status')?.value||'';
@@ -1051,7 +1084,7 @@ function renderArtworksTable() {
     return true;
   }).sort((a,b) => a.title.localeCompare(b.title));
 
-  document.getElementById('artworks-count-lbl').textContent = `(${list.length} karya)`;
+  if(countLabel) countLabel.textContent = `(${list.length} karya)`;
 
   function thumbHTML(p) {
     if(p.image_url) return `<img src="${p.image_url}" style="width:48px;height:60px;object-fit:cover;border-radius:3px;border:1px solid var(--border);display:block" alt="${p.title}">`;
@@ -1059,12 +1092,12 @@ function renderArtworksTable() {
     return paintingSVG(p,48,60);
   }
 
-  document.getElementById('artworks-tbody').innerHTML = list.length ? list.map(p => `
+  tbody.innerHTML = list.length ? list.map(p => `
     <tr>
       <td><div class="painting-thumb">${thumbHTML(p)}</div></td>
       <td>
         <div class="td-title">${p.title}</div>
-        <div class="td-meta">${p.artist} · ${p.year}</div>
+        <div class="td-meta">${p.artist} · ${p.year} · Stok ${p.stock ?? 1}</div>
       </td>
       <td><div style="font-size:13px">${p.medium}</div><div class="td-meta">${p.t||'-'}×${p.l||p.p||'-'}×${p.k||'-'} cm</div></td>
       <td><strong style="color:var(--terra)">${fmt(p.price)}</strong></td>
