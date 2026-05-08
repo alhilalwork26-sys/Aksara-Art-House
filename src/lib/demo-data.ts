@@ -18,6 +18,7 @@ export const demoArtworks: Artwork[] = [
     image_url: null,
     colors: ["#C4722A", "#8B4E2E", "#F5A65B", "#1A1A2E", "#E8975A"],
     tags: ["landscape", "oil", "2024"],
+    stock: 1,
     is_featured: true
   },
   {
@@ -37,6 +38,7 @@ export const demoArtworks: Artwork[] = [
     image_url: null,
     colors: ["#8B2E2E", "#D4521A", "#F08030", "#2C1810", "#C44A2A"],
     tags: ["abstrak", "acrylic", "2024"],
+    stock: 1,
     is_featured: true
   },
   {
@@ -56,6 +58,7 @@ export const demoArtworks: Artwork[] = [
     image_url: null,
     colors: ["#3A4A5C", "#6A8A9C", "#C4A882", "#2C3040", "#8AAAB8"],
     tags: ["figuratif", "mixed media", "2023"],
+    stock: 1,
     is_featured: false
   },
   {
@@ -75,7 +78,7 @@ export const demoArtworks: Artwork[] = [
     image_url: null,
     colors: ["#1A1010", "#4A3020", "#8A6040", "#C49870", "#D4B888"],
     tags: ["figuratif", "oil", "2025"],
+    stock: 1,
     is_featured: true
   }
 ];
-

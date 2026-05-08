@@ -612,8 +612,31 @@ function loadPaintings() { return db_get(STORAGE_KEYS.paintings, null) || clone(
 function savePaintings(data) { db_set(STORAGE_KEYS.paintings, data); syncIndicator(); }
 function loadAuctions() { return db_get(STORAGE_KEYS.auctions, null) || clone(DEFAULT_AUCTIONS); }
 function saveAuctions(data) { db_set(STORAGE_KEYS.auctions, data); }
-function loadOrders() { return db_get(STORAGE_KEYS.orders, []); }
-function saveOrders(data) { db_set(STORAGE_KEYS.orders, data); }
+// Cache pesanan dari API
+let _ordersCache = [];
+function loadOrders() { return _ordersCache; }
+async function refreshOrders() {
+  try {
+    const res = await fetch('/api/admin/orders');
+    if(res.ok) {
+      const rows = await res.json();
+      _ordersCache = rows.map(o => ({
+        id: o.id, order_number: o.order_number,
+        name: o.customer_name, email: o.customer_email, wa: o.customer_phone,
+        address: o.shipping_address, city: o.shipping_city,
+        postalCode: o.shipping_postal_code,
+        courier: o.courier, payment: o.payment_method,
+        paymentStatus: o.payment_status,
+        status: o.status, total: o.total,
+        notes: o.notes,
+        date: o.created_at ? o.created_at.slice(0,10) : '',
+        created_at: o.created_at || '',
+        items: (o.order_items||[])
+      }));
+    }
+  } catch(e) { console.error('Gagal memuat pesanan:', e); }
+}
+async function saveOrders() {} // no-op, update via API
 function loadSettings() { return { ...DEFAULT_SETTINGS, ...(db_get(STORAGE_KEYS.settings, {})||{}) }; }
 function saveSettingsData(data) { db_set(STORAGE_KEYS.settings, data); }
 
@@ -686,13 +709,15 @@ function doAdminLogout() {
 // ══════════════════════════════════════════
 // APP INIT
 // ══════════════════════════════════════════
-function initApp() {
+async function initApp() {
+  await refreshOrders();
   renderDashboard();
   renderArtworksTable();
   renderOrders();
   renderAuctionsAdmin();
-  // Poll for updates from user tab
-  setInterval(() => {
+  // Poll untuk data terbaru dari Supabase
+  setInterval(async () => {
+    await refreshOrders();
     renderDashboard();
     renderOrders();
     renderAuctionsAdmin();
@@ -975,10 +1000,10 @@ function renderOrders() {
   const filterStatus = document.getElementById('order-filter')?.value||'';
 
   let list = [...orders].filter(o => {
-    if(q && !o.name.toLowerCase().includes(q) && !JSON.stringify(o.items||[]).toLowerCase().includes(q)) return false;
+    if(q && !(o.name||'').toLowerCase().includes(q) && !JSON.stringify(o.items||[]).toLowerCase().includes(q) && !(o.order_number||'').toLowerCase().includes(q)) return false;
     if(filterStatus && o.status !== filterStatus) return false;
     return true;
-  }).sort((a,b)=>b.id-a.id);
+  }).sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
 
   const container = document.getElementById('orders-container');
   if(!list.length) {
@@ -988,7 +1013,7 @@ function renderOrders() {
   container.innerHTML = list.map(o => `
     <div class="order-card">
       <div class="order-header">
-        <span class="order-id">#${String(o.id).padStart(4,'0')}</span>
+        <span class="order-id">${o.order_number || o.id}</span>
         <div style="display:flex;align-items:center;gap:8px">
           ${orderStatusChip(o.status)}
           <span class="order-date">${o.date||''}</span>
@@ -1021,7 +1046,7 @@ function viewOrder(id) {
   document.getElementById('order-detail-body').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:1rem">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:12px;color:var(--muted)">Pesanan #${String(o.id).padStart(4,'0')}</span>
+        <span style="font-size:12px;color:var(--muted)">Pesanan ${o.order_number || o.id}</span>
         ${orderStatusChip(o.status)}
       </div>
       <div style="background:var(--cream);border-radius:6px;padding:1rem">
@@ -1046,21 +1071,27 @@ function viewOrder(id) {
   `;
   const settings = loadSettings();
   document.getElementById('order-wa-btn').onclick = () => {
-    const msg = `Halo ${o.name}, kami mengkonfirmasi pesanan Anda #${String(o.id).padStart(4,'0')} untuk "${(o.items||[]).map(i=>i.title).join(', ')}" senilai ${fmt(o.total)}.`;
+    const msg = `Halo ${o.name}, kami mengkonfirmasi pesanan Anda ${o.order_number||o.id} untuk "${(o.items||[]).map(i=>i.title).join(', ')}" senilai ${fmt(o.total)}.`;
     window.open(`https://wa.me/${settings.wa}?text=${encodeURIComponent(msg)}`, '_blank');
   };
   openModal('modal-order');
 }
 
-function updateOrderStatus(id, status) {
-  const orders = loadOrders();
-  const o = orders.find(x=>x.id===id);
-  if(!o) return;
-  o.status = status;
-  saveOrders(orders);
-  renderOrders();
-  renderDashboard();
-  showToast(`Status pesanan #${String(id).padStart(4,'0')} diperbarui ✓`, 'success');
+async function updateOrderStatus(id, status) {
+  try {
+    const res = await fetch('/api/admin/orders/' + id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    if(!res.ok) { const d = await res.json(); throw new Error(d.error||'Gagal update status.'); }
+    // Update cache lokal
+    const o = _ordersCache.find(x=>x.id===id);
+    if(o) o.status = status;
+    renderOrders();
+    renderDashboard();
+    showToast('Status pesanan diperbarui ✓', 'success');
+  } catch(e) { showToast(e.message, 'error'); }
 }
 
 // ══════════════════════════════════════════

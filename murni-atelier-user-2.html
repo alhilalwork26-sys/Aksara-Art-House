@@ -2568,7 +2568,7 @@ function renderCkSteps(){
   }
 }
 
-function ckNext(){
+async function ckNext(){
   if(state.ckStep===1){
     const n=document.getElementById('ck-nama').value;
     const e=document.getElementById('ck-email').value;
@@ -2593,8 +2593,8 @@ function ckNext(){
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pembayaran</span><span style="color:var(--brown)">${payment}</span></div>
         <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid var(--border);font-weight:500"><span style="color:var(--muted)">Total</span><span style="color:var(--terra);font-size:16px">${fmt(total)}</span></div>
       </div>`;
-    // Save order to localStorage for admin
-    saveOrderToStorage({
+    // Simpan pesanan ke localStorage dan Supabase
+    await saveOrderToStorage({
       name: nama,
       email: document.getElementById('ck-email').value,
       wa: document.getElementById('ck-wa').value,
@@ -2730,7 +2730,8 @@ function renderAbout(){
 
 
 // ── ORDER STORAGE ──────────────────────────────────
-function saveOrderToStorage(orderData){
+async function saveOrderToStorage(orderData){
+  // Simpan ke localStorage untuk tampilan "Pesanan Saya"
   try {
     const orders = JSON.parse(localStorage.getItem('aksara-orders')||'[]');
     const newOrder = {
@@ -2739,7 +2740,32 @@ function saveOrderToStorage(orderData){
     };
     orders.push(newOrder);
     localStorage.setItem('aksara-orders', JSON.stringify(orders));
-  } catch(e) { console.error('Gagal menyimpan order:', e); }
+  } catch(e) { console.error('Gagal menyimpan order lokal:', e); }
+
+  // Simpan ke Supabase via API agar admin bisa melihat pesanan
+  try {
+    await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerName: orderData.name,
+        customerEmail: orderData.email,
+        customerPhone: orderData.wa || '',
+        shippingAddress: orderData.address || '',
+        shippingCity: orderData.city || '',
+        shippingPostalCode: orderData.postalCode || '',
+        courier: orderData.courier || '',
+        paymentMethod: orderData.payment || 'Transfer bank',
+        notes: '',
+        items: (orderData.items || []).map(i => ({
+          artworkId: String(i.id),
+          title: i.title,
+          price: i.price,
+          quantity: 1
+        }))
+      })
+    });
+  } catch(e) { console.error('Gagal menyimpan order ke server:', e); }
 }
 
 // ── INIT ──────────────────────────────────

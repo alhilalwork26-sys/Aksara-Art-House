@@ -20,6 +20,7 @@ export type Artwork = {
   colors: string[];
   tags: string[];
   is_featured: boolean;
+  stock: number;
 };
 
 export type Auction = {
@@ -62,6 +63,7 @@ export type CheckoutInput = {
   paymentMethod: string;
   notes?: string;
   items: OrderItemInput[];
+  promoCode?: string;
 };
 
 export type AdminOrder = {
@@ -70,17 +72,72 @@ export type AdminOrder = {
   customer_name: string;
   customer_email: string;
   customer_phone: string | null;
+  shipping_address: string | null;
   shipping_city: string | null;
+  shipping_postal_code: string | null;
   courier: string | null;
   payment_method: string;
   payment_status: PaymentStatus;
   status: OrderStatus;
+  subtotal: number;
+  discount_amount: number;
   total: number;
   notes: string | null;
+  tracking_number: string | null;
+  shipping_notes: string | null;
+  estimated_delivery: string | null;
+  promo_code_id: string | null;
   created_at: string;
   order_items?: Array<{
     title: string;
     price: number;
     quantity: number;
   }>;
+};
+
+export type Review = {
+  id: string;
+  artwork_id: string;
+  user_id: string | null;
+  reviewer_name: string;
+  reviewer_email: string;
+  rating: number;
+  comment: string | null;
+  is_verified_purchase: boolean;
+  is_approved: boolean;
+  is_rejected: boolean;
+  created_at: string;
+};
+
+export type ReviewInput = {
+  artworkId: string;
+  reviewerName: string;
+  reviewerEmail: string;
+  rating: number;
+  comment?: string;
+};
+
+export type PromoCode = {
+  id: string;
+  code: string;
+  description: string | null;
+  discount_type: "percentage" | "fixed";
+  discount_value: number;
+  min_purchase: number;
+  max_uses: number | null;
+  current_uses: number;
+  valid_from: string;
+  valid_until: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type PromoValidationResult = {
+  valid: boolean;
+  promoCodeId?: string;
+  discountType?: "percentage" | "fixed";
+  discountValue?: number;
+  discountAmount?: number;
+  finalTotal?: number;
+  message: string;
 };

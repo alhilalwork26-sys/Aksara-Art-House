@@ -1542,6 +1542,7 @@ footer {
           </div>
           <div class="purchase-note" id="d-purchase-note">Setelah checkout, tim studio akan menghubungi Anda untuk konfirmasi pembayaran, pengiriman, dan detail penempatan karya bila diperlukan.</div>
           <div class="detail-actions" id="d-actions"></div>
+          <div id="reviews-section"></div>
         </div>
       </div>
     </div>
@@ -1763,6 +1764,14 @@ footer {
         </div>
         <div id="ck-summary" style="background:var(--cream);border-radius:4px;padding:1rem;border:1px solid var(--border);margin-bottom:1rem"></div>
         <div class="form-group">
+          <label>Kode Promo (opsional)</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="ck-promo-input" placeholder="Masukkan kode promo..." style="text-transform:uppercase;flex:1">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="applyPromoCode()" id="promo-apply-btn" style="white-space:nowrap">Pakai</button>
+          </div>
+          <div id="ck-promo-result" style="margin-top:.5rem;font-size:12px"></div>
+        </div>
+        <div class="form-group">
           <label>Link / Catatan Bukti Pembayaran</label>
           <textarea id="ck-payment-proof" placeholder="Opsional: tempel link bukti transfer/QRIS, nama bank, atau catatan pembayaran. Admin akan melihat catatan ini."></textarea>
         </div>
@@ -1905,7 +1914,8 @@ let state = {
   currentPainting:null, currentRoom:'living',
   filter:'semua', sort:'newest',
   ckStep:1,
-  postAuthAction:null
+  postAuthAction:null,
+  promo: null  // { promoCodeId, discountAmount, discountType, discountValue, code }
 };
 let timers = {};
 
@@ -2005,13 +2015,31 @@ async function fetchAuctionsFromDB(){
 }
 
 async function fetchWishlistFromDB(){
+  // Muat wishlist dari localStorage untuk guest
+  try {
+    const local = JSON.parse(localStorage.getItem('aksara-wishlist') || '[]');
+    if(Array.isArray(local) && local.length) {
+      state.wishlist = [...new Set([...state.wishlist, ...local])];
+      updateWishCount();
+    }
+  } catch(e){}
+
   if(!state.user) return;
+
+  // Jika login, ambil dari server dan merge
   try {
     const res = await fetch('/api/wishlist');
     if(!res.ok) return;
     const rows = await res.json();
     if(!Array.isArray(rows)) return;
-    state.wishlist = rows.map(a => a.id);
+    const serverIds = rows.map(a => a.id);
+    // Upload item lokal yang belum ada di server
+    const localOnly = state.wishlist.filter(id => !serverIds.includes(id));
+    for(const id of localOnly){
+      await fetch('/api/wishlist', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({artworkId: id}) }).catch(()=>{});
+    }
+    state.wishlist = [...new Set([...serverIds, ...localOnly])];
+    localStorage.removeItem('aksara-wishlist');
     updateWishCount();
   } catch(e){}
 }
@@ -2246,7 +2274,6 @@ function sortGallery(v){ state.sort=v; renderGallery(); }
 
 // ── WISHLIST ──────────────────────────────────
 async function toggleWishlist(id){
-  if(!state.user){ showToast('Silakan masuk untuk menyimpan wishlist','error'); openAuth('login'); return; }
   const idx = state.wishlist.indexOf(id);
   const removing = idx > -1;
   // Optimistic update
@@ -2254,6 +2281,14 @@ async function toggleWishlist(id){
   updateWishCount();
   if(state.currentPage==='gallery') renderGallery();
   if(state.currentPage==='home') renderHome();
+
+  if(!state.user){
+    // Simpan ke localStorage untuk guest
+    try { localStorage.setItem('aksara-wishlist', JSON.stringify(state.wishlist)); } catch(e){}
+    showToast(removing ? 'Dihapus dari wishlist' : 'Disimpan ke wishlist ♥', removing ? '' : 'success');
+    return;
+  }
+
   try {
     if(removing){
       await fetch('/api/wishlist?artworkId='+id, { method:'DELETE' });
@@ -2347,6 +2382,81 @@ function openDetail(id){
 
   goPage('detail');
   setTimeout(()=>drawRoom(state.currentRoom, p), 80);
+  loadArtworkReviews(p.id);
+}
+
+async function loadArtworkReviews(artworkId){
+  const container = document.getElementById('reviews-section');
+  if(!container) return;
+  container.innerHTML = '<div style="color:var(--muted);font-size:13px">Memuat ulasan...</div>';
+  try {
+    const res = await fetch('/api/reviews?artworkId='+artworkId);
+    const reviews = res.ok ? await res.json() : [];
+    const stars = n => '★'.repeat(n)+'☆'.repeat(5-n);
+    const avg = reviews.length ? (reviews.reduce((s,r)=>s+r.rating,0)/reviews.length).toFixed(1) : null;
+    container.innerHTML = `
+      <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h4 style="font-family:var(--fd);font-size:16px;font-weight:400">Ulasan Kolektor</h4>
+          ${avg?`<div style="font-size:13px;color:var(--terra)">★ ${avg} <span style="color:var(--muted)">(${reviews.length} ulasan)</span></div>`:''}
+        </div>
+        ${reviews.length ? reviews.map(r=>`
+          <div style="padding:.9rem 0;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.4rem">
+              <span style="color:var(--terra);font-size:14px">${stars(r.rating)}</span>
+              <strong style="font-size:13px">${escapeHtml(r.reviewer_name)}</strong>
+              <span style="font-size:11px;color:var(--muted)">${r.created_at?r.created_at.slice(0,10):''}</span>
+            </div>
+            ${r.comment?`<p style="font-size:13px;color:var(--charcoal);line-height:1.6;margin:0">${escapeHtml(r.comment)}</p>`:''}
+          </div>`).join('') : '<p style="font-size:13px;color:var(--muted)">Belum ada ulasan untuk karya ini.</p>'}
+        <div style="margin-top:1.25rem">
+          <button class="btn btn-secondary btn-sm" onclick="toggleReviewForm('${artworkId}')">✍ Tulis Ulasan</button>
+          <div id="review-form-${CSS.escape(artworkId)}" style="display:none;margin-top:1rem">
+            <div style="display:flex;flex-direction:column;gap:.75rem">
+              <div class="form-group"><label>Nama</label><input id="rv-name-${CSS.escape(artworkId)}" placeholder="Nama Anda"></div>
+              <div class="form-group"><label>Email</label><input type="email" id="rv-email-${CSS.escape(artworkId)}" placeholder="email@contoh.com"></div>
+              <div class="form-group">
+                <label>Rating</label>
+                <div style="display:flex;gap:6px" id="rv-stars-${CSS.escape(artworkId)}">
+                  ${[1,2,3,4,5].map(n=>`<button type="button" onclick="setReviewRating('${artworkId}',${n})" data-star="${n}" style="font-size:24px;background:none;border:none;cursor:pointer;color:var(--border)">★</button>`).join('')}
+                </div>
+                <input type="hidden" id="rv-rating-${CSS.escape(artworkId)}" value="0">
+              </div>
+              <div class="form-group"><label>Komentar (opsional)</label><textarea id="rv-comment-${CSS.escape(artworkId)}" rows="3" placeholder="Ceritakan pengalaman Anda..."></textarea></div>
+              <button class="btn btn-primary btn-sm" onclick="submitReview('${artworkId}')">Kirim Ulasan</button>
+              <p style="font-size:11px;color:var(--muted)">Ulasan akan ditampilkan setelah diverifikasi admin.</p>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  } catch(e){ container.innerHTML=''; }
+}
+
+function toggleReviewForm(id){
+  const form = document.getElementById('review-form-'+CSS.escape(id));
+  if(form) form.style.display = form.style.display==='none'?'block':'none';
+}
+
+function setReviewRating(artworkId, n){
+  document.getElementById('rv-rating-'+CSS.escape(artworkId)).value = n;
+  document.querySelectorAll(`#rv-stars-${CSS.escape(artworkId)} button`).forEach(btn=>{
+    btn.style.color = Number(btn.dataset.star)<=n ? 'var(--terra)' : 'var(--border)';
+  });
+}
+
+async function submitReview(artworkId){
+  const name = document.getElementById('rv-name-'+CSS.escape(artworkId))?.value.trim();
+  const email = document.getElementById('rv-email-'+CSS.escape(artworkId))?.value.trim();
+  const rating = Number(document.getElementById('rv-rating-'+CSS.escape(artworkId))?.value||0);
+  const comment = document.getElementById('rv-comment-'+CSS.escape(artworkId))?.value.trim();
+  if(!name||!email){ showToast('Nama dan email wajib diisi','error'); return; }
+  if(!rating){ showToast('Pilih rating terlebih dahulu','error'); return; }
+  try {
+    const res = await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({artworkId,reviewerName:name,reviewerEmail:email,rating,comment})});
+    if(!res.ok) throw new Error((await res.json()).error||'Gagal');
+    showToast('Ulasan terkirim! Menunggu verifikasi admin.','success');
+    toggleReviewForm(artworkId);
+  } catch(e){ showToast(e.message||'Gagal mengirim ulasan','error'); }
 }
 
 // ── ROOM PREVIEW ──────────────────────────────────
@@ -2706,7 +2816,8 @@ async function ckNext(){
           courier: kurirText,
           paymentMethod: payment,
           notes: proof ? `Bukti/catatan pembayaran: ${proof}` : '',
-          items: state.cart.map(c=>({artworkId:String(c.id), title:c.title, price:c.price, quantity:1}))
+          items: state.cart.map(c=>({artworkId:String(c.id), title:c.title, price:c.price, quantity:1})),
+          promoCode: state.promo?.code || undefined
         })
       });
       const data = await res.json();
@@ -2717,6 +2828,8 @@ async function ckNext(){
       if(nextBtn){ nextBtn.disabled=false; nextBtn.textContent='Konfirmasi Pesanan'; }
       return;
     }
+    const discount = state.promo?.discountAmount || 0;
+    const finalTotal = Math.max(0, total - discount);
     document.getElementById('ck-confirm-detail').innerHTML=`
       <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
         ${orderNumber ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Nomor Pesanan</span><span style="color:var(--brown)">${orderNumber}</span></div>` : ''}
@@ -2724,9 +2837,11 @@ async function ckNext(){
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pengiriman</span><span style="color:var(--brown);font-size:12px;max-width:60%;text-align:right">${kurirText}</span></div>
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pembayaran</span><span style="color:var(--brown)">${payment}</span></div>
         ${proof ? `<div style="padding-top:6px;color:var(--muted);font-size:12px">Bukti/catatan: <span style="color:var(--brown)">${escapeHtml(proof)}</span></div>` : ''}
-        <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid var(--border);font-weight:500"><span style="color:var(--muted)">Total</span><span style="color:var(--terra);font-size:16px">${fmt(total)}</span></div>
+        ${discount>0?`<div style="display:flex;justify-content:space-between;color:var(--success)"><span>Diskon</span><span>-${fmt(discount)}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid var(--border);font-weight:500"><span style="color:var(--muted)">Total</span><span style="color:var(--terra);font-size:16px">${fmt(finalTotal)}</span></div>
       </div>`;
     state.cart=[];
+    state.promo=null;
     updateCartCount();
     saveState();
     renderCartBody();
@@ -2739,6 +2854,51 @@ async function ckNext(){
 function ckBack(){
   if(state.ckStep>1) state.ckStep--;
   renderCkSteps();
+}
+
+async function applyPromoCode(){
+  const code = (document.getElementById('ck-promo-input')?.value||'').trim().toUpperCase();
+  const resultEl = document.getElementById('ck-promo-result');
+  const btn = document.getElementById('promo-apply-btn');
+  if(!code){ resultEl.innerHTML='<span style="color:var(--danger)">Masukkan kode promo terlebih dahulu.</span>'; return; }
+
+  const subtotal = state.cart.reduce((s,c)=>s+c.price,0);
+  btn.disabled=true; btn.textContent='Memvalidasi...';
+  try {
+    const res = await fetch('/api/promo/validate', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ code, subtotal })
+    });
+    const data = await res.json();
+    if(data.valid){
+      state.promo = { promoCodeId: data.promoCodeId, discountAmount: data.discountAmount, code };
+      resultEl.innerHTML=`<span style="color:var(--success)">✓ ${escapeHtml(data.message)}</span>`;
+      updateCkSummary();
+    } else {
+      state.promo = null;
+      resultEl.innerHTML=`<span style="color:var(--danger)">✗ ${escapeHtml(data.message)}</span>`;
+      updateCkSummary();
+    }
+  } catch(e){
+    resultEl.innerHTML='<span style="color:var(--danger)">Gagal memvalidasi promo.</span>';
+  } finally {
+    btn.disabled=false; btn.textContent='Pakai';
+  }
+}
+
+function updateCkSummary(){
+  const summaryEl = document.getElementById('ck-summary');
+  if(!summaryEl) return;
+  const subtotal = state.cart.reduce((s,c)=>s+c.price,0);
+  const discount = state.promo?.discountAmount || 0;
+  const total = Math.max(0, subtotal - discount);
+  summaryEl.innerHTML=`
+    <div style="font-size:13px;display:flex;flex-direction:column;gap:.4rem">
+      ${state.cart.map(c=>`<div style="display:flex;justify-content:space-between"><span>${escapeHtml(c.title)}</span><span>${fmt(c.price)}</span></div>`).join('')}
+      <div style="border-top:1px solid var(--border);padding-top:.4rem;display:flex;justify-content:space-between"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
+      ${discount>0?`<div style="display:flex;justify-content:space-between;color:var(--success)"><span>Diskon (${escapeHtml(state.promo?.code||'')})</span><span>-${fmt(discount)}</span></div>`:''}
+      <div style="display:flex;justify-content:space-between;font-weight:600;font-size:14px"><span>Total</span><span style="color:var(--terra)">${fmt(total)}</span></div>
+    </div>`;
 }
 
 // ── AUTH ──────────────────────────────────
@@ -2962,7 +3122,16 @@ async function renderMyOrders(){
   const statusLabel = {pending:'Menunggu Konfirmasi',confirmed:'Dikonfirmasi',paid:'Pembayaran Diterima',packed:'Dikemas',shipped:'Sedang Dikirim',done:'Selesai',cancelled:'Dibatalkan'};
   const statusCls = {pending:'osb-pending',confirmed:'osb-confirmed',paid:'osb-confirmed',packed:'osb-shipped',shipped:'osb-shipped',done:'osb-done',cancelled:'osb-cancelled'};
 
-  body.innerHTML = myOrders.map(o => `
+  body.innerHTML = myOrders.map(o => {
+    const trackingHtml = (o.status==='shipped'||o.status==='packed') ? `
+      <div style="margin:.6rem 0;padding:.6rem;background:var(--cream);border-radius:4px;border-left:3px solid var(--terra);font-size:12px">
+        <div style="font-weight:500;color:var(--brown);margin-bottom:.3rem">📦 Info Pengiriman</div>
+        ${o.tracking_number ? `<div>No. Resi: <strong>${escapeHtml(o.tracking_number)}</strong></div>` : '<div style="color:var(--muted)">Nomor resi belum tersedia</div>'}
+        ${o.estimated_delivery ? `<div style="color:var(--muted)">Estimasi tiba: ${o.estimated_delivery}</div>` : ''}
+        ${o.shipping_notes ? `<div style="color:var(--muted);margin-top:.2rem">${escapeHtml(o.shipping_notes)}</div>` : ''}
+      </div>` : '';
+    const discountHtml = o.discount_amount>0 ? `<div style="font-size:11px;color:var(--success)">Diskon: -${fmt(o.discount_amount)}</div>` : '';
+    return `
     <div class="my-order-card">
       <div class="my-order-header">
         <div>
@@ -2970,14 +3139,15 @@ async function renderMyOrders(){
         </div>
         <span class="order-status-badge ${statusCls[o.status]||'osb-pending'}">${statusLabel[o.status]||o.status}</span>
       </div>
-      <div class="my-order-items">${(o.order_items||[]).map(i=>`${i.title} &mdash; <span style="color:var(--terra)">${fmt(i.price)}</span>`).join('<br>')}</div>
-      ${o.shipping_city ? `<div style="font-size:12px;color:var(--muted);margin-top:.3rem">📦 ${o.shipping_city} via ${o.courier||'-'}</div>` : ''}
+      <div class="my-order-items">${(o.order_items||[]).map(i=>`${escapeHtml(i.title)} &mdash; <span style="color:var(--terra)">${fmt(i.price)}</span>`).join('<br>')}</div>
+      ${o.shipping_city ? `<div style="font-size:12px;color:var(--muted);margin-top:.3rem">📍 ${o.shipping_city} via ${escapeHtml(o.courier||'-')}</div>` : ''}
+      ${trackingHtml}
       <div class="my-order-footer">
-        <div class="my-order-total">${fmt(o.total)}</div>
+        <div>${discountHtml}<div class="my-order-total">${fmt(o.total)}</div></div>
         <button class="btn btn-secondary btn-sm" onclick="contactAboutOrder('${o.order_number}','${(o.order_items||[]).map(i=>i.title).join(', ')}')">Tanya via WhatsApp</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function contactAboutOrder(orderId, items){

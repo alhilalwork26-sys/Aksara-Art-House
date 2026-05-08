@@ -1,4 +1,4 @@
-import type { AdminOrder, Artwork, Auction, AuctionBid, CheckoutInput } from "@/lib/types";
+import type { AdminOrder, Artwork, Auction, AuctionBid, CheckoutInput, PromoCode, PromoValidationResult, Review, ReviewInput } from "@/lib/types";
 
 type SupabaseConfig = {
   url: string;
@@ -365,18 +365,15 @@ export async function removeFromWishlist(userId: string, artworkId: string): Pro
 }
 
 export async function listAdminOrders(): Promise<AdminOrder[]> {
-  if (!isSupabaseConfigured()) return [];
-
-  try {
-    return await supabaseFetch<AdminOrder[]>(
-      "orders?select=*,order_items(title,price,quantity)&order=created_at.desc",
-      undefined,
-      { serviceRole: true }
-    );
-  } catch (error) {
-    console.error(error);
-    return [];
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase belum dikonfigurasi. Isi SUPABASE_URL dan SUPABASE_ANON_KEY di environment variables.");
   }
+
+  return supabaseFetch<AdminOrder[]>(
+    "orders?select=*,order_items(title,price,quantity)&order=created_at.desc",
+    undefined,
+    { serviceRole: true }
+  );
 }
 
 export async function createOrder(input: CheckoutInput) {
@@ -386,6 +383,19 @@ export async function createOrder(input: CheckoutInput) {
 
   const subtotal = input.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shippingCost = 0;
+
+  // Validasi & ambil promo code jika ada
+  let discountAmount = 0;
+  let promoCodeId: string | null = null;
+  if (input.promoCode) {
+    const promo = await validatePromoCode(input.promoCode, subtotal);
+    if (promo.valid && promo.promoCodeId && promo.discountAmount) {
+      discountAmount = promo.discountAmount;
+      promoCodeId = promo.promoCodeId;
+    }
+  }
+
+  const total = Math.max(0, subtotal + shippingCost - discountAmount);
 
   const [order] = await supabaseFetch<Array<{ id: string; order_number: string }>>(
     "orders",
@@ -404,8 +414,10 @@ export async function createOrder(input: CheckoutInput) {
         status: "pending",
         subtotal,
         shipping_cost: shippingCost,
-        total: subtotal + shippingCost,
-        notes: input.notes || null
+        discount_amount: discountAmount,
+        total,
+        notes: input.notes || null,
+        promo_code_id: promoCodeId
       })
     },
     { serviceRole: true }
@@ -428,5 +440,166 @@ export async function createOrder(input: CheckoutInput) {
     { serviceRole: true }
   );
 
+  // Increment uses pada promo code
+  if (promoCodeId) {
+    await supabaseFetch(
+      `promo_codes?id=eq.${promoCodeId}`,
+      {
+        method: "PATCH",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ current_uses: { inc: 1 } })
+      },
+      { serviceRole: true }
+    ).catch(() => {
+      // Gunakan raw SQL increment jika PATCH biasa tidak support
+      supabaseFetch(
+        `rpc/increment_promo_uses`,
+        { method: "POST", body: JSON.stringify({ code_id: promoCodeId }) },
+        { serviceRole: true }
+      ).catch(() => {});
+    });
+  }
+
+  // Kurangi stok artwork yang dipesan
+  await Promise.all(
+    input.items
+      .filter((item) => !String(item.artworkId).startsWith("demo-"))
+      .map((item) =>
+        supabaseFetch(
+          `rpc/decrement_artwork_stock`,
+          { method: "POST", body: JSON.stringify({ p_artwork_id: item.artworkId, p_qty: item.quantity }) },
+          { serviceRole: true }
+        ).catch(() => {})
+      )
+  );
+
   return order;
+}
+
+// ── REVIEWS ────────────────────────────────────────────────
+
+export async function listReviews(artworkId: string): Promise<Review[]> {
+  return supabaseFetch<Review[]>(
+    `reviews?artwork_id=eq.${artworkId}&is_approved=eq.true&order=created_at.desc`
+  );
+}
+
+export async function createReview(input: ReviewInput): Promise<Review> {
+  const [row] = await supabaseFetch<Review[]>(
+    "reviews",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        artwork_id: input.artworkId,
+        reviewer_name: input.reviewerName,
+        reviewer_email: input.reviewerEmail,
+        rating: input.rating,
+        comment: input.comment || null,
+        is_approved: false
+      })
+    },
+    { serviceRole: true }
+  );
+  return row;
+}
+
+export async function listAdminReviews(): Promise<Review[]> {
+  if (!isSupabaseConfigured()) throw new Error("Supabase belum dikonfigurasi.");
+  return supabaseFetch<Review[]>(
+    "reviews?select=*&order=created_at.desc",
+    undefined,
+    { serviceRole: true }
+  );
+}
+
+export async function updateReview(id: string, data: Partial<Review>): Promise<Review> {
+  const [row] = await supabaseFetch<Review[]>(
+    `reviews?id=eq.${id}`,
+    { method: "PATCH", body: JSON.stringify(data) },
+    { serviceRole: true }
+  );
+  return row;
+}
+
+export async function deleteReview(id: string): Promise<void> {
+  await supabaseFetch<null>(
+    `reviews?id=eq.${id}`,
+    { method: "DELETE", headers: { Prefer: "return=minimal" } },
+    { serviceRole: true }
+  );
+}
+
+// ── PROMO CODES ────────────────────────────────────────────
+
+export async function validatePromoCode(code: string, subtotal: number): Promise<PromoValidationResult> {
+  if (!isSupabaseConfigured()) return { valid: false, message: "Supabase belum dikonfigurasi." };
+
+  try {
+    const rows = await supabaseFetch<PromoCode[]>(
+      `promo_codes?code=ilike.${encodeURIComponent(code)}&is_active=eq.true&limit=1`,
+      undefined,
+      { serviceRole: true }
+    );
+
+    if (!rows || rows.length === 0) return { valid: false, message: "Kode promo tidak ditemukan atau sudah tidak aktif." };
+
+    const promo = rows[0];
+    const now = new Date();
+
+    if (new Date(promo.valid_from) > now) return { valid: false, message: "Kode promo belum aktif." };
+    if (promo.valid_until && new Date(promo.valid_until) < now) return { valid: false, message: "Kode promo sudah kadaluarsa." };
+    if (promo.max_uses !== null && promo.current_uses >= promo.max_uses) return { valid: false, message: "Kode promo sudah mencapai batas penggunaan." };
+    if (subtotal < promo.min_purchase) return { valid: false, message: `Minimum pembelian ${promo.min_purchase.toLocaleString("id-ID")} untuk kode ini.` };
+
+    const discountAmount = promo.discount_type === "percentage"
+      ? Math.round(subtotal * promo.discount_value / 100)
+      : Math.min(Math.round(promo.discount_value), subtotal);
+
+    return {
+      valid: true,
+      promoCodeId: promo.id,
+      discountType: promo.discount_type,
+      discountValue: promo.discount_value,
+      discountAmount,
+      finalTotal: Math.max(0, subtotal - discountAmount),
+      message: `Promo berhasil! Hemat Rp ${discountAmount.toLocaleString("id-ID")}`
+    };
+  } catch {
+    return { valid: false, message: "Gagal memvalidasi kode promo." };
+  }
+}
+
+export async function listPromoCodes(): Promise<PromoCode[]> {
+  if (!isSupabaseConfigured()) throw new Error("Supabase belum dikonfigurasi.");
+  return supabaseFetch<PromoCode[]>(
+    "promo_codes?select=*&order=created_at.desc",
+    undefined,
+    { serviceRole: true }
+  );
+}
+
+export async function createPromoCode(data: Partial<PromoCode>): Promise<PromoCode> {
+  const [row] = await supabaseFetch<PromoCode[]>(
+    "promo_codes",
+    { method: "POST", body: JSON.stringify(data) },
+    { serviceRole: true }
+  );
+  return row;
+}
+
+export async function updatePromoCode(id: string, data: Partial<PromoCode>): Promise<PromoCode> {
+  const [row] = await supabaseFetch<PromoCode[]>(
+    `promo_codes?id=eq.${id}`,
+    { method: "PATCH", body: JSON.stringify(data) },
+    { serviceRole: true }
+  );
+  return row;
+}
+
+export async function deletePromoCode(id: string): Promise<void> {
+  await supabaseFetch<null>(
+    `promo_codes?id=eq.${id}`,
+    { method: "DELETE", headers: { Prefer: "return=minimal" } },
+    { serviceRole: true }
+  );
 }

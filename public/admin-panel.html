@@ -302,9 +302,15 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
           <input type="number" id="art-year" min="2000" max="2100" placeholder="2025" required>
         </div>
       </div>
-      <div class="form-group">
-        <label>Harga (Rp) *</label>
-        <input type="number" id="art-price" min="0" step="100000" placeholder="4500000" required>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Harga (Rp) *</label>
+          <input type="number" id="art-price" min="0" step="100000" placeholder="4500000" required>
+        </div>
+        <div class="form-group">
+          <label>Stok *</label>
+          <input type="number" id="art-stock" min="0" step="1" placeholder="1" value="1" required>
+        </div>
       </div>
       <div class="form-row-4">
         <div class="form-group">
@@ -417,6 +423,12 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
     </button>
     <button class="nav-item" data-section="auctions" onclick="showSection('auctions',this)">
       <span class="nav-icon">🔨</span> Lelang
+    </button>
+    <button class="nav-item" data-section="promo" onclick="showSection('promo',this)">
+      <span class="nav-icon">🎟️</span> Kode Promo
+    </button>
+    <button class="nav-item" data-section="reviews" onclick="showSection('reviews',this)">
+      <span class="nav-icon">⭐</span> Ulasan
     </button>
     <div class="nav-section">Lainnya</div>
     <button class="nav-item" onclick="openSettings()">
@@ -556,6 +568,79 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
       </div>
     </div>
 
+    <!-- ═══ PROMO ═══ -->
+    <div id="section-promo" class="tab-panel">
+      <div class="panel" style="margin-bottom:1.5rem">
+        <div class="panel-head">
+          <h3>Tambah Kode Promo</h3>
+        </div>
+        <div class="panel-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Kode *</label>
+              <input type="text" id="promo-code" placeholder="DISKON10" style="text-transform:uppercase">
+            </div>
+            <div class="form-group">
+              <label>Tipe Diskon *</label>
+              <select id="promo-type">
+                <option value="percentage">Persentase (%)</option>
+                <option value="fixed">Nominal (Rp)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Nilai Diskon *</label>
+              <input type="number" id="promo-value" min="1" placeholder="10">
+            </div>
+            <div class="form-group">
+              <label>Maks Penggunaan</label>
+              <input type="number" id="promo-max" min="1" placeholder="kosong = tak terbatas">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Berlaku Dari</label>
+              <input type="date" id="promo-start">
+            </div>
+            <div class="form-group">
+              <label>Berlaku Hingga</label>
+              <input type="date" id="promo-end">
+            </div>
+            <div class="form-group">
+              <label>Min. Pembelian (Rp)</label>
+              <input type="number" id="promo-minpurchase" min="0" placeholder="0">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="createPromo()">Buat Kode Promo</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Daftar Kode Promo <span id="promo-count-lbl" style="font-size:13px;color:var(--muted);font-weight:300"></span></h3>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Kode</th><th>Tipe</th><th>Nilai</th><th>Penggunaan</th><th>Berlaku</th><th>Status</th><th>Aksi</th></tr></thead>
+              <tbody id="promo-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ REVIEWS ═══ -->
+    <div id="section-reviews" class="tab-panel">
+      <div class="search-bar">
+        <select class="filter-select" id="review-filter" onchange="renderAdminReviews()">
+          <option value="">Semua Ulasan</option>
+          <option value="pending">Menunggu Moderasi</option>
+          <option value="approved">Disetujui</option>
+          <option value="rejected">Ditolak</option>
+        </select>
+      </div>
+      <div id="reviews-admin-container"></div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -590,7 +675,7 @@ function timeAgo(dateValue){
 }
 
 // ── IN-MEMORY CACHE (diisi dari Supabase) ──
-let _paintings = null, _auctions = null, _orders = null, _settings = null;
+let _paintings = null, _auctions = null, _orders = null, _settings = null, _promos = null, _reviews = null;
 
 function adminHeaders() {
   return { 'Content-Type': 'application/json' };
@@ -618,7 +703,7 @@ async function fetchAllFromDB() {
         cat: a.category,
         status: a.status === 'available' ? 'tersedia' : a.status === 'auction' ? 'lelang' : a.status === 'sold' ? 'terjual' : a.status,
         medium: a.medium, year: a.year, price: a.price, p: a.width_cm,
-        t: a.height_cm, l: a.width_cm, k: a.depth_cm || 3,
+        t: a.height_cm, l: a.width_cm, k: a.depth_cm || 3, stock: a.stock ?? 1,
         desc: a.description, image_url: a.image_url,
         colors: a.colors || paletteByCategory(a.category),
         tags: a.tags || buildTags({cat:a.category, medium:a.medium, year:a.year}),
@@ -637,8 +722,18 @@ async function fetchAllFromDB() {
         status: o.status, total: o.total,
         notes: o.notes,
         date: o.created_at ? o.created_at.slice(0,10) : '',
+        created_at: o.created_at || '',
+        trackingNumber: o.tracking_number || '',
+        estimatedDelivery: o.estimated_delivery || '',
+        shippingNotes: o.shipping_notes || '',
+        discountAmount: o.discount_amount || 0,
         items: (o.order_items||[])
       }));
+    } else {
+      const errData = await ordRes.json().catch(()=>({}));
+      console.error('Gagal memuat pesanan:', ordRes.status, errData);
+      const container = document.getElementById('orders-container');
+      if(container) container.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-msg" style="color:var(--danger)">Gagal memuat pesanan (${ordRes.status}).<br>${errData.error||'Periksa konfigurasi Supabase.'}</div></div>`;
     }
     if(aucRes.ok) {
       const rows = await aucRes.json();
@@ -654,8 +749,14 @@ async function fetchAllFromDB() {
         }))
       }));
     }
-    const settingsRes = await fetch('/api/settings');
+    const [settingsRes, promoRes, reviewRes] = await Promise.all([
+      fetch('/api/settings'),
+      fetch('/api/admin/promo', { headers: adminHeaders() }),
+      fetch('/api/admin/reviews', { headers: adminHeaders() })
+    ]);
     if(settingsRes.ok) _settings = { ...DEFAULT_SETTINGS, ...(await settingsRes.json()) };
+    if(promoRes.ok) _promos = await promoRes.json();
+    if(reviewRes.ok) _reviews = await reviewRes.json();
   } catch(e) { console.error('Gagal fetch dari DB:', e); }
 }
 function loadSettings() { return { ...DEFAULT_SETTINGS, ...(_settings||{}) }; }
@@ -755,12 +856,16 @@ async function initApp() {
   renderArtworksTable();
   renderOrders();
   renderAuctionsAdmin();
+  renderPromos();
+  renderAdminReviews();
   // Poll untuk data terbaru dari Supabase
   setInterval(async () => {
     await fetchAllFromDB();
     renderDashboard();
     renderOrders();
     renderAuctionsAdmin();
+    renderPromos();
+    renderAdminReviews();
     updateOrderBadge();
   }, 15000);
 }
@@ -787,7 +892,7 @@ function syncIndicator() {
 // ══════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════
-const SECTION_TITLES = { dashboard:'Dashboard', artworks:'Kelola Karya', orders:'Pesanan', auctions:'Lelang' };
+const SECTION_TITLES = { dashboard:'Dashboard', artworks:'Kelola Karya', orders:'Pesanan', auctions:'Lelang', promo:'Kode Promo', reviews:'Ulasan' };
 
 function showSection(id, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -967,6 +1072,7 @@ function openArtworkModal(painting = null) {
   document.getElementById('art-t').value = painting?.t || '';
   document.getElementById('art-l').value = painting?.l || '';
   document.getElementById('art-k').value = painting?.k || '';
+  document.getElementById('art-stock').value = painting?.stock ?? 1;
   document.getElementById('art-desc').value = painting?.desc || '';
   document.getElementById('artwork-modal-title').textContent = painting ? 'Edit Karya' : 'Tambah Karya Baru';
   openModal('modal-artwork');
@@ -984,6 +1090,7 @@ async function saveArtwork() {
   const medium = document.getElementById('art-medium').value.trim();
   const year = Number(document.getElementById('art-year').value);
   const price = Number(document.getElementById('art-price').value);
+  const stock = Number(document.getElementById('art-stock').value);
   const t = Number(document.getElementById('art-t').value);
   const l = Number(document.getElementById('art-l').value);
   const k = Number(document.getElementById('art-k').value);
@@ -1003,6 +1110,7 @@ async function saveArtwork() {
     status: statusMap[rawStatus] || rawStatus,
     medium, year, price,
     height_cm: t, width_cm: l, depth_cm: k||3,
+    stock: isNaN(stock) ? 1 : stock,
     description: desc || null,
     colors: paletteByCategory(cat),
     tags: buildTags({cat, medium, year}),
@@ -1062,10 +1170,10 @@ function renderOrders() {
   const filterStatus = document.getElementById('order-filter')?.value||'';
 
   let list = [...orders].filter(o => {
-    if(q && !o.name.toLowerCase().includes(q) && !JSON.stringify(o.items||[]).toLowerCase().includes(q)) return false;
+    if(q && !(o.name||'').toLowerCase().includes(q) && !JSON.stringify(o.items||[]).toLowerCase().includes(q) && !(o.order_number||'').toLowerCase().includes(q)) return false;
     if(filterStatus && o.status !== filterStatus) return false;
     return true;
-  }).sort((a,b)=>b.id-a.id);
+  }).sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
 
   const container = document.getElementById('orders-container');
   if(!list.length) {
@@ -1075,7 +1183,7 @@ function renderOrders() {
   container.innerHTML = list.map(o => `
     <div class="order-card">
       <div class="order-header">
-        <span class="order-id">#${String(o.id).padStart(4,'0')}</span>
+        <span class="order-id">${o.order_number || o.id}</span>
         <div style="display:flex;align-items:center;gap:8px">
           ${orderStatusChip(o.status)}
           <span class="order-date">${o.date||''}</span>
@@ -1111,7 +1219,7 @@ function viewOrder(id) {
   document.getElementById('order-detail-body').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:1rem">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:12px;color:var(--muted)">Pesanan #${String(o.id).padStart(4,'0')}</span>
+        <span style="font-size:12px;color:var(--muted)">Pesanan ${o.order_number || o.id}</span>
         ${orderStatusChip(o.status)}
       </div>
       <div style="background:var(--cream);border-radius:6px;padding:1rem">
@@ -1124,10 +1232,20 @@ function viewOrder(id) {
       </div>
       <div style="background:var(--cream);border-radius:6px;padding:1rem">
         <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Karya Dipesan</div>
-        ${(o.items||[]).map(i=>`<div style="font-size:13px;display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border)"><span>${i.title}</span><span style="color:var(--terra)">${fmt(i.price)}</span></div>`).join('')}
+        ${(o.items||[]).map(i=>`<div style="font-size:13px;display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border)"><span>${escapeHtml(i.title)}</span><span style="color:var(--terra)">${fmt(i.price)}</span></div>`).join('')}
+        ${o.discountAmount||o.discount_amount ? `<div style="font-size:13px;display:flex;justify-content:space-between;padding:.4rem 0;color:var(--success)"><span>Diskon Promo</span><span>− ${fmt(o.discountAmount||o.discount_amount)}</span></div>` : ''}
         <div style="font-size:13px;display:flex;justify-content:space-between;padding:.6rem 0 0;font-weight:500"><span>Total</span><span style="color:var(--terra)">${fmt(o.total)}</span></div>
       </div>
-      ${o.address?`<div style="background:var(--cream);border-radius:6px;padding:1rem"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">Alamat Pengiriman</div><div style="font-size:13px;color:var(--charcoal)">${o.address}</div><div style="font-size:12px;color:var(--muted)">${o.city||''} ${o.postalCode||''} · ${o.courier||''}</div></div>`:''}
+      ${o.address?`<div style="background:var(--cream);border-radius:6px;padding:1rem"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">Alamat Pengiriman</div><div style="font-size:13px;color:var(--charcoal)">${escapeHtml(o.address)}</div><div style="font-size:12px;color:var(--muted)">${escapeHtml(o.city||'')} ${escapeHtml(o.postalCode||'')} · ${escapeHtml(o.courier||'')}</div></div>`:''}
+      <div style="background:var(--cream);border-radius:6px;padding:1rem">
+        <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Info Pengiriman (Resi)</div>
+        <div style="display:flex;flex-direction:column;gap:.6rem">
+          <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Nomor Resi</label><input id="tracking-input" type="text" value="${escapeHtml(o.trackingNumber||o.tracking_number||'')}" placeholder="JNE12345678" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:3px;font-size:13px;outline:none"></div>
+          <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Estimasi Tiba</label><input id="delivery-input" type="date" value="${o.estimatedDelivery||o.estimated_delivery||''}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:3px;font-size:13px;outline:none"></div>
+          <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Catatan Pengiriman</label><textarea id="shipping-notes-input" rows="2" placeholder="Paket dikemas dengan bubble wrap..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:3px;font-size:13px;outline:none;resize:vertical">${escapeHtml(o.shippingNotes||o.shipping_notes||'')}</textarea></div>
+        </div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:.75rem" onclick="saveOrderShipping('${o.id}')">Simpan Info Resi</button>
+      </div>
       <div style="background:var(--cream);border-radius:6px;padding:1rem">
         <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">Pembayaran</div>
         <div style="font-size:13px">${o.payment||'-'} · ${o.paymentStatus||'waiting_confirmation'}</div>
@@ -1142,7 +1260,7 @@ function viewOrder(id) {
   `;
   const settings = loadSettings();
   document.getElementById('order-wa-btn').onclick = () => {
-    const msg = `Halo ${o.name}, kami mengkonfirmasi pesanan Anda #${String(o.id).padStart(4,'0')} untuk "${(o.items||[]).map(i=>i.title).join(', ')}" senilai ${fmt(o.total)}.`;
+    const msg = `Halo ${o.name}, kami mengkonfirmasi pesanan Anda ${o.order_number||o.id} untuk "${(o.items||[]).map(i=>i.title).join(', ')}" senilai ${fmt(o.total)}.`;
     window.open(`https://wa.me/${settings.wa}?text=${encodeURIComponent(msg)}`, '_blank');
   };
   openModal('modal-order');
@@ -1433,6 +1551,200 @@ function checkNewOrders() {
   updateOrderBadge();
   renderOrders();
   renderDashboard();
+}
+
+// ══════════════════════════════════════════
+// SAVE ORDER SHIPPING INFO
+// ══════════════════════════════════════════
+async function saveOrderShipping(id) {
+  const tracking_number = document.getElementById('tracking-input')?.value.trim() || '';
+  const estimated_delivery = document.getElementById('delivery-input')?.value || null;
+  const shipping_notes = document.getElementById('shipping-notes-input')?.value.trim() || '';
+  try {
+    const res = await fetch('/api/admin/orders/' + id, {
+      method:'PATCH', headers: adminHeaders(),
+      body: JSON.stringify({ tracking_number, estimated_delivery: estimated_delivery || null, shipping_notes })
+    });
+    if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal menyimpan.'); }
+    const orders = loadOrders();
+    const o = orders.find(x=>x.id===id);
+    if(o){ o.trackingNumber=tracking_number; o.estimatedDelivery=estimated_delivery; o.shippingNotes=shipping_notes; }
+    showToast('Info resi disimpan ✓', 'success');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+// ══════════════════════════════════════════
+// PROMO CODES
+// ══════════════════════════════════════════
+function renderPromos() {
+  const list = _promos || [];
+  const lbl = document.getElementById('promo-count-lbl');
+  if(lbl) lbl.textContent = `(${list.length} kode)`;
+  const tbody = document.getElementById('promo-tbody');
+  if(!tbody) return;
+  if(!list.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-icon">🎟️</div><div class="empty-msg">Belum ada kode promo.</div></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(p => {
+    const usageText = p.max_uses ? `${p.current_uses||0}/${p.max_uses}` : `${p.current_uses||0}/∞`;
+    const validFrom = p.valid_from ? p.valid_from.slice(0,10) : '—';
+    const validTo   = p.valid_until ? p.valid_until.slice(0,10) : '—';
+    const statusChipPromo = p.is_active
+      ? '<span class="chip chip-avail">Aktif</span>'
+      : '<span class="chip chip-sold">Nonaktif</span>';
+    const valueText = p.discount_type === 'percentage' ? `${p.discount_value}%` : fmt(p.discount_value);
+    return `<tr>
+      <td><strong style="font-family:var(--fd);font-size:15px;color:var(--brown)">${escapeHtml(p.code)}</strong></td>
+      <td>${p.discount_type === 'percentage' ? 'Persentase' : 'Nominal'}</td>
+      <td style="color:var(--terra)">${valueText}</td>
+      <td>${usageText}</td>
+      <td style="font-size:12px;color:var(--muted)">${validFrom} — ${validTo}</td>
+      <td>${statusChipPromo}</td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-ghost btn-sm" onclick="togglePromo('${p.id}', ${!p.is_active})">${p.is_active?'Nonaktifkan':'Aktifkan'}</button>
+          <button class="btn btn-danger btn-sm" onclick="confirmDeletePromo('${p.id}', '${escapeHtml(p.code)}')">Hapus</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function createPromo() {
+  const code = (document.getElementById('promo-code')?.value||'').trim().toUpperCase();
+  const discount_type = document.getElementById('promo-type')?.value;
+  const discount_value = Number(document.getElementById('promo-value')?.value);
+  const max_uses = document.getElementById('promo-max')?.value ? Number(document.getElementById('promo-max').value) : null;
+  const valid_from = document.getElementById('promo-start')?.value || null;
+  const valid_until = document.getElementById('promo-end')?.value || null;
+  const min_purchase = Number(document.getElementById('promo-minpurchase')?.value)||0;
+
+  if(!code || !discount_type || !discount_value) {
+    showToast('Kode, tipe, dan nilai diskon wajib diisi', 'error'); return;
+  }
+  try {
+    const res = await fetch('/api/admin/promo', {
+      method:'POST', headers: adminHeaders(),
+      body: JSON.stringify({ code, discount_type, discount_value, max_uses, valid_from, valid_until, min_purchase })
+    });
+    if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal membuat promo.'); }
+    const created = await res.json();
+    _promos = [created, ...(_promos||[])];
+    renderPromos();
+    // Clear form
+    ['promo-code','promo-value','promo-max','promo-start','promo-end','promo-minpurchase'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    showToast(`Kode promo ${code} berhasil dibuat ✓`, 'success');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function togglePromo(id, is_active) {
+  try {
+    const res = await fetch('/api/admin/promo/' + id, {
+      method:'PATCH', headers: adminHeaders(),
+      body: JSON.stringify({ is_active })
+    });
+    if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal update.'); }
+    if(_promos) { const p=_promos.find(x=>x.id===id); if(p) p.is_active=is_active; }
+    renderPromos();
+    showToast(is_active ? 'Promo diaktifkan ✓' : 'Promo dinonaktifkan ✓', 'success');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+function confirmDeletePromo(id, code) {
+  showConfirm('Hapus Kode Promo?', `Kode "${code}" akan dihapus permanen.`, () => deletePromo(id), '🗑️');
+}
+
+async function deletePromo(id) {
+  try {
+    const res = await fetch('/api/admin/promo/' + id, { method:'DELETE', headers: adminHeaders() });
+    if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal hapus.'); }
+    _promos = (_promos||[]).filter(p=>p.id!==id);
+    renderPromos();
+    showToast('Kode promo dihapus ✓', 'success');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+// ══════════════════════════════════════════
+// REVIEWS MODERATION
+// ══════════════════════════════════════════
+function renderAdminReviews() {
+  const filterEl = document.getElementById('review-filter');
+  const filter = filterEl ? filterEl.value : '';
+  let list = _reviews || [];
+  if(filter === 'pending') list = list.filter(r => !r.is_approved && !r.is_rejected);
+  else if(filter === 'approved') list = list.filter(r => r.is_approved);
+  else if(filter === 'rejected') list = list.filter(r => r.is_rejected);
+
+  const container = document.getElementById('reviews-admin-container');
+  if(!container) return;
+  if(!list.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">⭐</div><div class="empty-msg">Tidak ada ulasan ditemukan.</div></div>';
+    return;
+  }
+  const stars = n => '★'.repeat(Math.round(n||0)) + '☆'.repeat(5-Math.round(n||0));
+  container.innerHTML = list.map(r => {
+    let statusBadge = '';
+    if(r.is_approved) statusBadge = '<span class="chip chip-avail">Disetujui</span>';
+    else if(r.is_rejected) statusBadge = '<span class="chip chip-sold">Ditolak</span>';
+    else statusBadge = '<span class="chip chip-pending">Menunggu</span>';
+    return `<div class="order-card" style="margin-bottom:.75rem">
+      <div class="order-header">
+        <div style="display:flex;align-items:center;gap:8px">
+          ${statusBadge}
+          <span style="font-size:13px;color:var(--ochre)">${stars(r.rating)} (${r.rating}/5)</span>
+        </div>
+        <span class="order-date">${r.created_at ? r.created_at.slice(0,10) : ''}</span>
+      </div>
+      <div style="font-size:13px;font-weight:500;color:var(--brown);margin:.4rem 0">${escapeHtml(r.reviewer_name||r.name||'Anonim')} · <span style="color:var(--muted);font-weight:300;font-size:12px">${escapeHtml(r.reviewer_email||r.email||'')}</span></div>
+      <div style="font-size:13px;color:var(--charcoal);margin-bottom:.75rem;line-height:1.7">${escapeHtml(r.comment||r.review_text||'')}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${!r.is_approved ? `<button class="btn btn-secondary btn-sm" onclick="approveReview('${r.id}')">✓ Setujui</button>` : ''}
+        ${!r.is_rejected ? `<button class="btn btn-ghost btn-sm" onclick="rejectReview('${r.id}')">✗ Tolak</button>` : ''}
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteReview('${r.id}')">Hapus</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function approveReview(id) {
+  try {
+    const res = await fetch('/api/admin/reviews/' + id, {
+      method:'PATCH', headers: adminHeaders(),
+      body: JSON.stringify({ is_approved: true, is_rejected: false })
+    });
+    if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal.'); }
+    if(_reviews) { const r=_reviews.find(x=>x.id===id); if(r){ r.is_approved=true; r.is_rejected=false; } }
+    renderAdminReviews();
+    showToast('Ulasan disetujui ✓', 'success');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function rejectReview(id) {
+  try {
+    const res = await fetch('/api/admin/reviews/' + id, {
+      method:'PATCH', headers: adminHeaders(),
+      body: JSON.stringify({ is_approved: false, is_rejected: true })
+    });
+    if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal.'); }
+    if(_reviews) { const r=_reviews.find(x=>x.id===id); if(r){ r.is_approved=false; r.is_rejected=true; } }
+    renderAdminReviews();
+    showToast('Ulasan ditolak', 'success');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+function confirmDeleteReview(id) {
+  showConfirm('Hapus Ulasan?', 'Ulasan ini akan dihapus permanen.', () => deleteAdminReview(id), '🗑️');
+}
+
+async function deleteAdminReview(id) {
+  try {
+    const res = await fetch('/api/admin/reviews/' + id, { method:'DELETE', headers: adminHeaders() });
+    if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal hapus.'); }
+    _reviews = (_reviews||[]).filter(r=>r.id!==id);
+    renderAdminReviews();
+    showToast('Ulasan dihapus ✓', 'success');
+  } catch(e) { showToast(e.message, 'error'); }
 }
 
 // Patch initApp to set up notification polling
