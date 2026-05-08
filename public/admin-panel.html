@@ -712,17 +712,7 @@ async function fetchAllFromDB() {
     }
     if(aucRes.ok) {
       const rows = await aucRes.json();
-      _auctions = rows.map(a => ({
-        id: a.id, paintingId: a.artwork_id,
-        status: a.status, currentBid: a.current_bid,
-        startBid: a.start_bid, minStep: a.min_step,
-        endsAt: a.ends_at,
-        bids: (a.auction_bids||[]).map(b => ({
-          name: b.bidder_name,
-          amount: b.amount,
-          ago: timeAgo(b.created_at)
-        }))
-      }));
+      _auctions = normalizeAuctions(rows);
     }
     const [settingsRes, promoRes, reviewRes] = await Promise.all([
       fetch('/api/settings'),
@@ -747,6 +737,41 @@ function normalizeArtworks(rows) {
     tags: a.tags || buildTags({cat:a.category, medium:a.medium, year:a.year}),
     featured: a.is_featured
   }));
+}
+
+function normalizeAuctions(rows) {
+  return (Array.isArray(rows) ? rows : []).map(a => ({
+    id: a.id,
+    paintingId: a.artwork_id,
+    status: a.status,
+    startBid: Number(a.start_bid || 0),
+    currentBid: Number(a.current_bid || 0),
+    minStep: Number(a.min_step || 100000),
+    startsAt: a.starts_at,
+    endsAt: a.ends_at,
+    artwork: a.artworks ? normalizeArtworks([a.artworks])[0] : null,
+    bids: (a.auction_bids||[]).map(b => ({
+      id: b.id,
+      name: b.bidder_name,
+      amount: Number(b.amount || 0),
+      ago: timeAgo(b.created_at),
+      createdAt: b.created_at
+    }))
+  }));
+}
+
+async function fetchAuctionsFromDB(showLoading = false) {
+  const container = document.getElementById('auction-list-admin');
+  if(showLoading && container) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div class="empty-msg">Memuat lelang terbaru...</div></div>';
+  }
+  const res = await fetch('/api/admin/auctions', { headers: adminHeaders(), cache: 'no-store' });
+  if(!res.ok) {
+    const errData = await res.json().catch(()=>({}));
+    throw new Error(errData.error || `Gagal memuat lelang (${res.status}).`);
+  }
+  _auctions = normalizeAuctions(await res.json());
+  return _auctions;
 }
 
 async function fetchArtworksFromDB(showLoading = false) {
@@ -941,6 +966,7 @@ function showSection(id, btn) {
   document.getElementById('sidebar').classList.remove('open');
   if(id === 'artworks') renderArtworksTable(true);
   if(id === 'orders') renderOrders(true);
+  if(id === 'auctions') renderAuctionsAdmin(true);
 }
 
 // ══════════════════════════════════════════
@@ -1375,30 +1401,115 @@ async function updateOrderPayment(id, payment_status) {
 // ══════════════════════════════════════════
 // AUCTIONS
 // ══════════════════════════════════════════
-function renderAuctionsAdmin() {
+async function renderAuctionsAdmin(forceRefresh = false) {
+  const container = document.getElementById('auction-list-admin');
+  if(forceRefresh || !_auctions) {
+    try {
+      await fetchAuctionsFromDB(true);
+    } catch(e) {
+      if(container) container.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-msg" style="color:var(--danger)">${escapeHtml(e.message || 'Gagal memuat lelang.')}</div></div>`;
+      return;
+    }
+  }
   const auctions = loadAuctions();
   const paintings = loadPaintings();
-  const container = document.getElementById('auction-list-admin');
   if(!auctions.length) {
     container.innerHTML = '<div class="empty"><div class="empty-icon">🔨</div><div class="empty-msg">Belum ada karya yang dilelang.<br>Ubah status karya menjadi "Lelang" untuk mulai.</div></div>';
     return;
   }
   container.innerHTML = auctions.map(a => {
-    const p = paintings.find(x=>x.id===a.paintingId);
+    const p = paintings.find(x=>x.id===a.paintingId) || a.artwork;
     if(!p) return '';
+    const ended = new Date(a.endsAt).getTime() <= Date.now();
+    const editable = a.status === 'active' || a.status === 'scheduled';
     return `<div class="auction-manage-item">
       <div class="painting-thumb" style="width:50px;height:64px">${paintingSVG(p,50,64)}</div>
       <div class="auction-manage-info">
-        <div class="auction-manage-title">${escapeHtml(p.title)}</div>
-        <div class="auction-manage-meta">${escapeHtml(p.medium)} · ${p.year} · ${(a.bids||[]).length} penawaran</div>
+        <div class="auction-manage-title">${escapeHtml(p.title)} ${auctionStatusChip(a.status, ended)}</div>
+        <div class="auction-manage-meta">${escapeHtml(p.medium)} · ${p.year} · ${(a.bids||[]).length} penawaran · selesai ${formatDateTime(a.endsAt)}</div>
         <div class="auction-price">Bid tertinggi: ${fmt(a.currentBid)} (min +${fmt(a.minStep)})</div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(160px,1fr));gap:.6rem;margin-top:.75rem;max-width:560px">
+          <label style="font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Minimum kenaikan
+            <input id="auc-step-${a.id}" type="number" min="10000" step="10000" value="${a.minStep}" ${editable?'':'disabled'} style="margin-top:.25rem;width:100%;padding:.55rem;border:1px solid var(--border);border-radius:4px">
+          </label>
+          <label style="font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Berakhir
+            <input id="auc-end-${a.id}" type="datetime-local" value="${toDateTimeLocal(a.endsAt)}" ${editable?'':'disabled'} style="margin-top:.25rem;width:100%;padding:.55rem;border:1px solid var(--border);border-radius:4px">
+          </label>
+        </div>
         <div style="margin-top:.45rem;font-size:12px;color:var(--muted);line-height:1.7">
           ${(a.bids||[]).slice(0,3).map(b=>`${escapeHtml(b.name)} · ${fmt(b.amount)} · ${escapeHtml(b.ago)}`).join('<br>') || 'Belum ada bid masuk'}
         </div>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="editArtwork('${p.id}')">Edit Karya</button>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn btn-secondary btn-sm" onclick="editArtwork('${p.id}')">Edit Karya</button>
+        ${editable ? `<button class="btn btn-secondary btn-sm" onclick="saveAuctionSettings('${a.id}')">Simpan Lelang</button>` : ''}
+        ${editable ? `<button class="btn btn-primary btn-sm" onclick="finalizeAuctionAdmin('${a.id}')">Finalisasi</button>` : ''}
+      </div>
     </div>`;
   }).join('');
+}
+
+function auctionStatusChip(status, ended) {
+  if(status === 'active' && ended) return '<span class="chip chip-pending">Waktu habis</span>';
+  if(status === 'active') return '<span class="chip chip-avail">Aktif</span>';
+  if(status === 'scheduled') return '<span class="chip chip-auction">Terjadwal</span>';
+  if(status === 'ended') return '<span class="chip chip-sold">Selesai</span>';
+  if(status === 'cancelled') return '<span class="chip chip-sold">Dibatalkan</span>';
+  return `<span class="chip">${escapeHtml(status||'-')}</span>`;
+}
+
+function toDateTimeLocal(value) {
+  if(!value) return '';
+  const d = new Date(value);
+  if(Number.isNaN(d.getTime())) return '';
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function formatDateTime(value) {
+  if(!value) return '-';
+  const d = new Date(value);
+  if(Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleString('id-ID', { dateStyle:'medium', timeStyle:'short' });
+}
+
+async function saveAuctionSettings(id) {
+  const step = Number(document.getElementById('auc-step-'+id)?.value || 0);
+  const endValue = document.getElementById('auc-end-'+id)?.value;
+  if(!step || step < 10000) { showToast('Minimum kenaikan bid minimal Rp 10.000', 'error'); return; }
+  if(!endValue) { showToast('Waktu selesai lelang wajib diisi', 'error'); return; }
+  try {
+    const res = await fetch('/api/admin/auctions/' + id, {
+      method: 'PATCH',
+      headers: adminHeaders(),
+      body: JSON.stringify({ min_step: step, ends_at: new Date(endValue).toISOString(), updated_at: new Date().toISOString() })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || 'Gagal menyimpan lelang.');
+    await renderAuctionsAdmin(true);
+    showToast('Pengaturan lelang tersimpan ✓', 'success');
+  } catch(e) { showToast(e.message || 'Gagal menyimpan lelang.', 'error'); }
+}
+
+async function finalizeAuctionAdmin(id) {
+  showConfirm('Finalisasi Lelang?', 'Sistem akan menutup lelang, memilih bid tertinggi, dan membuat invoice pesanan untuk pemenang. Jika belum ada bid, karya kembali tersedia.', async () => {
+    try {
+      const res = await fetch('/api/admin/auctions/' + id, {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify({ action: 'finalize' })
+      });
+      const data = await res.json().catch(()=>({}));
+      if(!res.ok) throw new Error(data.error || 'Gagal finalisasi lelang.');
+      await fetchAllFromDB();
+      renderDashboard();
+      renderAuctionsAdmin();
+      renderArtworksTable();
+      if(data.status === 'sold') showToast('Lelang selesai, invoice pemenang dibuat ✓', 'success');
+      else if(data.status === 'no_bids') showToast('Lelang selesai tanpa bid, karya kembali tersedia ✓', 'success');
+      else showToast('Lelang sudah pernah difinalisasi.', 'success');
+    } catch(e) { showToast(e.message || 'Gagal finalisasi lelang.', 'error'); }
+  }, '✓');
 }
 
 // ══════════════════════════════════════════

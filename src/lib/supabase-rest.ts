@@ -494,6 +494,123 @@ export async function finalizeExpiredAuctions(): Promise<FinalizedAuction[]> {
   return results;
 }
 
+export async function finalizeAuctionById(id: string): Promise<FinalizedAuction> {
+  const [auction] = await supabaseFetch<Array<Auction & { artworks: Artwork; auction_bids?: AuctionBid[] }>>(
+    `auctions?select=*,artworks(*),auction_bids(*)&id=eq.${encodeURIComponent(id)}&limit=1&auction_bids.order=amount.desc,created_at.desc`,
+    undefined,
+    { serviceRole: true }
+  );
+
+  if (!auction) throw new Error("Lelang tidak ditemukan.");
+  if (auction.status === "ended" || auction.status === "cancelled") {
+    return {
+      auctionId: auction.id,
+      artworkId: auction.artwork_id,
+      artworkTitle: auction.artworks?.title || auction.artwork_id,
+      winnerName: null,
+      winnerEmail: null,
+      amount: null,
+      order: null,
+      status: "skipped"
+    };
+  }
+
+  const [lockedAuction] = await supabaseFetch<Auction[]>(
+    `auctions?id=eq.${encodeURIComponent(auction.id)}&status=in.(scheduled,active)`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        status: "ended",
+        ends_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+    },
+    { serviceRole: true }
+  );
+
+  if (!lockedAuction) {
+    throw new Error("Lelang sudah berubah. Muat ulang data lalu coba lagi.");
+  }
+
+  const highestBid = [...(auction.auction_bids || [])].sort((a, b) => {
+    if (Number(b.amount) !== Number(a.amount)) return Number(b.amount) - Number(a.amount);
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  })[0];
+
+  if (!highestBid) {
+    await updateArtwork(auction.artwork_id, { status: "available", stock: Math.max(1, Number(auction.artworks?.stock || 1)) });
+    return {
+      auctionId: auction.id,
+      artworkId: auction.artwork_id,
+      artworkTitle: auction.artworks?.title || auction.artwork_id,
+      winnerName: null,
+      winnerEmail: null,
+      amount: null,
+      order: null,
+      status: "no_bids"
+    };
+  }
+
+  const winner = highestBid.bidder_id ? await getProfile(highestBid.bidder_id) : null;
+  const winnerName = winner?.full_name || highestBid.bidder_name || "Pemenang Lelang";
+  const winnerEmail = winner?.email || `auction-winner-${highestBid.id}@aksaraarthouse.local`;
+  const amount = Number(highestBid.amount);
+
+  const [order] = await supabaseFetch<AdminOrder[]>(
+    "orders",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        customer_id: winner?.id || null,
+        customer_name: winnerName,
+        customer_email: winnerEmail,
+        customer_phone: winner?.phone || null,
+        shipping_address: "Menunggu konfirmasi pemenang lelang",
+        shipping_city: "Menunggu konfirmasi",
+        shipping_postal_code: null,
+        courier: "Konfirmasi admin",
+        payment_method: "auction_invoice",
+        payment_status: "waiting_confirmation",
+        status: "pending",
+        subtotal: amount,
+        shipping_cost: 0,
+        discount_amount: 0,
+        total: amount,
+        notes: `Invoice otomatis pemenang lelang. Auction ID: ${auction.id}. Bid ID: ${highestBid.id}.`
+      })
+    },
+    { serviceRole: true }
+  );
+
+  await supabaseFetch(
+    "order_items",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        order_id: order.id,
+        artwork_id: auction.artwork_id,
+        title: auction.artworks?.title || "Karya lelang",
+        price: amount,
+        quantity: 1
+      })
+    },
+    { serviceRole: true }
+  );
+
+  await updateArtwork(auction.artwork_id, { status: "sold", stock: 0 });
+
+  return {
+    auctionId: auction.id,
+    artworkId: auction.artwork_id,
+    artworkTitle: auction.artworks?.title || auction.artwork_id,
+    winnerName,
+    winnerEmail: winner?.email || null,
+    amount,
+    order,
+    status: "sold"
+  };
+}
+
 async function getProfile(id: string): Promise<Profile | null> {
   const [profile] = await supabaseFetch<Profile[]>(
     `profiles?select=*&id=eq.${encodeURIComponent(id)}&limit=1`,
