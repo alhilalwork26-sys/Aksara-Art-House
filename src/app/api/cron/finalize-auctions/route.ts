@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { notifyAuctionFinalized } from "@/lib/notifications";
-import { finalizeExpiredAuctions } from "@/lib/supabase-rest";
+import { finalizeExpiredAuctionsWithNotifications } from "@/lib/auction-finalizer";
 
 function isAuthorized(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -16,20 +15,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const results = await finalizeExpiredAuctions();
-    await Promise.allSettled(
-      results
-        .filter((result) => result.status === "sold" && result.order && result.amount)
-        .map((result) =>
-          notifyAuctionFinalized({
-            order: result.order!,
-            artworkTitle: result.artworkTitle,
-            winnerName: result.winnerName,
-            winnerEmail: result.winnerEmail,
-            amount: result.amount!
-          })
-        )
-    );
+    const results = await finalizeExpiredAuctionsWithNotifications();
 
     return NextResponse.json({
       ok: true,

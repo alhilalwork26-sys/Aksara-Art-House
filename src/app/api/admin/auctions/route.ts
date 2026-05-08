@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminToken, verifyAdminToken } from "@/lib/admin-auth";
+import { finalizeExpiredAuctionsWithNotifications } from "@/lib/auction-finalizer";
 import { createAuction, listAdminAuctions } from "@/lib/supabase-rest";
 
 function unauthorized() {
@@ -9,6 +10,7 @@ function unauthorized() {
 export async function GET(request: Request) {
   if (!verifyAdminToken(getAdminToken(request) || "")) return unauthorized();
   try {
+    await finalizeExpiredAuctionsWithNotifications();
     return NextResponse.json(await listAdminAuctions());
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Gagal." }, { status: 500 });
