@@ -1159,12 +1159,16 @@ async function saveArtwork() {
   const desc = document.getElementById('art-desc').value.trim();
 
   const statusMap = { tersedia:'available', dijual:'available', lelang:'auction', terjual:'sold', arsip:'archived' };
+  const nextStatus = statusMap[rawStatus] || rawStatus;
+  let nextStock = isNaN(stock) ? 1 : Math.max(0, stock);
+  if(nextStatus === 'sold') nextStock = 0;
+  if((nextStatus === 'available' || nextStatus === 'auction') && nextStock < 1) nextStock = 1;
   const payload = {
     title, artist, category: cat,
-    status: statusMap[rawStatus] || rawStatus,
+    status: nextStatus,
     medium, year, price,
     height_cm: t, width_cm: l, depth_cm: k||3,
-    stock: isNaN(stock) ? 1 : stock,
+    stock: nextStock,
     description: desc || null,
     colors: paletteByCategory(cat),
     tags: buildTags({cat, medium, year}),

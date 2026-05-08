@@ -150,19 +150,40 @@ export async function listAllArtworks(): Promise<Artwork[]> {
   );
 }
 
+function normalizeArtworkInventory(data: Partial<Artwork>): Partial<Artwork> {
+  const next: Partial<Artwork> = { ...data };
+
+  if (next.stock !== undefined) {
+    const numericStock = Number(next.stock);
+    next.stock = Number.isFinite(numericStock) ? Math.max(0, Math.trunc(numericStock)) : 1;
+  }
+
+  if (next.status === "sold") {
+    next.stock = 0;
+  }
+
+  if ((next.status === "available" || next.status === "auction") && Number(next.stock ?? 1) < 1) {
+    next.stock = 1;
+  }
+
+  return next;
+}
+
 export async function createArtwork(data: Partial<Artwork>): Promise<Artwork> {
+  const payload = normalizeArtworkInventory(data);
   const [row] = await supabaseFetch<Artwork[]>(
     "artworks",
-    { method: "POST", body: JSON.stringify(data) },
+    { method: "POST", body: JSON.stringify(payload) },
     { serviceRole: true }
   );
   return row;
 }
 
 export async function updateArtwork(id: string, data: Partial<Artwork>): Promise<Artwork> {
+  const payload = normalizeArtworkInventory(data);
   const [row] = await supabaseFetch<Artwork[]>(
     `artworks?id=eq.${id}`,
-    { method: "PATCH", body: JSON.stringify(data) },
+    { method: "PATCH", body: JSON.stringify(payload) },
     { serviceRole: true }
   );
   return row;
