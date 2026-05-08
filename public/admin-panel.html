@@ -535,8 +535,11 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
           <option value="">Semua Status</option>
           <option value="pending">Menunggu Konfirmasi</option>
           <option value="confirmed">Dikonfirmasi</option>
+          <option value="paid">Dibayar</option>
+          <option value="packed">Dikemas</option>
           <option value="shipped">Dikirim</option>
           <option value="done">Selesai</option>
+          <option value="cancelled">Dibatalkan</option>
         </select>
         <button class="btn btn-secondary btn-sm" onclick="exportOrdersCSV()">⬇ Export CSV</button>
         <button class="btn btn-secondary btn-sm" onclick="exportOrdersExcel()">⬇ Export Excel</button>
@@ -711,24 +714,7 @@ async function fetchAllFromDB() {
       }));
     }
     if(ordRes.ok) {
-      const rows = await ordRes.json();
-      _orders = rows.map(o => ({
-        id: o.id, order_number: o.order_number,
-        name: o.customer_name, email: o.customer_email, wa: o.customer_phone,
-        address: o.shipping_address, city: o.shipping_city,
-        postalCode: o.shipping_postal_code,
-        courier: o.courier, payment: o.payment_method,
-        paymentStatus: o.payment_status,
-        status: o.status, total: o.total,
-        notes: o.notes,
-        date: o.created_at ? o.created_at.slice(0,10) : '',
-        created_at: o.created_at || '',
-        trackingNumber: o.tracking_number || '',
-        estimatedDelivery: o.estimated_delivery || '',
-        shippingNotes: o.shipping_notes || '',
-        discountAmount: o.discount_amount || 0,
-        items: (o.order_items||[])
-      }));
+      _orders = normalizeOrders(await ordRes.json());
     } else {
       const errData = await ordRes.json().catch(()=>({}));
       console.error('Gagal memuat pesanan:', ordRes.status, errData);
@@ -758,6 +744,40 @@ async function fetchAllFromDB() {
     if(promoRes.ok) _promos = await promoRes.json();
     if(reviewRes.ok) _reviews = await reviewRes.json();
   } catch(e) { console.error('Gagal fetch dari DB:', e); }
+}
+
+function normalizeOrders(rows) {
+  return (Array.isArray(rows) ? rows : []).map(o => ({
+    id: o.id, order_number: o.order_number,
+    name: o.customer_name, email: o.customer_email, wa: o.customer_phone,
+    address: o.shipping_address, city: o.shipping_city,
+    postalCode: o.shipping_postal_code,
+    courier: o.courier, payment: o.payment_method,
+    paymentStatus: o.payment_status,
+    status: o.status, total: o.total,
+    notes: o.notes,
+    date: o.created_at ? o.created_at.slice(0,10) : '',
+    created_at: o.created_at || '',
+    trackingNumber: o.tracking_number || '',
+    estimatedDelivery: o.estimated_delivery || '',
+    shippingNotes: o.shipping_notes || '',
+    discountAmount: o.discount_amount || 0,
+    items: (o.order_items||[])
+  }));
+}
+
+async function fetchOrdersFromDB(showLoading = false) {
+  const container = document.getElementById('orders-container');
+  if(showLoading && container) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">⏳</div><div class="empty-msg">Memuat pesanan terbaru...</div></div>`;
+  }
+  const res = await fetch('/api/admin/orders', { headers: adminHeaders(), cache: 'no-store' });
+  if(!res.ok) {
+    const errData = await res.json().catch(()=>({}));
+    throw new Error(errData.error || `Gagal memuat pesanan (${res.status}).`);
+  }
+  _orders = normalizeOrders(await res.json());
+  return _orders;
 }
 function loadSettings() { return { ...DEFAULT_SETTINGS, ...(_settings||{}) }; }
 async function saveSettingsData(data) {
@@ -854,7 +874,7 @@ async function initApp() {
   await fetchAllFromDB();
   renderDashboard();
   renderArtworksTable();
-  renderOrders();
+  await renderOrders();
   renderAuctionsAdmin();
   renderPromos();
   renderAdminReviews();
@@ -862,7 +882,7 @@ async function initApp() {
   setInterval(async () => {
     await fetchAllFromDB();
     renderDashboard();
-    renderOrders();
+    await renderOrders();
     renderAuctionsAdmin();
     renderPromos();
     renderAdminReviews();
@@ -901,6 +921,7 @@ function showSection(id, btn) {
   if(btn) btn.classList.add('active');
   document.getElementById('topbar-title').textContent = SECTION_TITLES[id] || id;
   document.getElementById('sidebar').classList.remove('open');
+  if(id === 'orders') renderOrders(true);
 }
 
 // ══════════════════════════════════════════
@@ -1164,7 +1185,19 @@ async function deleteArtwork(id) {
 // ══════════════════════════════════════════
 // ORDERS
 // ══════════════════════════════════════════
-function renderOrders() {
+async function renderOrders(forceRefresh = false) {
+  const container = document.getElementById('orders-container');
+  if(!container) return;
+
+  if(forceRefresh || !_orders) {
+    try {
+      await fetchOrdersFromDB(true);
+    } catch(e) {
+      container.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-msg" style="color:var(--danger)">${escapeHtml(e.message || 'Gagal memuat pesanan.')}</div></div>`;
+      return;
+    }
+  }
+
   const orders = loadOrders();
   const q = (document.getElementById('order-search')?.value||'').toLowerCase();
   const filterStatus = document.getElementById('order-filter')?.value||'';
@@ -1175,9 +1208,11 @@ function renderOrders() {
     return true;
   }).sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
 
-  const container = document.getElementById('orders-container');
   if(!list.length) {
-    container.innerHTML = `<div class="empty"><div class="empty-icon">📦</div><div class="empty-msg">Belum ada pesanan masuk.<br>Pesanan dari halaman user akan muncul di sini.</div></div>`;
+    const msg = orders.length
+      ? 'Tidak ada pesanan yang cocok dengan filter saat ini.'
+      : 'Belum ada pesanan masuk.<br>Pesanan dari halaman user akan muncul di sini.';
+    container.innerHTML = `<div class="empty"><div class="empty-icon">📦</div><div class="empty-msg">${msg}</div></div>`;
     return;
   }
   container.innerHTML = list.map(o => `
