@@ -343,7 +343,7 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
             <div class="img-upload-lbl">Klik untuk upload foto karya<br><span style="font-size:11px;opacity:.7">JPG, PNG, WEBP — maks 3MB</span></div>
           </div>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:5px">Foto disimpan ke database sebagai data gambar. Untuk produksi besar, gunakan Supabase Storage.</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:5px">Foto disimpan ke Supabase Storage, database hanya menyimpan URL gambar.</div>
       </div>
     </div>
     <div class="modal-foot">
@@ -680,8 +680,8 @@ function timeAgo(dateValue){
 // ── IN-MEMORY CACHE (diisi dari Supabase) ──
 let _paintings = null, _auctions = null, _orders = null, _settings = null, _promos = null, _reviews = null;
 
-function adminHeaders() {
-  return { 'Content-Type': 'application/json' };
+function adminHeaders(json = true) {
+  return json ? { 'Content-Type': 'application/json' } : {};
 }
 
 function loadPaintings() { return _paintings || clone(DEFAULT_PAINTINGS); }
@@ -1447,24 +1447,36 @@ document.querySelectorAll('.overlay').forEach(o => {
 });
 
 // ══════════════════════════════════════════
-// IMAGE UPLOAD (base64 — gunakan Supabase Storage untuk katalog besar)
+// IMAGE UPLOAD (Supabase Storage)
 // ══════════════════════════════════════════
 let _currentImageBase64 = null;
 
-function handleImageUpload(event) {
+async function handleImageUpload(event) {
   const file = event.target.files[0];
   if(!file) return;
-  if(file.size > 3 * 1024 * 1024) {
-    showToast('Ukuran file maks 3MB', 'error');
+  if(file.size > 5 * 1024 * 1024) {
+    showToast('Ukuran file maks 5MB', 'error');
     return;
   }
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    _currentImageBase64 = e.target.result;
-    const wrap = document.getElementById('img-upload-preview-wrap');
-    wrap.innerHTML = `<img src="${_currentImageBase64}" class="img-preview" alt="preview"><div style="font-size:11px;color:var(--success);margin-top:6px;text-align:center">✓ Foto siap disimpan</div>`;
-  };
-  reader.readAsDataURL(file);
+  const wrap = document.getElementById('img-upload-preview-wrap');
+  wrap.innerHTML = `<div class="img-upload-icon">⏳</div><div class="img-upload-lbl">Mengupload foto...</div>`;
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/admin/uploads', {
+      method: 'POST',
+      headers: adminHeaders(false),
+      body: formData
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Gagal upload foto.');
+    _currentImageBase64 = data.url;
+    wrap.innerHTML = `<img src="${_currentImageBase64}" class="img-preview" alt="preview"><div style="font-size:11px;color:var(--success);margin-top:6px;text-align:center">✓ Foto tersimpan di storage</div>`;
+    showToast('Foto berhasil diupload ✓', 'success');
+  } catch(e) {
+    showToast(e.message || 'Gagal upload foto.', 'error');
+    loadArtworkImagePreview({ image_url: _currentImageBase64 });
+  }
 }
 
 function loadArtworkImagePreview(artwork) {

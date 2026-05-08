@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createOrder } from "@/lib/supabase-rest";
+import { notifyOrderCreated } from "@/lib/notifications";
 import type { CheckoutInput } from "@/lib/types";
 
 function validateCheckout(input: CheckoutInput) {
@@ -32,6 +33,9 @@ export async function POST(request: Request) {
     }
 
     const order = await createOrder(input);
+    await notifyOrderCreated(order, input).catch((error) => {
+      console.warn("Gagal mengirim notifikasi pesanan:", error);
+    });
 
     return NextResponse.json({
       id: order.id,

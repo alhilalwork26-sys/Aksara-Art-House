@@ -301,20 +301,48 @@ export async function placeAuctionBid(input: {
   amount: number;
   bidderId: string;
   bidderName: string;
-}): Promise<{ auction: Auction; bid: AuctionBid }> {
-  const [auction] = await supabaseFetch<Auction[]>(
-    `auctions?select=*&id=eq.${encodeURIComponent(input.auctionId)}&limit=1`,
+}): Promise<{ auction: Auction; bid: AuctionBid; artworkTitle?: string }> {
+  const [auction] = await supabaseFetch<Array<Auction & { artworks?: Pick<Artwork, "title" | "status"> }>>(
+    `auctions?select=*,artworks(title,status)&id=eq.${encodeURIComponent(input.auctionId)}&limit=1`,
     undefined,
     { serviceRole: true }
   );
 
   if (!auction) throw new Error("Lelang tidak ditemukan.");
   if (auction.status !== "active") throw new Error("Lelang ini tidak aktif.");
+  if (auction.artworks?.status !== "auction") throw new Error("Karya ini tidak sedang dilelang.");
   if (new Date(auction.ends_at).getTime() <= Date.now()) throw new Error("Waktu lelang sudah berakhir.");
 
-  const minNext = Number(auction.current_bid) + Number(auction.min_step);
+  const [highestBid] = await supabaseFetch<AuctionBid[]>(
+    `auction_bids?select=*&auction_id=eq.${encodeURIComponent(input.auctionId)}&order=amount.desc,created_at.desc&limit=1`,
+    undefined,
+    { serviceRole: true }
+  );
+
+  if (highestBid?.bidder_id === input.bidderId) {
+    throw new Error("Anda masih menjadi penawar tertinggi. Tunggu penawaran berikutnya sebelum menaikkan bid.");
+  }
+
+  const currentBid = Math.max(Number(auction.current_bid), Number(highestBid?.amount || 0));
+  const minNext = currentBid + Number(auction.min_step);
   if (input.amount < minNext) {
     throw new Error(`Penawaran minimal Rp ${minNext.toLocaleString("id-ID")}.`);
+  }
+
+  const [updatedAuction] = await supabaseFetch<Auction[]>(
+    `auctions?id=eq.${encodeURIComponent(input.auctionId)}&status=eq.active&current_bid=eq.${encodeURIComponent(String(auction.current_bid))}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        current_bid: input.amount,
+        updated_at: new Date().toISOString()
+      })
+    },
+    { serviceRole: true }
+  );
+
+  if (!updatedAuction) {
+    throw new Error("Ada penawaran baru yang masuk. Muat ulang lelang lalu coba lagi.");
   }
 
   const [bid] = await supabaseFetch<AuctionBid[]>(
@@ -331,12 +359,7 @@ export async function placeAuctionBid(input: {
     { serviceRole: true }
   );
 
-  const updatedAuction = await updateAuction(input.auctionId, {
-    current_bid: input.amount,
-    updated_at: new Date().toISOString()
-  });
-
-  return { auction: updatedAuction, bid };
+  return { auction: updatedAuction, bid, artworkTitle: auction.artworks?.title };
 }
 
 export async function getUserOrders(userId: string, email: string): Promise<AdminOrder[]> {

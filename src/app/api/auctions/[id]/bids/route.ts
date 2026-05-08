@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUser, getUserAuthToken } from "@/lib/supabase-auth";
 import { placeAuctionBid } from "@/lib/supabase-rest";
+import { notifyAuctionBidPlaced } from "@/lib/notifications";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,11 +30,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       bidderName: fullName
     });
 
+    await notifyAuctionBidPlaced(result).catch((error) => {
+      console.warn("Gagal mengirim notifikasi bid:", error);
+    });
+
     return NextResponse.json(result);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Gagal menyimpan penawaran.";
+    const isConflict = /penawaran baru|penawar tertinggi/i.test(message);
+    const isValidationError = /minimal|tidak aktif|berakhir|tidak sedang dilelang|tidak ditemukan/i.test(message);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Gagal menyimpan penawaran." },
-      { status: 500 }
+      { error: message },
+      { status: isConflict ? 409 : isValidationError ? 400 : 500 }
     );
   }
 }
