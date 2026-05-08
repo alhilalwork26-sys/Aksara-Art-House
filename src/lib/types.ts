@@ -89,6 +89,7 @@ export type AdminOrder = {
   promo_code_id: string | null;
   created_at: string;
   order_items?: Array<{
+    artwork_id: string | null;
     title: string;
     price: number;
     quantity: number;

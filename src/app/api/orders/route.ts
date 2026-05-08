@@ -35,12 +35,17 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       id: order.id,
-      orderNumber: order.order_number
+      orderNumber: order.order_number,
+      subtotal: order.subtotal,
+      discountAmount: order.discount_amount,
+      total: order.total
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Gagal membuat pesanan.";
+    const isValidationError = /stok|tidak ditemukan|belum tersedia|tidak mencukupi/i.test(message);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Gagal membuat pesanan." },
-      { status: 500 }
+      { error: message },
+      { status: isValidationError ? 400 : 500 }
     );
   }
 }

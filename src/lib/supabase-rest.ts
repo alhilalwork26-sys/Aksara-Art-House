@@ -1,4 +1,4 @@
-import type { AdminOrder, Artwork, Auction, AuctionBid, CheckoutInput, PromoCode, PromoValidationResult, Review, ReviewInput } from "@/lib/types";
+import type { AdminOrder, Artwork, Auction, AuctionBid, CheckoutInput, OrderItemInput, PromoCode, PromoValidationResult, Review, ReviewInput } from "@/lib/types";
 
 type SupabaseConfig = {
   url: string;
@@ -320,18 +320,29 @@ export async function placeAuctionBid(input: {
 
 export async function getUserOrders(userId: string, email: string): Promise<AdminOrder[]> {
   return supabaseFetch<AdminOrder[]>(
-    `orders?select=*,order_items(title,price,quantity)&or=(customer_id.eq.${userId},customer_email.ilike.${encodeURIComponent(email)})&order=created_at.desc`,
+    `orders?select=*,order_items(artwork_id,title,price,quantity)&or=(customer_id.eq.${userId},customer_email.ilike.${encodeURIComponent(email)})&order=created_at.desc`,
     undefined,
     { serviceRole: true }
   );
 }
 
 export async function updateOrder(id: string, data: Partial<AdminOrder>): Promise<AdminOrder> {
+  const [previous] = await supabaseFetch<AdminOrder[]>(
+    `orders?select=*,order_items(artwork_id,title,price,quantity)&id=eq.${id}&limit=1`,
+    undefined,
+    { serviceRole: true }
+  );
+
   const [row] = await supabaseFetch<AdminOrder[]>(
     `orders?id=eq.${id}`,
     { method: "PATCH", body: JSON.stringify(data) },
     { serviceRole: true }
   );
+
+  if (data.status === "cancelled" && previous && previous.status !== "cancelled") {
+    await restoreOrderStock(previous).catch(() => {});
+  }
+
   return row;
 }
 
@@ -370,7 +381,7 @@ export async function listAdminOrders(): Promise<AdminOrder[]> {
   }
 
   return supabaseFetch<AdminOrder[]>(
-    "orders?select=*,order_items(title,price,quantity)&order=created_at.desc",
+    "orders?select=*,order_items(artwork_id,title,price,quantity)&order=created_at.desc",
     undefined,
     { serviceRole: true }
   );
@@ -381,7 +392,8 @@ export async function createOrder(input: CheckoutInput) {
     throw new Error("Supabase belum dikonfigurasi. Pesanan produksi belum bisa disimpan.");
   }
 
-  const subtotal = input.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const verifiedItems = await verifyOrderItems(input.items);
+  const subtotal = verifiedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shippingCost = 0;
 
   // Validasi & ambil promo code jika ada
@@ -397,7 +409,7 @@ export async function createOrder(input: CheckoutInput) {
 
   const total = Math.max(0, subtotal + shippingCost - discountAmount);
 
-  const [order] = await supabaseFetch<Array<{ id: string; order_number: string }>>(
+  const [order] = await supabaseFetch<AdminOrder[]>(
     "orders",
     {
       method: "POST",
@@ -428,7 +440,7 @@ export async function createOrder(input: CheckoutInput) {
     {
       method: "POST",
       body: JSON.stringify(
-        input.items.map((item) => ({
+        verifiedItems.map((item) => ({
           order_id: order.id,
           artwork_id: String(item.artworkId).startsWith("demo-") ? null : item.artworkId,
           title: item.title,
@@ -462,18 +474,81 @@ export async function createOrder(input: CheckoutInput) {
 
   // Kurangi stok artwork yang dipesan
   await Promise.all(
-    input.items
+    verifiedItems
       .filter((item) => !String(item.artworkId).startsWith("demo-"))
-      .map((item) =>
-        supabaseFetch(
+      .map(async (item) => {
+        await supabaseFetch(
           `rpc/decrement_artwork_stock`,
           { method: "POST", body: JSON.stringify({ p_artwork_id: item.artworkId, p_qty: item.quantity }) },
           { serviceRole: true }
-        ).catch(() => {})
-      )
+        );
+
+        const remainingStock = Math.max(0, item.stockBefore - item.quantity);
+        if (remainingStock <= 0) {
+          await updateArtwork(item.artworkId, { status: "sold", stock: 0 });
+        }
+      })
   );
 
   return order;
+}
+
+type VerifiedOrderItem = OrderItemInput & {
+  stockBefore: number;
+};
+
+async function verifyOrderItems(items: OrderItemInput[]): Promise<VerifiedOrderItem[]> {
+  const realItems = items.filter((item) => !String(item.artworkId).startsWith("demo-"));
+  if (!realItems.length) {
+    return items.map((item) => ({ ...item, stockBefore: item.quantity }));
+  }
+
+  const ids = [...new Set(realItems.map((item) => item.artworkId))];
+  const artworks = await supabaseFetch<Artwork[]>(
+    `artworks?select=*&id=in.(${ids.map(encodeURIComponent).join(",")})`,
+    undefined,
+    { serviceRole: true }
+  );
+  const artworkById = new Map(artworks.map((artwork) => [artwork.id, artwork]));
+
+  return items.map((item) => {
+    if (String(item.artworkId).startsWith("demo-")) return { ...item, stockBefore: item.quantity };
+
+    const artwork = artworkById.get(item.artworkId);
+    if (!artwork) throw new Error(`Karya "${item.title}" tidak ditemukan.`);
+    if (artwork.status !== "available") throw new Error(`"${artwork.title}" belum tersedia untuk dibeli.`);
+    if (Number(artwork.stock || 0) < item.quantity) {
+      throw new Error(`Stok "${artwork.title}" tidak mencukupi atau sudah habis.`);
+    }
+
+    return {
+      artworkId: artwork.id,
+      title: artwork.title,
+      price: artwork.price,
+      quantity: item.quantity,
+      stockBefore: Number(artwork.stock || 0)
+    };
+  });
+}
+
+async function restoreOrderStock(order: AdminOrder): Promise<void> {
+  const items = (order.order_items || []).filter((item) => item.artwork_id);
+  await Promise.all(
+    items.map(async (item) => {
+      const [artwork] = await supabaseFetch<Artwork[]>(
+        `artworks?select=*&id=eq.${item.artwork_id}&limit=1`,
+        undefined,
+        { serviceRole: true }
+      );
+      if (!artwork || !item.artwork_id) return;
+
+      const nextStock = Number(artwork.stock || 0) + Number(item.quantity || 1);
+      await updateArtwork(item.artwork_id, {
+        stock: nextStock,
+        status: artwork.status === "sold" ? "available" : artwork.status
+      });
+    })
+  );
 }
 
 // ── REVIEWS ────────────────────────────────────────────────

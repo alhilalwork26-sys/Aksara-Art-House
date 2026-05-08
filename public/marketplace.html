@@ -1762,6 +1762,11 @@ footer {
             </label>
           </div>
         </div>
+        <div style="background:rgba(193,113,75,.08);border:1px solid rgba(193,113,75,.2);border-radius:4px;padding:1rem;margin-bottom:1rem;font-size:12px;color:var(--brown);line-height:1.8">
+          <strong>Instruksi pembayaran:</strong><br>
+          Transfer Bank: BCA/Mandiri/BNI a.n. Aksara Art House, detail rekening dikirim admin via WhatsApp.<br>
+          QRIS: admin mengirim QR resmi setelah order dibuat. Pesanan diproses setelah pembayaran diverifikasi.
+        </div>
         <div id="ck-summary" style="background:var(--cream);border-radius:4px;padding:1rem;border:1px solid var(--border);margin-bottom:1rem"></div>
         <div class="form-group">
           <label>Kode Promo (opsional)</label>
@@ -1977,6 +1982,7 @@ async function fetchPaintingsFromDB(){
       medium: a.medium, year: a.year, price: a.price,
       p: a.width_cm, t: a.height_cm, l: a.width_cm, k: a.depth_cm || 3,
       w: a.width_cm, h: a.height_cm, d: a.depth_cm,
+      stock: a.stock ?? 1,
       desc: a.description, image_url: a.image_url,
       colors: (a.colors && a.colors.length) ? a.colors : paletteByCategory(a.category),
       tags: (a.tags && a.tags.length) ? a.tags : buildArtworkTags({ cat:a.category, medium:a.medium, year:a.year }),
@@ -2113,8 +2119,8 @@ function updateAuctionBadge(){
 function syncCartWithPaintings(){
   state.cart = state.cart.map(item => {
     const p = PAINTINGS.find(x => x.id === item.id);
-    return p ? {id:p.id, title:p.title, price:p.price, medium:p.medium} : item;
-  });
+    return p ? {id:p.id, title:p.title, price:p.price, medium:p.medium, stock:p.stock ?? 1, status:p.status} : item;
+  }).filter(item => item.status !== 'terjual' && Number(item.stock ?? 1) > 0);
   state.wishlist = state.wishlist.filter(id => PAINTINGS.some(p => p.id === id));
 }
 
@@ -2661,13 +2667,17 @@ function toggleBidHistory(id, btn){
 function addToCart(id, directCheckout=false){
   const p=PAINTINGS.find(x=>x.id===id);
   if(!p) return;
+  if(p.status==='terjual' || Number(p.stock ?? 1) <= 0){
+    showToast('Karya ini sudah terjual atau stok habis.','error');
+    return;
+  }
   if(state.cart.find(c=>c.id===id)){
     showToast('Karya sudah ada di keranjang');
     if(directCheckout){ closeCart(); openCheckout(); }
     else openCart();
     return;
   }
-  state.cart.push({id:p.id,title:p.title,price:p.price,medium:p.medium});
+  state.cart.push({id:p.id,title:p.title,price:p.price,medium:p.medium,stock:p.stock ?? 1,status:p.status});
   updateCartCount();
   saveState();
   renderCartBody();
@@ -2772,6 +2782,7 @@ function renderCkSteps(){
     else if(state.ckStep===3){ nextBtn.textContent='Konfirmasi Pesanan'; }
     else { nextBtn.textContent='Lanjut →'; nextBtn.style.display='block'; }
   }
+  if(state.ckStep===3) updateCkSummary();
 }
 
 async function ckNext(){
@@ -2823,19 +2834,22 @@ async function ckNext(){
       const data = await res.json();
       if(!res.ok) throw new Error(data.error||'Gagal membuat pesanan.');
       orderNumber = data.orderNumber || '';
+      if(typeof data.discountAmount === 'number') state.promo = state.promo ? { ...state.promo, discountAmount: data.discountAmount } : null;
+      if(typeof data.total === 'number') state.lastOrderTotal = data.total;
     } catch(e) {
       showToast(e.message||'Gagal membuat pesanan. Coba lagi.','error');
       if(nextBtn){ nextBtn.disabled=false; nextBtn.textContent='Konfirmasi Pesanan'; }
       return;
     }
     const discount = state.promo?.discountAmount || 0;
-    const finalTotal = Math.max(0, total - discount);
+    const finalTotal = typeof state.lastOrderTotal === 'number' ? state.lastOrderTotal : Math.max(0, total - discount);
     document.getElementById('ck-confirm-detail').innerHTML=`
       <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
         ${orderNumber ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Nomor Pesanan</span><span style="color:var(--brown)">${orderNumber}</span></div>` : ''}
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pemesan</span><span style="color:var(--brown)">${nama}</span></div>
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pengiriman</span><span style="color:var(--brown);font-size:12px;max-width:60%;text-align:right">${kurirText}</span></div>
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pembayaran</span><span style="color:var(--brown)">${payment}</span></div>
+        <div style="padding-top:6px;color:var(--muted);font-size:12px;line-height:1.7">Admin akan mengirim detail rekening/QRIS resmi via WhatsApp. Simpan nomor pesanan untuk konfirmasi.</div>
         ${proof ? `<div style="padding-top:6px;color:var(--muted);font-size:12px">Bukti/catatan: <span style="color:var(--brown)">${escapeHtml(proof)}</span></div>` : ''}
         ${discount>0?`<div style="display:flex;justify-content:space-between;color:var(--success)"><span>Diskon</span><span>-${fmt(discount)}</span></div>`:''}
         <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid var(--border);font-weight:500"><span style="color:var(--muted)">Total</span><span style="color:var(--terra);font-size:16px">${fmt(finalTotal)}</span></div>
