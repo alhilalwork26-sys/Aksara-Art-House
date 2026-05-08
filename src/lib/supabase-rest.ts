@@ -1,4 +1,4 @@
-import type { AdminOrder, Artwork, Auction, AuctionBid, CheckoutInput, OrderItemInput, PromoCode, PromoValidationResult, Review, ReviewInput } from "@/lib/types";
+import type { AdminOrder, Artwork, Auction, AuctionBid, CheckoutInput, OrderItemInput, Profile, PromoCode, PromoValidationResult, Review, ReviewInput } from "@/lib/types";
 
 type SupabaseConfig = {
   url: string;
@@ -198,6 +198,9 @@ export async function syncAuctionForArtwork(artwork: Artwork): Promise<void> {
     );
 
     if (existing[0]) {
+      if (existing[0].status === "ended" || existing[0].status === "cancelled") {
+        return;
+      }
       if (existing[0].status !== "active") {
         await updateAuction(existing[0].id, { status: "active", updated_at: new Date().toISOString() });
       }
@@ -265,7 +268,7 @@ export async function deleteArtwork(id: string): Promise<void> {
 export async function listAuctions(): Promise<(Auction & { artworks: Artwork; auction_bids?: AuctionBid[] })[]> {
   await ensureAuctionRecords();
   return supabaseFetch<(Auction & { artworks: Artwork; auction_bids?: AuctionBid[] })[]>(
-    "auctions?select=*,artworks(*),auction_bids(*)&status=in.(scheduled,active,ended)&order=ends_at.asc&auction_bids.order=amount.desc",
+    "auctions?select=*,artworks(*),auction_bids(*)&status=in.(scheduled,active)&order=ends_at.asc&auction_bids.order=amount.desc",
   );
 }
 
@@ -360,6 +363,144 @@ export async function placeAuctionBid(input: {
   );
 
   return { auction: updatedAuction, bid, artworkTitle: auction.artworks?.title };
+}
+
+type FinalizedAuction = {
+  auctionId: string;
+  artworkId: string;
+  artworkTitle: string;
+  winnerName: string | null;
+  winnerEmail: string | null;
+  amount: number | null;
+  order: AdminOrder | null;
+  status: "sold" | "no_bids" | "skipped";
+};
+
+export async function finalizeExpiredAuctions(): Promise<FinalizedAuction[]> {
+  const expired = await supabaseFetch<Array<Auction & { artworks: Artwork; auction_bids?: AuctionBid[] }>>(
+    `auctions?select=*,artworks(*),auction_bids(*)&status=eq.active&ends_at=lte.${encodeURIComponent(new Date().toISOString())}&order=ends_at.asc&auction_bids.order=amount.desc,created_at.desc`,
+    undefined,
+    { serviceRole: true }
+  );
+
+  const results: FinalizedAuction[] = [];
+
+  for (const auction of expired) {
+    const [lockedAuction] = await supabaseFetch<Auction[]>(
+      `auctions?id=eq.${encodeURIComponent(auction.id)}&status=eq.active`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          status: "ended",
+          updated_at: new Date().toISOString()
+        })
+      },
+      { serviceRole: true }
+    );
+
+    if (!lockedAuction) {
+      results.push({
+        auctionId: auction.id,
+        artworkId: auction.artwork_id,
+        artworkTitle: auction.artworks?.title || auction.artwork_id,
+        winnerName: null,
+        winnerEmail: null,
+        amount: null,
+        order: null,
+        status: "skipped"
+      });
+      continue;
+    }
+
+    const highestBid = [...(auction.auction_bids || [])].sort((a, b) => {
+      if (Number(b.amount) !== Number(a.amount)) return Number(b.amount) - Number(a.amount);
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    })[0];
+
+    if (!highestBid) {
+      await updateArtwork(auction.artwork_id, { status: "available", stock: Math.max(1, Number(auction.artworks?.stock || 1)) });
+      results.push({
+        auctionId: auction.id,
+        artworkId: auction.artwork_id,
+        artworkTitle: auction.artworks?.title || auction.artwork_id,
+        winnerName: null,
+        winnerEmail: null,
+        amount: null,
+        order: null,
+        status: "no_bids"
+      });
+      continue;
+    }
+
+    const winner = highestBid.bidder_id ? await getProfile(highestBid.bidder_id) : null;
+    const winnerName = winner?.full_name || highestBid.bidder_name || "Pemenang Lelang";
+    const winnerEmail = winner?.email || `auction-winner-${highestBid.id}@aksaraarthouse.local`;
+    const amount = Number(highestBid.amount);
+
+    const [order] = await supabaseFetch<AdminOrder[]>(
+      "orders",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          customer_id: winner?.id || null,
+          customer_name: winnerName,
+          customer_email: winnerEmail,
+          customer_phone: winner?.phone || null,
+          shipping_address: "Menunggu konfirmasi pemenang lelang",
+          shipping_city: "Menunggu konfirmasi",
+          shipping_postal_code: null,
+          courier: "Konfirmasi admin",
+          payment_method: "auction_invoice",
+          payment_status: "waiting_confirmation",
+          status: "pending",
+          subtotal: amount,
+          shipping_cost: 0,
+          discount_amount: 0,
+          total: amount,
+          notes: `Invoice otomatis pemenang lelang. Auction ID: ${auction.id}. Bid ID: ${highestBid.id}.`
+        })
+      },
+      { serviceRole: true }
+    );
+
+    await supabaseFetch(
+      "order_items",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          order_id: order.id,
+          artwork_id: auction.artwork_id,
+          title: auction.artworks?.title || "Karya lelang",
+          price: amount,
+          quantity: 1
+        })
+      },
+      { serviceRole: true }
+    );
+
+    await updateArtwork(auction.artwork_id, { status: "sold", stock: 0 });
+    results.push({
+      auctionId: auction.id,
+      artworkId: auction.artwork_id,
+      artworkTitle: auction.artworks?.title || auction.artwork_id,
+      winnerName,
+      winnerEmail: winner?.email || null,
+      amount,
+      order,
+      status: "sold"
+    });
+  }
+
+  return results;
+}
+
+async function getProfile(id: string): Promise<Profile | null> {
+  const [profile] = await supabaseFetch<Profile[]>(
+    `profiles?select=*&id=eq.${encodeURIComponent(id)}&limit=1`,
+    undefined,
+    { serviceRole: true }
+  );
+  return profile || null;
 }
 
 export async function getUserOrders(userId: string, email: string): Promise<AdminOrder[]> {

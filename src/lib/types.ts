@@ -45,6 +45,16 @@ export type AuctionBid = {
   created_at: string;
 };
 
+export type Profile = {
+  id: string;
+  role: "customer" | "admin";
+  full_name: string;
+  email: string;
+  phone: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export type OrderItemInput = {
   artworkId: string;
   title: string;

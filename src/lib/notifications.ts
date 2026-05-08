@@ -132,3 +132,47 @@ export async function notifyOrderUpdated(order: AdminOrder) {
     `
   });
 }
+
+export async function notifyAuctionFinalized(input: {
+  order: AdminOrder;
+  artworkTitle: string;
+  winnerEmail: string | null;
+  winnerName: string | null;
+  amount: number;
+}) {
+  const config = getEmailConfig();
+  if (!config) return;
+
+  const winnerHtml = `
+    <h2>Selamat, Anda memenangkan lelang</h2>
+    <p>Halo ${escapeHtml(input.winnerName || "Kolektor")}, Anda memenangkan lelang karya <strong>${escapeHtml(input.artworkTitle)}</strong>.</p>
+    <p><strong>Nominal akhir:</strong> ${currency.format(input.amount)}</p>
+    <p><strong>Nomor invoice:</strong> ${escapeHtml(input.order.order_number)}</p>
+    <p>Silakan lanjutkan konfirmasi pembayaran dan pengiriman dengan tim Aksara Art House.</p>
+  `;
+
+  const adminHtml = `
+    <h2>Lelang selesai dan invoice dibuat</h2>
+    <p><strong>Karya:</strong> ${escapeHtml(input.artworkTitle)}</p>
+    <p><strong>Pemenang:</strong> ${escapeHtml(input.winnerName || "-")} (${escapeHtml(input.winnerEmail || "-")})</p>
+    <p><strong>Nominal:</strong> ${currency.format(input.amount)}</p>
+    <p><strong>Nomor invoice:</strong> ${escapeHtml(input.order.order_number)}</p>
+  `;
+
+  await Promise.allSettled([
+    input.winnerEmail
+      ? sendEmail({
+          to: input.winnerEmail,
+          subject: `Anda memenangkan lelang ${input.artworkTitle} - Aksara Art House`,
+          html: winnerHtml
+        })
+      : Promise.resolve(),
+    config.adminEmail
+      ? sendEmail({
+          to: config.adminEmail,
+          subject: `Lelang selesai: ${input.artworkTitle}`,
+          html: adminHtml
+        })
+      : Promise.resolve()
+  ]);
+}
