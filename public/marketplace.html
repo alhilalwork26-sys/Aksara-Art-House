@@ -1320,6 +1320,20 @@ footer {
 .my-order-footer{display:flex;justify-content:space-between;align-items:center;margin-top:.6rem}
 .my-order-total{font-family:var(--fd);font-size:20px;font-weight:500;color:var(--terra)}
 .order-status-badge{padding:4px 12px;border-radius:999px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:1px solid}
+.invoice-wrap{padding:1.5rem 1.75rem}
+.invoice-head{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.invoice-title{font-family:var(--fd);font-size:26px;font-weight:400;color:var(--brown);line-height:1}
+.invoice-meta{font-size:12px;color:var(--muted);line-height:1.7;text-align:right}
+.invoice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-bottom:1.25rem}
+.invoice-box{border:1px solid var(--border);border-radius:6px;padding:1rem;background:var(--cream)}
+.invoice-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.45rem}
+.invoice-text{font-size:13px;color:var(--charcoal);line-height:1.7}
+.invoice-table{width:100%;border-collapse:collapse;margin:1rem 0}
+.invoice-table th{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:left;padding:.75rem 0;border-bottom:1px solid var(--border)}
+.invoice-table td{font-size:13px;color:var(--charcoal);padding:.85rem 0;border-bottom:1px solid var(--border);vertical-align:top}
+.invoice-total-row{display:flex;justify-content:space-between;align-items:center;font-family:var(--fd);font-size:22px;color:var(--terra);margin-top:1rem}
+.invoice-actions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.25rem;flex-wrap:wrap}
+@media (max-width:700px){.invoice-grid{grid-template-columns:1fr}.invoice-head{flex-direction:column}.invoice-meta{text-align:left}.my-order-footer{align-items:flex-start;flex-direction:column;gap:.75rem}}
 .osb-pending{color:#7a5a00;border-color:rgba(212,168,83,.3);background:rgba(212,168,83,.1)}
 .osb-confirmed{color:var(--terra-dark);border-color:rgba(193,113,75,.25);background:rgba(193,113,75,.1)}
 .osb-shipped{color:#1a5c8a;border-color:rgba(26,92,138,.25);background:rgba(26,92,138,.08)}
@@ -1920,6 +1934,7 @@ let state = {
   filter:'semua', sort:'newest',
   ckStep:1,
   postAuthAction:null,
+  myOrders: [],
   promo: null  // { promoCodeId, discountAmount, discountType, discountValue, code }
 };
 let timers = {};
@@ -3123,6 +3138,7 @@ async function renderMyOrders(){
     const res = await fetch('/api/orders/my');
     if(res.ok) myOrders = await res.json();
   } catch(e){}
+  state.myOrders = myOrders;
 
   if(!myOrders.length){
     body.innerHTML = `<div style="text-align:center;padding:3rem 1rem">
@@ -3158,10 +3174,93 @@ async function renderMyOrders(){
       ${trackingHtml}
       <div class="my-order-footer">
         <div>${discountHtml}<div class="my-order-total">${fmt(o.total)}</div></div>
-        <button class="btn btn-secondary btn-sm" onclick="contactAboutOrder('${o.order_number}','${(o.order_items||[]).map(i=>i.title).join(', ')}')">Tanya via WhatsApp</button>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn btn-outline btn-sm" onclick="openOrderInvoice('${o.id}')">Lihat Invoice</button>
+          <button class="btn btn-secondary btn-sm" onclick="contactAboutOrder('${o.order_number}','${(o.order_items||[]).map(i=>i.title).join(', ')}')">Tanya via WhatsApp</button>
+        </div>
       </div>
     </div>`;
   }).join('');
+}
+
+function openOrderInvoice(orderId){
+  const order = (state.myOrders||[]).find(o=>o.id===orderId);
+  if(!order){ showToast('Pesanan tidak ditemukan. Muat ulang daftar pesanan.','error'); return; }
+  const statusLabel = {pending:'Menunggu Konfirmasi',confirmed:'Dikonfirmasi',paid:'Pembayaran Diterima',packed:'Dikemas',shipped:'Sedang Dikirim',done:'Selesai',cancelled:'Dibatalkan'};
+  const paymentLabel = {unpaid:'Belum Dibayar',waiting_confirmation:'Menunggu Konfirmasi',paid:'Dibayar',failed:'Gagal',refunded:'Refund'};
+  const items = order.order_items || [];
+  const subtotal = Number(order.subtotal || items.reduce((sum,i)=>sum+Number(i.price||0)*Number(i.quantity||1),0));
+  const discount = Number(order.discount_amount || 0);
+  const total = Number(order.total || Math.max(0, subtotal - discount));
+  document.getElementById('invoice-body').innerHTML = `
+    <div class="invoice-wrap" id="invoice-print-area">
+      <div class="invoice-head">
+        <div>
+          <div class="invoice-title">Invoice</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:.4rem">Aksara Art House</div>
+        </div>
+        <div class="invoice-meta">
+          <strong style="color:var(--brown)">${escapeHtml(order.order_number || order.id)}</strong><br>
+          ${order.created_at ? new Date(order.created_at).toLocaleString('id-ID', { dateStyle:'medium', timeStyle:'short' }) : ''}<br>
+          <span class="order-status-badge ${order.status==='done'?'osb-done':order.status==='cancelled'?'osb-cancelled':order.status==='shipped'||order.status==='packed'?'osb-shipped':'osb-confirmed'}">${statusLabel[order.status]||order.status}</span>
+        </div>
+      </div>
+      <div class="invoice-grid">
+        <div class="invoice-box">
+          <div class="invoice-label">Pemesan</div>
+          <div class="invoice-text">
+            <strong>${escapeHtml(order.customer_name||'-')}</strong><br>
+            ${escapeHtml(order.customer_email||'-')}<br>
+            ${escapeHtml(order.customer_phone||'-')}
+          </div>
+        </div>
+        <div class="invoice-box">
+          <div class="invoice-label">Pengiriman</div>
+          <div class="invoice-text">
+            ${escapeHtml(order.shipping_address||'Menunggu konfirmasi')}<br>
+            ${escapeHtml(order.shipping_city||'-')} ${escapeHtml(order.shipping_postal_code||'')}<br>
+            ${escapeHtml(order.courier||'-')}
+          </div>
+        </div>
+      </div>
+      <div class="invoice-box">
+        <div class="invoice-label">Pembayaran</div>
+        <div class="invoice-text">
+          Metode: <strong>${escapeHtml(order.payment_method||'-')}</strong><br>
+          Status: <strong>${paymentLabel[order.payment_status]||escapeHtml(order.payment_status||'-')}</strong>
+          ${order.tracking_number ? `<br>Resi: <strong>${escapeHtml(order.tracking_number)}</strong>` : ''}
+          ${order.estimated_delivery ? `<br>Estimasi tiba: ${escapeHtml(order.estimated_delivery)}</span>` : ''}
+        </div>
+      </div>
+      <table class="invoice-table">
+        <thead><tr><th>Karya</th><th style="text-align:center">Qty</th><th style="text-align:right">Harga</th></tr></thead>
+        <tbody>
+          ${items.map(i=>`<tr><td>${escapeHtml(i.title)}</td><td style="text-align:center">${Number(i.quantity||1)}</td><td style="text-align:right">${fmt(Number(i.price||0)*Number(i.quantity||1))}</td></tr>`).join('')}
+        </tbody>
+      </table>
+      <div style="display:flex;flex-direction:column;gap:.35rem;font-size:13px;color:var(--muted);align-items:flex-end">
+        <div>Subtotal: <span style="color:var(--charcoal)">${fmt(subtotal)}</span></div>
+        ${discount ? `<div>Diskon: <span style="color:var(--success)">-${fmt(discount)}</span></div>` : ''}
+      </div>
+      <div class="invoice-total-row"><span>Total</span><span>${fmt(total)}</span></div>
+      ${order.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:1rem;line-height:1.6">Catatan: ${escapeHtml(order.notes)}</div>` : ''}
+    </div>
+    <div class="invoice-actions">
+      <button class="btn btn-outline btn-sm" onclick="printOrderInvoice()">Cetak Invoice</button>
+      <button class="btn btn-secondary btn-sm" onclick="contactAboutOrder('${order.order_number}','${items.map(i=>i.title).join(', ')}')">Tanya via WhatsApp</button>
+    </div>`;
+  openModal('modal-invoice');
+}
+
+function printOrderInvoice(){
+  const area = document.getElementById('invoice-print-area');
+  if(!area) return;
+  const w = window.open('', '_blank');
+  if(!w) { showToast('Pop-up diblokir browser.','error'); return; }
+  w.document.write(`<!doctype html><html><head><title>Invoice Aksara Art House</title><style>body{font-family:Arial,sans-serif;color:#3b2a22;padding:28px}.invoice-head{display:flex;justify-content:space-between;border-bottom:1px solid #ddd;padding-bottom:16px;margin-bottom:18px}.invoice-title{font-size:30px}.invoice-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.invoice-box{border:1px solid #ddd;padding:12px;margin-bottom:12px}.invoice-label{font-size:11px;text-transform:uppercase;color:#777;margin-bottom:6px}.invoice-table{width:100%;border-collapse:collapse}.invoice-table th,.invoice-table td{border-bottom:1px solid #ddd;padding:10px 0}.invoice-total-row{display:flex;justify-content:space-between;font-size:24px;margin-top:16px;color:#b35f3c}.order-status-badge{font-size:11px}</style></head><body>${area.innerHTML}</body></html>`);
+  w.document.close();
+  w.focus();
+  w.print();
 }
 
 function contactAboutOrder(orderId, items){
@@ -3183,6 +3282,17 @@ function contactAboutOrder(orderId, items){
       <button class="modal-close" onclick="closeModal('modal-myorders')">&#10005;</button>
     </div>
     <div class="modal-body" id="my-orders-body" style="padding:0"></div>
+  </div>
+</div>
+
+<!-- INVOICE MODAL -->
+<div class="modal-overlay hidden" id="modal-invoice">
+  <div class="modal-box" style="max-width:760px">
+    <div class="modal-header">
+      <h3>Detail Invoice</h3>
+      <button class="modal-close" onclick="closeModal('modal-invoice')">&#10005;</button>
+    </div>
+    <div class="modal-body" id="invoice-body" style="padding:0"></div>
   </div>
 </div>
 
