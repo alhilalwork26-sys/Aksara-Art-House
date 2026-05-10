@@ -97,6 +97,32 @@ button{cursor:pointer}
 .stat-val{font-family:var(--fd);font-size:32px;font-weight:500;color:var(--terra)}
 .stat-lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:2px}
 .stat-sub{font-size:12px;color:var(--muted);margin-top:6px}
+.stat-card.is-warn{border-color:rgba(193,113,75,.32);box-shadow:0 10px 28px rgba(193,113,75,.08)}
+.dashboard-hero{background:linear-gradient(135deg,rgba(91,62,47,.98),rgba(116,78,57,.92));border:1px solid rgba(91,62,47,.22);border-radius:8px;padding:1.45rem 1.6rem;margin-bottom:1rem;color:#fff;display:flex;align-items:flex-end;justify-content:space-between;gap:1.2rem;overflow:hidden}
+.dashboard-hero h2{font-family:var(--fd);font-size:27px;font-weight:400;margin-bottom:.35rem;color:#fff}
+.dashboard-hero p{font-size:13px;line-height:1.7;color:rgba(255,255,255,.72);max-width:620px}
+.dashboard-hero-meta{display:flex;gap:.55rem;flex-wrap:wrap;justify-content:flex-end}
+.dashboard-pill{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);border-radius:999px;padding:.45rem .75rem;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.82);white-space:nowrap}
+.dashboard-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.9fr);gap:1.25rem;align-items:start}
+.dashboard-stack{display:flex;flex-direction:column;gap:1.25rem}
+.dashboard-actions{display:flex;flex-direction:column;gap:.7rem}
+.dash-action{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:.8rem;padding:.85rem;border:1px solid var(--border);background:var(--cream);border-radius:6px}
+.dash-action-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(193,113,75,.12);color:var(--terra);font-size:17px}
+.dash-action-title{font-size:13px;font-weight:500;color:var(--brown);margin-bottom:2px}
+.dash-action-sub{font-size:11px;color:var(--muted);line-height:1.5}
+.dash-action-count{font-family:var(--fd);font-size:24px;color:var(--terra);text-align:right;min-width:32px}
+.dash-action.is-empty .dash-action-icon{background:rgba(58,107,58,.09);color:var(--success)}
+.dashboard-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.dash-mini{border:1px solid var(--border);background:var(--cream);border-radius:6px;padding:.85rem}
+.dash-mini-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.dash-mini-value{font-family:var(--fd);font-size:20px;color:var(--brown);margin-top:.3rem}
+.dash-mini-sub{font-size:11px;color:var(--muted);margin-top:.2rem;line-height:1.5}
+.dashboard-empty-row{padding:1.5rem;text-align:center;color:var(--muted);font-size:13px}
+.dash-order-cell{min-width:180px}
+.dash-order-id{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.dash-status-line{display:flex;gap:.45rem;align-items:center;flex-wrap:wrap}
+.progress-track{height:7px;border-radius:999px;background:rgba(223,214,205,.75);overflow:hidden;margin-top:.55rem}
+.progress-fill{height:100%;background:var(--terra);border-radius:999px}
 
 /* ── PANEL / CARD ── */
 .panel{background:var(--warm);border:1px solid var(--border);border-radius:8px;overflow:hidden}
@@ -199,6 +225,9 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
 /* ── RESPONSIVE ── */
 @media(max-width:900px){
   .stats-grid{grid-template-columns:1fr 1fr}
+  .dashboard-hero{align-items:flex-start;flex-direction:column}
+  .dashboard-hero-meta{justify-content:flex-start}
+  .dashboard-grid{grid-template-columns:1fr}
   #sidebar{transform:translateX(-100%)}
   #sidebar.open{transform:translateX(0)}
   #main{margin-left:0}
@@ -488,25 +517,52 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
 
     <!-- ═══ DASHBOARD ═══ -->
     <div id="section-dashboard" class="tab-panel active">
+      <div class="dashboard-hero" id="dashboard-hero"></div>
       <div class="stats-grid" id="stats-grid"></div>
-      <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:1.5rem">
-        <div class="panel">
-          <div class="panel-head">
-            <h3>Karya Terbaru</h3>
-            <button class="btn btn-ghost btn-sm" onclick="showSection('artworks',document.querySelector('[data-section=artworks]'))">Lihat Semua</button>
+      <div class="dashboard-grid">
+        <div class="dashboard-stack">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Pesanan Terbaru</h3>
+              <button class="btn btn-ghost btn-sm" onclick="showSection('orders',document.querySelector('[data-section=orders]'))">Lihat Semua</button>
+            </div>
+            <div class="panel-body" style="padding:0">
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Pesanan</th><th>Pemesan</th><th>Total</th><th>Status</th></tr></thead>
+                  <tbody id="dash-orders-tbody"></tbody>
+                </table>
+              </div>
+            </div>
           </div>
-          <div class="panel-body" style="padding:0">
-            <div class="table-wrap">
-              <table id="dash-artworks-table">
-                <thead><tr><th></th><th>Judul</th><th>Harga</th><th>Status</th></tr></thead>
-                <tbody id="dash-artworks-tbody"></tbody>
-              </table>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Karya Terbaru</h3>
+              <button class="btn btn-ghost btn-sm" onclick="showSection('artworks',document.querySelector('[data-section=artworks]'))">Lihat Semua</button>
+            </div>
+            <div class="panel-body" style="padding:0">
+              <div class="table-wrap">
+                <table id="dash-artworks-table">
+                  <thead><tr><th></th><th>Judul</th><th>Harga</th><th>Status</th></tr></thead>
+                  <tbody id="dash-artworks-tbody"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
-        <div class="panel">
-          <div class="panel-head"><h3>Ringkasan</h3></div>
-          <div class="panel-body" id="dash-summary"></div>
+        <div class="dashboard-stack">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Perlu Tindakan</h3>
+              <button class="btn btn-ghost btn-sm" onclick="showSection('orders',document.querySelector('[data-section=orders]'))">Buka Pesanan</button>
+            </div>
+            <div class="panel-body" id="dash-actions"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Lelang & Stok</h3></div>
+            <div class="panel-body" id="dash-summary"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1013,58 +1069,133 @@ function renderDashboard() {
   const paintings = loadPaintings();
   const orders = loadOrders();
   const auctions = loadAuctions();
+  const promos = Array.isArray(_promos) ? _promos : [];
+  const reviews = Array.isArray(_reviews) ? _reviews : [];
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
 
   const total = paintings.length;
   const avail = paintings.filter(p=>p.status==='tersedia').length;
   const sold = paintings.filter(p=>p.status==='terjual').length;
-  const pendingOrders = orders.filter(o=>o.status==='pending').length;
-  const revenue = orders.filter(o=>o.status!=='cancelled').reduce((s,o)=>s+o.total,0);
+  const auctionArtworkCount = paintings.filter(p=>p.status==='lelang').length;
+  const pendingOrders = orders.filter(o=>o.status==='pending');
+  const waitingPayment = orders.filter(o=>['waiting_confirmation','pending','unpaid'].includes(o.paymentStatus || 'waiting_confirmation'));
+  const paidNeedShipping = orders.filter(o=>['paid','processing','packed'].includes(o.status) && !(o.trackingNumber || o.tracking_number));
+  const activeAuctions = auctions.filter(a=>a.status==='active');
+  const endingSoon = activeAuctions.filter(a => {
+    const end = new Date(a.endsAt).getTime();
+    return Number.isFinite(end) && end >= now && end - now <= day;
+  });
+  const pendingReviews = reviews.filter(r=>!r.is_approved);
+  const activePromos = promos.filter(p=>p.is_active !== false);
+  const revenue = orders.filter(o=>o.status!=='cancelled').reduce((s,o)=>s+Number(o.total||0),0);
+  const availableValue = paintings.filter(p=>p.status==='tersedia').reduce((s,p)=>s+Number(p.price||0),0);
   const prices = paintings.map(p=>Number(p.price)||0).filter(Boolean);
+  const syncDate = new Date().toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const getTime = value => {
+    const t = new Date(value || 0).getTime();
+    return Number.isFinite(t) ? t : 0;
+  };
 
-  document.getElementById('stats-grid').innerHTML = `
-    <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Total Karya</div><div class="stat-sub">${avail} tersedia · ${sold} terjual</div></div>
-    <div class="stat-card"><div class="stat-val">${orders.length}</div><div class="stat-lbl">Total Pesanan</div><div class="stat-sub">${pendingOrders} menunggu konfirmasi</div></div>
-    <div class="stat-card"><div class="stat-val">${auctions.length}</div><div class="stat-lbl">Lelang Aktif</div><div class="stat-sub">Dari ${paintings.filter(p=>p.status==='lelang').length} karya lelang</div></div>
-    <div class="stat-card"><div class="stat-val" style="font-size:20px">${revenue>0?fmt(revenue):'Rp 0'}</div><div class="stat-lbl">Total Pendapatan</div><div class="stat-sub">Dari pesanan masuk</div></div>
+  document.getElementById('dashboard-hero').innerHTML = `
+    <div>
+      <h2>Dashboard Operasional</h2>
+      <p>Pantau pekerjaan harian Aksara Art House dari satu layar: pesanan masuk, pembayaran yang perlu dicek, lelang aktif, dan kondisi koleksi marketplace.</p>
+    </div>
+    <div class="dashboard-hero-meta">
+      <span class="dashboard-pill">${escapeHtml(syncDate)}</span>
+      <span class="dashboard-pill">${pendingOrders.length + waitingPayment.length + endingSoon.length} prioritas</span>
+    </div>
   `;
 
-  // Recent artworks
-  const recent = [...paintings].sort((a,b)=>b.id-a.id).slice(0,5);
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Total Karya</div><div class="stat-sub">${avail} tersedia · ${sold} terjual · ${auctionArtworkCount} lelang</div></div>
+    <div class="stat-card ${pendingOrders.length ? 'is-warn' : ''}"><div class="stat-val">${orders.length}</div><div class="stat-lbl">Total Pesanan</div><div class="stat-sub">${pendingOrders.length} pesanan baru perlu diproses</div></div>
+    <div class="stat-card ${endingSoon.length ? 'is-warn' : ''}"><div class="stat-val">${activeAuctions.length}</div><div class="stat-lbl">Lelang Aktif</div><div class="stat-sub">${endingSoon.length} lelang selesai dalam 24 jam</div></div>
+    <div class="stat-card"><div class="stat-val" style="font-size:20px">${revenue>0?fmt(revenue):'Rp 0'}</div><div class="stat-lbl">Omzet Order</div><div class="stat-sub">Nilai karya tersedia ${fmt(availableValue)}</div></div>
+  `;
+
+  const recentOrders = [...orders].sort((a,b)=>getTime(b.created_at || b.date)-getTime(a.created_at || a.date)).slice(0,5);
+  document.getElementById('dash-orders-tbody').innerHTML = recentOrders.length ? recentOrders.map(o => `
+    <tr>
+      <td class="dash-order-cell">
+        <div class="dash-order-id">${escapeHtml(o.order_number || o.id || '-')}</div>
+        <div class="td-meta">${escapeHtml(o.date || '')}</div>
+      </td>
+      <td><div class="td-title">${escapeHtml(o.name || 'Kolektor Aksara')}</div><div class="td-meta">${escapeHtml(o.wa || o.email || '-')}</div></td>
+      <td>${fmt(o.total || 0)}</td>
+      <td><div class="dash-status-line">${orderStatusChip(o.status)}<span class="td-meta">${escapeHtml(o.paymentStatus || 'waiting_confirmation')}</span></div></td>
+    </tr>
+  `).join('') : `<tr><td colspan="4"><div class="dashboard-empty-row">Belum ada pesanan masuk.</div></td></tr>`;
+
+  const recent = paintings.slice(0,5);
   function dashThumb(p){
     const imageUrl = p.image_url || p.image;
-    return imageUrl ? `<img src="${imageUrl}" style="width:48px;height:60px;object-fit:cover;border-radius:3px;border:1px solid var(--border)">` : paintingSVG(p,48,60);
+    return imageUrl ? `<img src="${escapeHtml(imageUrl)}" style="width:48px;height:60px;object-fit:cover;border-radius:3px;border:1px solid var(--border)">` : paintingSVG(p,48,60);
   }
-  document.getElementById('dash-artworks-tbody').innerHTML = recent.map(p => `
+  document.getElementById('dash-artworks-tbody').innerHTML = recent.length ? recent.map(p => `
     <tr>
       <td><div class="painting-thumb">${dashThumb(p)}</div></td>
-      <td><div class="td-title">${p.title}</div><div class="td-meta">${p.artist} · ${p.year}</div></td>
+      <td><div class="td-title">${escapeHtml(p.title)}</div><div class="td-meta">${escapeHtml(p.artist)} · ${escapeHtml(p.year)}</div></td>
       <td>${fmt(p.price)}</td>
       <td>${statusChip(p.status)}</td>
     </tr>
-  `).join('');
+  `).join('') : `<tr><td colspan="4"><div class="dashboard-empty-row">Belum ada karya di database.</div></td></tr>`;
 
-  // Summary
+  const actions = [
+    { icon:'📦', title:'Pesanan baru', sub:'Butuh konfirmasi dan pemrosesan admin.', count:pendingOrders.length, section:'orders' },
+    { icon:'💳', title:'Pembayaran menunggu cek', sub:'Cek bukti transfer atau status pembayaran.', count:waitingPayment.length, section:'orders' },
+    { icon:'🚚', title:'Perlu nomor resi', sub:'Order lunas yang belum punya info pengiriman.', count:paidNeedShipping.length, section:'orders' },
+    { icon:'🔨', title:'Lelang hampir selesai', sub:'Siapkan penutupan lelang dan invoice pemenang.', count:endingSoon.length, section:'auctions' },
+    { icon:'⭐', title:'Ulasan menunggu moderasi', sub:'Setujui ulasan yang layak tampil di marketplace.', count:pendingReviews.length, section:'reviews' }
+  ];
+  const actionHtml = actions.map(a => `
+    <div class="dash-action ${a.count ? '' : 'is-empty'}" onclick="showSection('${a.section}',document.querySelector('[data-section=${a.section}]'))" style="cursor:pointer">
+      <div class="dash-action-icon">${a.icon}</div>
+      <div>
+        <div class="dash-action-title">${escapeHtml(a.title)}</div>
+        <div class="dash-action-sub">${escapeHtml(a.count ? a.sub : 'Aman untuk saat ini.')}</div>
+      </div>
+      <div class="dash-action-count">${a.count}</div>
+    </div>
+  `).join('');
+  document.getElementById('dash-actions').innerHTML = `<div class="dashboard-actions">${actionHtml}</div>`;
+
+  const availablePct = total ? Math.round((avail / total) * 100) : 0;
+  const auctionWithBid = activeAuctions.filter(a=>Number(a.currentBid || 0) > 0).length;
   document.getElementById('dash-summary').innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:.9rem">
-      <div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:.75rem;border-bottom:1px solid var(--border)">
-        <span style="color:var(--muted)">Abstrak</span>
-        <strong style="color:var(--brown)">${paintings.filter(p=>p.cat==='abstrak').length} karya</strong>
+    <div class="dashboard-mini-grid">
+      <div class="dash-mini">
+        <div class="dash-mini-label">Karya Tersedia</div>
+        <div class="dash-mini-value">${avail}/${total}</div>
+        <div class="progress-track"><div class="progress-fill" style="width:${availablePct}%"></div></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:.75rem;border-bottom:1px solid var(--border)">
-        <span style="color:var(--muted)">Figuratif</span>
-        <strong style="color:var(--brown)">${paintings.filter(p=>p.cat==='figuratif').length} karya</strong>
+      <div class="dash-mini">
+        <div class="dash-mini-label">Promo Aktif</div>
+        <div class="dash-mini-value">${activePromos.length}</div>
+        <div class="dash-mini-sub">Kode siap dipakai pembeli.</div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:.75rem;border-bottom:1px solid var(--border)">
-        <span style="color:var(--muted)">Landscape</span>
-        <strong style="color:var(--brown)">${paintings.filter(p=>p.cat==='landscape').length} karya</strong>
+      <div class="dash-mini">
+        <div class="dash-mini-label">Bid Berjalan</div>
+        <div class="dash-mini-value">${auctionWithBid}</div>
+        <div class="dash-mini-sub">Lelang aktif yang sudah punya bid.</div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:.75rem;border-bottom:1px solid var(--border)">
-        <span style="color:var(--muted)">Harga Tertinggi</span>
-        <strong style="color:var(--terra)">${prices.length ? fmt(Math.max(...prices)) : 'Rp 0'}</strong>
+      <div class="dash-mini">
+        <div class="dash-mini-label">Harga Tertinggi</div>
+        <div class="dash-mini-value" style="font-size:17px">${prices.length ? fmt(Math.max(...prices)) : 'Rp 0'}</div>
+        <div class="dash-mini-sub">Harga terendah ${prices.length ? fmt(Math.min(...prices)) : 'Rp 0'}.</div>
       </div>
+    </div>
+    <div style="margin-top:1rem;display:flex;flex-direction:column;gap:.7rem">
+      ${['abstrak','figuratif','landscape'].map(cat => `
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:.65rem;border-bottom:1px solid var(--border)">
+          <span style="color:var(--muted);text-transform:capitalize">${cat}</span>
+          <strong style="color:var(--brown)">${paintings.filter(p=>p.cat===cat).length} karya</strong>
+        </div>
+      `).join('')}
       <div style="display:flex;justify-content:space-between;font-size:13px">
-        <span style="color:var(--muted)">Harga Terendah</span>
-        <strong style="color:var(--terra)">${prices.length ? fmt(Math.min(...prices)) : 'Rp 0'}</strong>
+        <span style="color:var(--muted)">Nilai stok tersedia</span>
+        <strong style="color:var(--terra)">${fmt(availableValue)}</strong>
       </div>
     </div>
   `;
