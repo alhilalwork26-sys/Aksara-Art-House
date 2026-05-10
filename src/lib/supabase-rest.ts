@@ -314,7 +314,9 @@ export async function placeAuctionBid(input: {
   if (!auction) throw new Error("Lelang tidak ditemukan.");
   if (auction.status !== "active") throw new Error("Lelang ini tidak aktif.");
   if (auction.artworks?.status !== "auction") throw new Error("Karya ini tidak sedang dilelang.");
-  if (new Date(auction.ends_at).getTime() <= Date.now()) throw new Error("Waktu lelang sudah berakhir.");
+  const now = Date.now();
+  if (new Date(auction.starts_at).getTime() > now) throw new Error("Lelang belum dimulai.");
+  if (new Date(auction.ends_at).getTime() <= now) throw new Error("Waktu lelang sudah berakhir.");
 
   const [highestBid] = await supabaseFetch<AuctionBid[]>(
     `auction_bids?select=*&auction_id=eq.${encodeURIComponent(input.auctionId)}&order=amount.desc,created_at.desc&limit=1`,

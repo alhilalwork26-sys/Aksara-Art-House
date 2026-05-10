@@ -369,7 +369,7 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
           <input type="file" id="art-image-input" accept="image/*" style="display:none" onchange="handleImageUpload(event)">
           <div id="img-upload-preview-wrap">
             <div class="img-upload-icon">🖼️</div>
-            <div class="img-upload-lbl">Klik untuk upload foto karya<br><span style="font-size:11px;opacity:.7">JPG, PNG, WEBP — maks 3MB</span></div>
+            <div class="img-upload-lbl">Klik untuk upload foto karya<br><span style="font-size:11px;opacity:.7">JPG, PNG, WEBP — maks 5MB</span></div>
           </div>
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:5px">Foto disimpan ke Supabase Storage, database hanya menyimpan URL gambar.</div>
@@ -430,13 +430,9 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
         <label>Nomor WhatsApp Studio (format: 6281...)</label>
         <input type="text" id="set-wa" placeholder="6281234567890">
       </div>
-      <div class="form-group">
-        <label>Ganti Password Admin</label>
-        <input type="password" id="set-pass-new" placeholder="Password baru (kosongkan jika tidak ganti)">
-      </div>
-      <div class="form-group">
-        <label>Username Admin</label>
-        <input type="text" id="set-uname" placeholder="admin">
+      <div style="background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:1rem;margin-top:.5rem">
+        <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.45rem">Login Admin</div>
+        <div style="font-size:13px;color:var(--charcoal);line-height:1.7">Username dan password admin disimpan sebagai Environment Variables di Vercel, bukan di browser. Ini lebih aman untuk production.</div>
       </div>
       <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:.5rem">
         <div style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Berbagi data dengan halaman user melalui database Supabase.</div>
@@ -637,8 +633,9 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
           <div style="font-size:13px;color:var(--muted);line-height:1.9">
             <p style="margin-bottom:.75rem">1. Buka <strong style="color:var(--brown)">Kelola Karya</strong> dan edit karya yang ingin dilelang.</p>
             <p style="margin-bottom:.75rem">2. Ubah <strong style="color:var(--brown)">Status</strong> karya menjadi <span class="chip chip-auction">Lelang</span> lalu simpan.</p>
-            <p style="margin-bottom:.75rem">3. Karya akan otomatis muncul di halaman lelang user dengan harga awal = harga karya dikurangi 1 step minimum.</p>
-            <p>4. Ubah kembali status ke <span class="chip chip-avail">Tersedia</span> atau <span class="chip chip-sold">Terjual</span> untuk mengakhiri lelang.</p>
+            <p style="margin-bottom:.75rem">3. Setelah karya muncul di daftar ini, atur harga awal, minimum kenaikan, tanggal mulai, dan tanggal akhir.</p>
+            <p style="margin-bottom:.75rem">4. Riwayat bidder tampil di setiap kartu lelang untuk memudahkan pengecekan.</p>
+            <p>5. Tekan <strong style="color:var(--brown)">Akhiri Lelang</strong> untuk menutup lelang, memilih bid tertinggi, dan membuat invoice otomatis.</p>
           </div>
         </div>
       </div>
@@ -1668,28 +1665,53 @@ async function renderAuctionsAdmin(forceRefresh = false) {
     if(!p) return '';
     const ended = new Date(a.endsAt).getTime() <= Date.now();
     const editable = a.status === 'active' || a.status === 'scheduled';
+    const bids = Array.isArray(a.bids) ? a.bids : [];
+    const bidHistory = bids.length ? `
+      <details style="margin-top:.7rem">
+        <summary style="font-size:12px;color:var(--terra);cursor:pointer;letter-spacing:.04em">Lihat ${bids.length} riwayat bid</summary>
+        <div style="margin-top:.55rem;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--warm)">
+          ${bids.map((b, idx)=>`
+            <div style="display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:.65rem;align-items:center;padding:.6rem .7rem;border-bottom:${idx === bids.length-1 ? 'none' : '1px solid var(--border)'}">
+              <div style="font-size:11px;color:var(--muted)">#${idx+1}</div>
+              <div>
+                <div style="font-size:13px;color:var(--brown);font-weight:500">${escapeHtml(b.name || 'Bidder')}</div>
+                <div style="font-size:11px;color:var(--muted)">${escapeHtml(b.ago || '')}</div>
+              </div>
+              <div style="font-size:13px;color:var(--terra);font-weight:500">${fmt(b.amount || 0)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </details>
+    ` : '<div style="margin-top:.55rem;font-size:12px;color:var(--muted)">Belum ada bid masuk.</div>';
+    const thumb = (p.image_url || p.image)
+      ? `<img src="${escapeHtml(p.image_url || p.image)}" style="width:50px;height:64px;object-fit:cover;display:block" alt="${escapeHtml(p.title)}">`
+      : paintingSVG(p,50,64);
     return `<div class="auction-manage-item">
-      <div class="painting-thumb" style="width:50px;height:64px">${paintingSVG(p,50,64)}</div>
+      <div class="painting-thumb" style="width:50px;height:64px">${thumb}</div>
       <div class="auction-manage-info">
         <div class="auction-manage-title">${escapeHtml(p.title)} ${auctionStatusChip(a.status, ended)}</div>
-        <div class="auction-manage-meta">${escapeHtml(p.medium)} · ${p.year} · ${(a.bids||[]).length} penawaran · selesai ${formatDateTime(a.endsAt)}</div>
+        <div class="auction-manage-meta">${escapeHtml(p.medium)} · ${p.year} · ${bids.length} penawaran · mulai ${formatDateTime(a.startsAt)} · selesai ${formatDateTime(a.endsAt)}</div>
         <div class="auction-price">Bid tertinggi: ${fmt(a.currentBid)} (min +${fmt(a.minStep)})</div>
-        <div style="display:grid;grid-template-columns:repeat(2,minmax(160px,1fr));gap:.6rem;margin-top:.75rem;max-width:560px">
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(160px,1fr));gap:.6rem;margin-top:.75rem;max-width:720px">
+          <label style="font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Harga awal
+            <input id="auc-start-bid-${a.id}" type="number" min="0" step="100000" value="${a.startBid}" ${editable && !bids.length?'':'disabled'} style="margin-top:.25rem;width:100%;padding:.55rem;border:1px solid var(--border);border-radius:4px">
+          </label>
           <label style="font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Minimum kenaikan
             <input id="auc-step-${a.id}" type="number" min="10000" step="10000" value="${a.minStep}" ${editable?'':'disabled'} style="margin-top:.25rem;width:100%;padding:.55rem;border:1px solid var(--border);border-radius:4px">
+          </label>
+          <label style="font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Mulai
+            <input id="auc-start-${a.id}" type="datetime-local" value="${toDateTimeLocal(a.startsAt)}" ${editable?'':'disabled'} style="margin-top:.25rem;width:100%;padding:.55rem;border:1px solid var(--border);border-radius:4px">
           </label>
           <label style="font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Berakhir
             <input id="auc-end-${a.id}" type="datetime-local" value="${toDateTimeLocal(a.endsAt)}" ${editable?'':'disabled'} style="margin-top:.25rem;width:100%;padding:.55rem;border:1px solid var(--border);border-radius:4px">
           </label>
         </div>
-        <div style="margin-top:.45rem;font-size:12px;color:var(--muted);line-height:1.7">
-          ${(a.bids||[]).slice(0,3).map(b=>`${escapeHtml(b.name)} · ${fmt(b.amount)} · ${escapeHtml(b.ago)}`).join('<br>') || 'Belum ada bid masuk'}
-        </div>
+        ${bidHistory}
       </div>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end">
         <button class="btn btn-secondary btn-sm" onclick="editArtwork('${p.id}')">Edit Karya</button>
         ${editable ? `<button class="btn btn-secondary btn-sm" onclick="saveAuctionSettings('${a.id}')">Simpan Lelang</button>` : ''}
-        ${editable ? `<button class="btn btn-primary btn-sm" onclick="finalizeAuctionAdmin('${a.id}')">Finalisasi</button>` : ''}
+        ${editable ? `<button class="btn btn-primary btn-sm" onclick="finalizeAuctionAdmin('${a.id}')">Akhiri Lelang</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -1720,15 +1742,33 @@ function formatDateTime(value) {
 }
 
 async function saveAuctionSettings(id) {
+  const auction = loadAuctions().find(a=>a.id===id);
+  const bids = auction?.bids || [];
+  const startBid = Number(document.getElementById('auc-start-bid-'+id)?.value || 0);
   const step = Number(document.getElementById('auc-step-'+id)?.value || 0);
+  const startValue = document.getElementById('auc-start-'+id)?.value;
   const endValue = document.getElementById('auc-end-'+id)?.value;
+  if(startBid < 0) { showToast('Harga awal tidak boleh minus', 'error'); return; }
   if(!step || step < 10000) { showToast('Minimum kenaikan bid minimal Rp 10.000', 'error'); return; }
+  if(!startValue) { showToast('Waktu mulai lelang wajib diisi', 'error'); return; }
   if(!endValue) { showToast('Waktu selesai lelang wajib diisi', 'error'); return; }
+  const startsAt = new Date(startValue);
+  const endsAt = new Date(endValue);
+  if(Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) { showToast('Tanggal lelang tidak valid', 'error'); return; }
+  if(endsAt <= startsAt) { showToast('Waktu selesai harus setelah waktu mulai', 'error'); return; }
+  const payload = {
+    start_bid: startBid,
+    min_step: step,
+    starts_at: startsAt.toISOString(),
+    ends_at: endsAt.toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  if(!bids.length) payload.current_bid = startBid;
   try {
     const res = await fetch('/api/admin/auctions/' + id, {
       method: 'PATCH',
       headers: adminHeaders(),
-      body: JSON.stringify({ min_step: step, ends_at: new Date(endValue).toISOString(), updated_at: new Date().toISOString() })
+      body: JSON.stringify(payload)
     });
     const data = await res.json().catch(()=>({}));
     if(!res.ok) throw new Error(data.error || 'Gagal menyimpan lelang.');
@@ -1765,8 +1805,6 @@ function openSettings() {
   const s = loadSettings();
   document.getElementById('set-studio').value = s.studioName || '';
   document.getElementById('set-wa').value = s.wa || '';
-  document.getElementById('set-uname').value = s.adminUser || 'admin';
-  document.getElementById('set-pass-new').value = '';
   openModal('modal-settings');
 }
 
@@ -1774,9 +1812,6 @@ async function saveSettings() {
   const s = loadSettings();
   s.studioName = document.getElementById('set-studio').value.trim() || s.studioName;
   s.wa = document.getElementById('set-wa').value.trim() || s.wa;
-  s.adminUser = document.getElementById('set-uname').value.trim() || s.adminUser;
-  const newPass = document.getElementById('set-pass-new').value;
-  if(newPass) s.adminPass = newPass;
   try {
     await saveSettingsData(s);
     closeModal('modal-settings');
@@ -1811,6 +1846,11 @@ let _currentImageBase64 = null;
 async function handleImageUpload(event) {
   const file = event.target.files[0];
   if(!file) return;
+  if(location.protocol === 'file:') {
+    showToast('Upload Supabase hanya berjalan jika admin dibuka lewat /admin, bukan file lokal.', 'error');
+    loadArtworkImagePreview({ image_url: _currentImageBase64 });
+    return;
+  }
   if(file.size > 5 * 1024 * 1024) {
     showToast('Ukuran file maks 5MB', 'error');
     return;
@@ -1842,7 +1882,7 @@ function loadArtworkImagePreview(artwork) {
   if(_currentImageBase64) {
     wrap.innerHTML = `<img src="${_currentImageBase64}" class="img-preview" alt="preview"><div style="font-size:11px;color:var(--muted);margin-top:5px;text-align:center">Foto sudah ada — klik untuk ganti</div>`;
   } else {
-    wrap.innerHTML = `<div class="img-upload-icon">🖼️</div><div class="img-upload-lbl">Klik untuk upload foto karya<br><span style="font-size:11px;opacity:.7">JPG, PNG, WEBP — maks 3MB</span></div>`;
+    wrap.innerHTML = `<div class="img-upload-icon">🖼️</div><div class="img-upload-lbl">Klik untuk upload foto karya<br><span style="font-size:11px;opacity:.7">JPG, PNG, WEBP — maks 5MB</span></div>`;
   }
   // Reset file input
   const inp = document.getElementById('art-image-input');
@@ -2001,16 +2041,29 @@ async function saveOrderShipping(id) {
   const tracking_number = document.getElementById('tracking-input')?.value.trim() || '';
   const estimated_delivery = document.getElementById('delivery-input')?.value || null;
   const shipping_notes = document.getElementById('shipping-notes-input')?.value.trim() || '';
+  const currentOrder = loadOrders().find(x=>x.id===id);
+  const payload = { tracking_number, estimated_delivery: estimated_delivery || null, shipping_notes };
+  if(tracking_number && currentOrder && !['shipped','done','cancelled'].includes(currentOrder.status)) {
+    payload.status = 'shipped';
+  }
   try {
     const res = await fetch('/api/admin/orders/' + id, {
       method:'PATCH', headers: adminHeaders(),
-      body: JSON.stringify({ tracking_number, estimated_delivery: estimated_delivery || null, shipping_notes })
+      body: JSON.stringify(payload)
     });
     if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal menyimpan.'); }
     const orders = loadOrders();
     const o = orders.find(x=>x.id===id);
-    if(o){ o.trackingNumber=tracking_number; o.estimatedDelivery=estimated_delivery; o.shippingNotes=shipping_notes; }
-    showToast('Info resi disimpan ✓', 'success');
+    if(o){
+      o.trackingNumber=tracking_number;
+      o.estimatedDelivery=estimated_delivery;
+      o.shippingNotes=shipping_notes;
+      if(payload.status) o.status = payload.status;
+    }
+    renderOrders();
+    renderDashboard();
+    if(o) viewOrder(id);
+    showToast(tracking_number ? 'Info resi disimpan dan status dikirim ✓' : 'Info pengiriman disimpan ✓', 'success');
   } catch(e) { showToast(e.message, 'error'); }
 }
 
