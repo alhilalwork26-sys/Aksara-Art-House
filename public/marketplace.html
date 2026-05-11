@@ -920,6 +920,33 @@ button { cursor:pointer; }
 .step-item.active .step-name { color:var(--terra); }
 .checkout-panel { display:none; }
 .checkout-panel.active { display:block; }
+.qris-payment-card {
+  display:grid; grid-template-columns:minmax(150px,220px) 1fr;
+  gap:1rem; align-items:center;
+  background:var(--warm); border:1px solid var(--border);
+  border-radius:8px; padding:1rem; margin-top:.9rem;
+}
+.qris-frame {
+  background:#f6f6f6; border:1px solid rgba(0,0,0,.08);
+  border-radius:8px; padding:.65rem; box-shadow:0 10px 28px rgba(44,35,32,.1);
+}
+.qris-frame img {
+  width:100%; aspect-ratio:1/1; object-fit:contain;
+  display:block; border-radius:6px; background:#fff;
+}
+.qris-copy-title {
+  font-family:var(--fd); font-size:20px; color:var(--brown); margin-bottom:.35rem;
+}
+.qris-copy {
+  font-size:12px; color:var(--muted); line-height:1.8;
+}
+.qris-missing {
+  display:none; font-size:11px; color:var(--danger); margin-top:.4rem;
+}
+@media(max-width:600px){
+  .qris-payment-card { grid-template-columns:1fr; }
+  .qris-frame { max-width:240px; margin:0 auto; }
+}
 .order-summary-item {
   display:flex; justify-content:space-between;
   padding:8px 0; font-size:13px;
@@ -2905,6 +2932,27 @@ function paymentInstructionHTML(method){
     dp:'DP 50%',
     auction_invoice:'Invoice Lelang'
   }[method] || 'Pembayaran';
+  if(method === 'qris') {
+    return `
+      <strong>QRIS Aksara Art House</strong><br>
+      Scan QRIS di bawah, lalu upload bukti pembayaran agar admin bisa memverifikasi lebih cepat.
+      <div class="qris-payment-card">
+        <div>
+          <div class="qris-frame">
+            <img src="/qris-aksara.png" alt="QRIS Aksara Art House" onerror="this.style.display='none';this.parentElement.nextElementSibling.style.display='block'">
+          </div>
+          <div class="qris-missing">File QRIS belum tersedia di server.</div>
+        </div>
+        <div>
+          <div class="qris-copy-title">Bayar dengan QRIS</div>
+          <div class="qris-copy">
+            Pastikan nama merchant dan nominal sudah sesuai sebelum menyelesaikan pembayaran.
+            Setelah membayar, simpan screenshot bukti transaksi lalu upload di kolom bukti pembayaran.
+          </div>
+        </div>
+      </div>
+    `;
+  }
   const copy = {
     transfer:'Transfer ke rekening resmi Aksara Art House. Admin akan mengirim detail rekening melalui WhatsApp setelah pesanan dibuat. Upload bukti transfer agar verifikasi lebih cepat.',
     qris:'Admin akan mengirim QRIS resmi melalui WhatsApp. Setelah membayar, upload bukti QRIS atau tulis catatan pembayaran.',
