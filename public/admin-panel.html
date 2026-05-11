@@ -741,7 +741,13 @@ const linkifyText = value => escapeHtml(value).replace(/https?:\/\/[^\s<]+/g, ur
 const extractFirstUrl = value => String(value || '').match(/https?:\/\/[^\s]+/)?.[0] || '';
 function paymentProofPreviewHTML(notes) {
   const url = extractFirstUrl(notes);
-  if(!url) return '';
+  if(!url) {
+    return `
+      <div style="margin-top:.8rem;border:1px dashed var(--border);background:rgba(247,243,238,.65);border-radius:6px;padding:.85rem">
+        <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem">Preview Bukti Pembayaran</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.7">Belum ada file bukti pembayaran yang diupload user.</div>
+      </div>`;
+  }
   const cleanUrl = escapeHtml(url);
   const isImage = /\.(png|jpe?g|webp)(\?|#|$)/i.test(url);
   const preview = isImage
