@@ -796,17 +796,22 @@ async function fetchAllFromDB() {
 }
 
 function normalizeArtworks(rows) {
-  return (Array.isArray(rows) ? rows : []).map(a => ({
-    id: a.id, title: a.title, artist: a.artist,
-    cat: a.category,
-    status: a.status === 'available' ? 'tersedia' : a.status === 'auction' ? 'lelang' : a.status === 'sold' ? 'terjual' : a.status,
-    medium: a.medium, year: a.year, price: a.price, p: a.width_cm,
-    t: a.height_cm, l: a.width_cm, k: a.depth_cm || 3, stock: a.stock ?? 1,
-    desc: a.description, image_url: a.image_url,
-    colors: a.colors || paletteByCategory(a.category),
-    tags: a.tags || buildTags({cat:a.category, medium:a.medium, year:a.year}),
-    featured: a.is_featured
-  }));
+  return (Array.isArray(rows) ? rows : []).map(a => {
+    const stock = Number(a.stock ?? 1);
+    let status = a.status === 'available' ? 'tersedia' : a.status === 'auction' ? 'lelang' : a.status === 'sold' ? 'terjual' : a.status;
+    if(status === 'tersedia' && stock <= 0) status = 'terjual';
+    return {
+      id: a.id, title: a.title, artist: a.artist,
+      cat: a.category,
+      status,
+      medium: a.medium, year: a.year, price: a.price, p: a.width_cm,
+      t: a.height_cm, l: a.width_cm, k: a.depth_cm || 3, stock: Number.isFinite(stock) ? stock : 1,
+      desc: a.description, image_url: a.image_url,
+      colors: a.colors || paletteByCategory(a.category),
+      tags: a.tags || buildTags({cat:a.category, medium:a.medium, year:a.year}),
+      featured: a.is_featured
+    };
+  });
 }
 
 function normalizeAuctions(rows) {
@@ -1258,8 +1263,8 @@ async function renderArtworksTable(forceRefresh = false) {
   if(countLabel) countLabel.textContent = `(${list.length} karya)`;
 
   function thumbHTML(p) {
-    if(p.image_url) return `<img src="${p.image_url}" style="width:48px;height:60px;object-fit:cover;border-radius:3px;border:1px solid var(--border);display:block" alt="${p.title}">`;
-    if(p.image) return `<img src="${p.image}" style="width:48px;height:60px;object-fit:cover;border-radius:3px;border:1px solid var(--border);display:block" alt="${p.title}">`;
+    if(p.image_url) return `<img src="${escapeHtml(p.image_url)}" style="width:48px;height:60px;object-fit:cover;border-radius:3px;border:1px solid var(--border);display:block" alt="${escapeHtml(p.title)}">`;
+    if(p.image) return `<img src="${escapeHtml(p.image)}" style="width:48px;height:60px;object-fit:cover;border-radius:3px;border:1px solid var(--border);display:block" alt="${escapeHtml(p.title)}">`;
     return paintingSVG(p,48,60);
   }
 
@@ -1267,10 +1272,10 @@ async function renderArtworksTable(forceRefresh = false) {
     <tr>
       <td><div class="painting-thumb">${thumbHTML(p)}</div></td>
       <td>
-        <div class="td-title">${p.title}</div>
-        <div class="td-meta">${p.artist} · ${p.year} · Stok ${p.stock ?? 1}</div>
+        <div class="td-title">${escapeHtml(p.title)}</div>
+        <div class="td-meta">${escapeHtml(p.artist)} · ${escapeHtml(p.year)} · Stok ${escapeHtml(p.stock ?? 1)}</div>
       </td>
-      <td><div style="font-size:13px">${p.medium}</div><div class="td-meta">${p.t||'-'}×${p.l||p.p||'-'}×${p.k||'-'} cm</div></td>
+      <td><div style="font-size:13px">${escapeHtml(p.medium)}</div><div class="td-meta">${escapeHtml(p.t||'-')}×${escapeHtml(p.l||p.p||'-')}×${escapeHtml(p.k||'-')} cm</div></td>
       <td><strong style="color:var(--terra)">${fmt(p.price)}</strong></td>
       <td>${statusChip(p.status)}</td>
       <td>

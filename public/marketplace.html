@@ -1991,18 +1991,23 @@ async function fetchPaintingsFromDB(){
     if(!res.ok) return;
     const rows = await res.json();
     if(!Array.isArray(rows)) return;
-    PAINTINGS = rows.map(a => ({
-      id: a.id, title: a.title, artist: a.artist,
-      cat: a.category, status: a.status === 'available' ? 'tersedia' : a.status === 'auction' ? 'lelang' : a.status === 'sold' ? 'terjual' : a.status,
-      medium: a.medium, year: a.year, price: a.price,
-      p: a.width_cm, t: a.height_cm, l: a.width_cm, k: a.depth_cm || 3,
-      w: a.width_cm, h: a.height_cm, d: a.depth_cm,
-      stock: a.stock ?? 1,
-      desc: a.description, image_url: a.image_url,
-      colors: (a.colors && a.colors.length) ? a.colors : paletteByCategory(a.category),
-      tags: (a.tags && a.tags.length) ? a.tags : buildArtworkTags({ cat:a.category, medium:a.medium, year:a.year }),
-      featured: a.is_featured
-    }));
+    PAINTINGS = rows.map(a => {
+      const stock = Number(a.stock ?? 1);
+      let status = a.status === 'available' ? 'tersedia' : a.status === 'auction' ? 'lelang' : a.status === 'sold' ? 'terjual' : a.status;
+      if(status === 'tersedia' && stock <= 0) status = 'terjual';
+      return {
+        id: a.id, title: a.title, artist: a.artist,
+        cat: a.category, status,
+        medium: a.medium, year: a.year, price: a.price,
+        p: a.width_cm, t: a.height_cm, l: a.width_cm, k: a.depth_cm || 3,
+        w: a.width_cm, h: a.height_cm, d: a.depth_cm,
+        stock: Number.isFinite(stock) ? stock : 1,
+        desc: a.description, image_url: a.image_url,
+        colors: (a.colors && a.colors.length) ? a.colors : paletteByCategory(a.category),
+        tags: (a.tags && a.tags.length) ? a.tags : buildArtworkTags({ cat:a.category, medium:a.medium, year:a.year }),
+        featured: a.is_featured
+      };
+    });
     syncArtworkCollections();
     renderHome();
     renderGallery();
