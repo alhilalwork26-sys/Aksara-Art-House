@@ -4,7 +4,7 @@ import { readSiteSetting, writeSiteSetting } from "@/lib/supabase-rest";
 
 const DEFAULT_CONTACT = {
   studioName: "Aksara Art House",
-  wa: "6281234567890"
+  wa: "6281918344549"
 };
 
 function normalizeContact(value: Record<string, unknown> | null) {

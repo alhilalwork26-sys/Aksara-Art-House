@@ -1679,8 +1679,8 @@ footer {
       <!-- Login Panel -->
       <div id="panel-login" class="checkout-panel active">
         <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="login-email" placeholder="email@anda.com">
+          <label>Email / Username Admin</label>
+          <input type="text" id="login-email" placeholder="email@anda.com atau admin">
         </div>
         <div class="form-group">
           <label>Password</label>
@@ -2951,10 +2951,27 @@ async function doLogin(){
   if(!email||!pass){ showToast('Mohon isi email dan password','error'); return; }
   const btn=document.querySelector('#panel-login .btn-primary');
   btn.disabled=true; btn.textContent='Memproses...';
+  const tryAdminLogin = async () => {
+    const adminRes = await fetch('/api/admin/token', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:email,password:pass})
+    });
+    if(adminRes.ok) {
+      showToast('Masuk sebagai admin. Mengarahkan ke panel admin...','success');
+      window.location.href='/admin';
+      return true;
+    }
+    return false;
+  };
   try {
+    if(!email.includes('@') && await tryAdminLogin()) return;
     const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
     const data=await res.json();
-    if(!res.ok) throw new Error(data.error||'Login gagal.');
+    if(!res.ok) {
+      if(await tryAdminLogin()) return;
+      throw new Error(data.error||'Login gagal.');
+    }
     state.user={name:data.user.name, email:data.user.email, wa:data.user.wa||'', id:data.user.id};
     updateUserUI();
     saveState();
@@ -3038,7 +3055,7 @@ function updateUserUI(){
 }
 
 // ── WHATSAPP / CONTACT ──────────────────────────────────
-const WA_NUMBER = '6281234567890'; // Ganti dengan nomor WA seniman
+const WA_NUMBER = '6281918344549';
 let _publicSettings = null;
 
 async function getPublicSettings(){
@@ -3270,7 +3287,7 @@ function printOrderInvoice(){
 
 function contactAboutOrder(orderId, items){
   getPublicSettings().then(settings => {
-    const wa = settings.wa || '6281234567890';
+    const wa = settings.wa || WA_NUMBER;
     const msg = `Halo, saya ingin menanyakan pesanan #${String(orderId).padStart(4,'0')} untuk "${items}".`;
     window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, '_blank');
   });
