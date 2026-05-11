@@ -940,9 +940,16 @@ button { cursor:pointer; }
 .qris-copy {
   font-size:12px; color:var(--muted); line-height:1.8;
 }
+.qris-actions { display:flex; gap:.55rem; flex-wrap:wrap; margin-top:.8rem; }
 .qris-missing {
   display:none; font-size:11px; color:var(--danger); margin-top:.4rem;
 }
+.payment-followup {
+  margin:.7rem 0; padding:.8rem; background:rgba(193,113,75,.08);
+  border:1px solid rgba(193,113,75,.2); border-radius:6px; font-size:12px;
+}
+.payment-followup-title { font-weight:500; color:var(--brown); margin-bottom:.3rem; }
+.payment-followup-text { color:var(--muted); line-height:1.7; }
 @media(max-width:600px){
   .qris-payment-card { grid-template-columns:1fr; }
   .qris-frame { max-width:240px; margin:0 auto; }
@@ -1974,6 +1981,7 @@ const jsArg = value => JSON.stringify(String(value));
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
   '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
 })[ch]);
+const linkifyText = value => escapeHtml(value).replace(/https?:\/\/[^\s<]+/g, url => `<a href="${url}" target="_blank" rel="noopener" style="color:var(--terra);text-decoration:underline">Buka file</a>`);
 const artworkImageUrl = p => p && (p.image_url || p.image || '');
 const fmtTime = s => {
   const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
@@ -2949,6 +2957,10 @@ function paymentInstructionHTML(method){
             Pastikan nama merchant dan nominal sudah sesuai sebelum menyelesaikan pembayaran.
             Setelah membayar, simpan screenshot bukti transaksi lalu upload di kolom bukti pembayaran.
           </div>
+          <div class="qris-actions">
+            <a class="btn btn-primary btn-sm" href="/qris-aksara.png" download="QRIS-Aksara-Art-House.png">Download QRIS</a>
+            <a class="btn btn-outline btn-sm" href="/qris-aksara.png" target="_blank" rel="noopener">Buka QRIS</a>
+          </div>
         </div>
       </div>
     `;
@@ -2968,6 +2980,28 @@ function paymentConfirmationText(method){
   if(method==='dp') return 'Admin akan menghubungi Anda untuk instruksi DP 50% dan jadwal pelunasan.';
   if(method==='qris') return 'Admin akan mengirim QRIS resmi via WhatsApp. Jika bukti sudah diupload, admin akan memverifikasi pembayaran.';
   return 'Admin akan mengirim detail rekening resmi via WhatsApp. Jika bukti sudah diupload, admin akan memverifikasi pembayaran.';
+}
+
+function paymentMethodLabel(method){
+  return {transfer:'Transfer Bank',qris:'QRIS',cod:'COD',dp:'DP 50%',auction_invoice:'Invoice Lelang'}[method] || method || '-';
+}
+
+function paymentFollowupHTML(order){
+  const method = order.payment_method || 'transfer';
+  const proofUrl = String(order.notes || '').match(/https?:\/\/[^\s]+/)?.[0] || '';
+  const proofHtml = proofUrl ? `<div style="margin-top:.45rem"><a href="${escapeHtml(proofUrl)}" target="_blank" rel="noopener" style="color:var(--terra);text-decoration:underline">Lihat bukti pembayaran</a></div>` : '';
+  const qrisActions = method === 'qris' ? `
+    <div class="qris-actions">
+      <a class="btn btn-primary btn-sm" href="/qris-aksara.png" download="QRIS-Aksara-Art-House.png">Download QRIS</a>
+      <a class="btn btn-outline btn-sm" href="/qris-aksara.png" target="_blank" rel="noopener">Buka QRIS</a>
+    </div>` : '';
+  return `
+    <div class="payment-followup">
+      <div class="payment-followup-title">${paymentMethodLabel(method)} · ${order.payment_status === 'paid' ? 'Pembayaran diterima' : 'Menunggu verifikasi'}</div>
+      <div class="payment-followup-text">${paymentConfirmationText(method)}</div>
+      ${qrisActions}
+      ${proofHtml}
+    </div>`;
 }
 
 function buildPaymentNote(method, note, proofUrl){
@@ -3312,6 +3346,7 @@ async function renderMyOrders(){
       </div>
       <div class="my-order-items">${(o.order_items||[]).map(i=>`${escapeHtml(i.title)} &mdash; <span style="color:var(--terra)">${fmt(i.price)}</span>`).join('<br>')}</div>
       ${o.shipping_city ? `<div style="font-size:12px;color:var(--muted);margin-top:.3rem">📍 ${o.shipping_city} via ${escapeHtml(o.courier||'-')}</div>` : ''}
+      ${paymentFollowupHTML(o)}
       ${trackingHtml}
       <div class="my-order-footer">
         <div>${discountHtml}<div class="my-order-total">${fmt(o.total)}</div></div>
@@ -3333,6 +3368,7 @@ function openOrderInvoice(orderId){
   const subtotal = Number(order.subtotal || items.reduce((sum,i)=>sum+Number(i.price||0)*Number(i.quantity||1),0));
   const discount = Number(order.discount_amount || 0);
   const total = Number(order.total || Math.max(0, subtotal - discount));
+  const proofUrl = String(order.notes || '').match(/https?:\/\/[^\s]+/)?.[0] || '';
   document.getElementById('invoice-body').innerHTML = `
     <div class="invoice-wrap" id="invoice-print-area">
       <div class="invoice-head">
@@ -3371,6 +3407,7 @@ function openOrderInvoice(orderId){
           Status: <strong>${paymentLabel[order.payment_status]||escapeHtml(order.payment_status||'-')}</strong>
           ${order.tracking_number ? `<br>Resi: <strong>${escapeHtml(order.tracking_number)}</strong>` : ''}
           ${order.estimated_delivery ? `<br>Estimasi tiba: ${escapeHtml(order.estimated_delivery)}</span>` : ''}
+          ${proofUrl ? `<br>Bukti: <a href="${escapeHtml(proofUrl)}" target="_blank" rel="noopener" style="color:var(--terra);text-decoration:underline">Buka file</a>` : ''}
         </div>
       </div>
       <table class="invoice-table">
@@ -3384,7 +3421,7 @@ function openOrderInvoice(orderId){
         ${discount ? `<div>Diskon: <span style="color:var(--success)">-${fmt(discount)}</span></div>` : ''}
       </div>
       <div class="invoice-total-row"><span>Total</span><span>${fmt(total)}</span></div>
-      ${order.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:1rem;line-height:1.6">Catatan: ${escapeHtml(order.notes)}</div>` : ''}
+      ${order.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:1rem;line-height:1.6">Catatan: ${linkifyText(order.notes)}</div>` : ''}
     </div>
     <div class="invoice-actions">
       <button class="btn btn-outline btn-sm" onclick="printOrderInvoice()">Cetak Invoice</button>
