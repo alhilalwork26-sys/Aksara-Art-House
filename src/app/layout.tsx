@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "Marketplace seni original, kurasi karya, lelang, dan pemesanan koleksi.",
   openGraph: {
     title: "Aksara Art House",
-    description: "Marketplace seni original dari Yogyakarta.",
+    description: "Marketplace seni original dari Surabaya.",
     type: "website"
   }
 };
