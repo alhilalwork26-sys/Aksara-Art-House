@@ -737,6 +737,7 @@ const clone = d => JSON.parse(JSON.stringify(d));
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
   '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
 })[ch]);
+const linkifyText = value => escapeHtml(value).replace(/https?:\/\/[^\s<]+/g, url => `<a href="${url}" target="_blank" rel="noopener" style="color:var(--terra);text-decoration:underline">Buka bukti pembayaran</a>`);
 function timeAgo(dateValue){
   const diff = Math.max(0, Date.now() - new Date(dateValue).getTime());
   const mins = Math.floor(diff / 60000);
@@ -1498,7 +1499,7 @@ function viewOrder(id) {
       <div style="background:var(--cream);border-radius:6px;padding:1rem">
         <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">Pembayaran</div>
         <div style="font-size:13px">${o.payment||'-'} · ${o.paymentStatus||'waiting_confirmation'}</div>
-        ${o.notes ? `<div style="font-size:12px;color:var(--brown);line-height:1.7;margin-top:.5rem;white-space:pre-wrap">${escapeHtml(o.notes)}</div>` : '<div style="font-size:12px;color:var(--muted);margin-top:.5rem">Belum ada bukti/catatan pembayaran.</div>'}
+        ${o.notes ? `<div style="font-size:12px;color:var(--brown);line-height:1.7;margin-top:.5rem;white-space:pre-wrap">${linkifyText(o.notes)}</div>` : '<div style="font-size:12px;color:var(--muted);margin-top:.5rem">Belum ada bukti/catatan pembayaran.</div>'}
         <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
           <button class="btn btn-secondary btn-sm" onclick="updateOrderPayment('${o.id}','paid')">Tandai Lunas</button>
           <button class="btn btn-ghost btn-sm" onclick="updateOrderPayment('${o.id}','waiting_confirmation')">Menunggu Cek</button>
@@ -1583,7 +1584,7 @@ function buildInvoiceHTML(o) {
       <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--fd);font-size:24px;color:var(--terra);margin-top:1rem">
         <span>Total</span><span>${fmt(total)}</span>
       </div>
-      ${o.notes ? `<div style="font-size:12px;color:var(--muted);line-height:1.7;margin-top:1rem;white-space:pre-wrap">Catatan: ${escapeHtml(o.notes)}</div>` : ''}
+      ${o.notes ? `<div style="font-size:12px;color:var(--muted);line-height:1.7;margin-top:1rem;white-space:pre-wrap">Catatan: ${linkifyText(o.notes)}</div>` : ''}
     </div>
   `;
 }

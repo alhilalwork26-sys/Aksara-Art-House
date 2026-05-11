@@ -1763,24 +1763,20 @@ footer {
           <div style="font-size:13px;color:var(--muted);margin-bottom:.8rem">Pilih metode pembayaran:</div>
           <div style="display:flex;flex-direction:column;gap:8px" id="payment-methods">
             <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">
-              <input type="radio" name="payment" value="transfer" checked> <span style="font-size:13px;color:var(--brown)">Transfer Bank (BCA, Mandiri, BNI)</span>
+              <input type="radio" name="payment" value="transfer" checked onchange="updatePaymentInstructions()"> <span style="font-size:13px;color:var(--brown)">Transfer Bank (BCA, Mandiri, BNI)</span>
             </label>
             <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">
-              <input type="radio" name="payment" value="qris"> <span style="font-size:13px;color:var(--brown)">QRIS (GoPay, OVO, Dana, ShopeePay)</span>
+              <input type="radio" name="payment" value="qris" onchange="updatePaymentInstructions()"> <span style="font-size:13px;color:var(--brown)">QRIS (GoPay, OVO, Dana, ShopeePay)</span>
             </label>
             <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">
-              <input type="radio" name="payment" value="cod"> <span style="font-size:13px;color:var(--brown)">COD — Bayar di Tempat (Yogyakarta only)</span>
+              <input type="radio" name="payment" value="cod" onchange="updatePaymentInstructions()"> <span style="font-size:13px;color:var(--brown)">COD — Bayar di Tempat (Yogyakarta only)</span>
             </label>
             <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">
-              <input type="radio" name="payment" value="dp"> <span style="font-size:13px;color:var(--brown)">DP 50% + Pelunasan saat terima</span>
+              <input type="radio" name="payment" value="dp" onchange="updatePaymentInstructions()"> <span style="font-size:13px;color:var(--brown)">DP 50% + Pelunasan saat terima</span>
             </label>
           </div>
         </div>
-        <div style="background:rgba(193,113,75,.08);border:1px solid rgba(193,113,75,.2);border-radius:4px;padding:1rem;margin-bottom:1rem;font-size:12px;color:var(--brown);line-height:1.8">
-          <strong>Instruksi pembayaran:</strong><br>
-          Transfer Bank: BCA/Mandiri/BNI a.n. Aksara Art House, detail rekening dikirim admin via WhatsApp.<br>
-          QRIS: admin mengirim QR resmi setelah order dibuat. Pesanan diproses setelah pembayaran diverifikasi.
-        </div>
+        <div id="payment-instructions" style="background:rgba(193,113,75,.08);border:1px solid rgba(193,113,75,.2);border-radius:4px;padding:1rem;margin-bottom:1rem;font-size:12px;color:var(--brown);line-height:1.8"></div>
         <div id="ck-summary" style="background:var(--cream);border-radius:4px;padding:1rem;border:1px solid var(--border);margin-bottom:1rem"></div>
         <div class="form-group">
           <label>Kode Promo (opsional)</label>
@@ -1791,8 +1787,13 @@ footer {
           <div id="ck-promo-result" style="margin-top:.5rem;font-size:12px"></div>
         </div>
         <div class="form-group">
-          <label>Link / Catatan Bukti Pembayaran</label>
-          <textarea id="ck-payment-proof" placeholder="Opsional: tempel link bukti transfer/QRIS, nama bank, atau catatan pembayaran. Admin akan melihat catatan ini."></textarea>
+          <label>Upload Bukti Pembayaran (opsional)</label>
+          <input type="file" id="ck-payment-proof-file" accept="image/*,application/pdf" onchange="uploadPaymentProofFile(event)" style="padding:10px;border:1px solid var(--border);border-radius:4px;width:100%;background:var(--cream)">
+          <div id="ck-payment-proof-status" style="font-size:12px;color:var(--muted);margin-top:.45rem">JPG, PNG, WEBP, atau PDF — maks 5MB. Bisa dikosongkan jika pembayaran menyusul.</div>
+        </div>
+        <div class="form-group">
+          <label>Catatan Pembayaran</label>
+          <textarea id="ck-payment-proof" placeholder="Opsional: tulis nama bank, nama pengirim, waktu transfer, atau catatan untuk admin."></textarea>
         </div>
       </div>
       <!-- Step 4: Konfirmasi -->
@@ -1935,6 +1936,7 @@ let state = {
   ckStep:1,
   postAuthAction:null,
   myOrders: [],
+  paymentProof: null,
   promo: null  // { promoCodeId, discountAmount, discountType, discountValue, code }
 };
 let timers = {};
@@ -2773,6 +2775,7 @@ function renderCartBody(){
 function openCheckout(){
   if(!state.user){ state.postAuthAction='checkout'; openAuth('login'); showToast('Silakan masuk untuk melanjutkan checkout'); return; }
   state.ckStep=1;
+  state.paymentProof=null;
   renderCkSteps();
   // Pre-fill from user
   if(state.user){
@@ -2803,6 +2806,7 @@ function renderCkSteps(){
     else { nextBtn.textContent='Lanjut →'; nextBtn.style.display='block'; }
   }
   if(state.ckStep===3) updateCkSummary();
+  if(state.ckStep===3) updatePaymentInstructions();
 }
 
 async function ckNext(){
@@ -2827,10 +2831,11 @@ async function ckNext(){
     const city=document.getElementById('ck-kota').value;
     const postalCode=document.getElementById('ck-kodepos').value;
     const proof=document.getElementById('ck-payment-proof').value.trim();
+    const proofUrl=state.paymentProof?.url || '';
     const kurir=document.getElementById('ck-kurir');
     const kurirText=kurir.options[kurir.selectedIndex]?.text||'-';
-    const payment=document.querySelector('input[name="payment"]:checked')?.value||'-';
-    if(!wa){ showToast('Mohon isi nomor WhatsApp','error'); return; }
+  const payment=document.querySelector('input[name="payment"]:checked')?.value||'-';
+  if(!wa){ showToast('Mohon isi nomor WhatsApp','error'); return; }
     if(nextBtn){ nextBtn.disabled=true; nextBtn.textContent='Menyimpan...'; }
     let orderNumber = '';
     try {
@@ -2846,7 +2851,7 @@ async function ckNext(){
           shippingPostalCode: postalCode,
           courier: kurirText,
           paymentMethod: payment,
-          notes: proof ? `Bukti/catatan pembayaran: ${proof}` : '',
+          notes: buildPaymentNote(payment, proof, proofUrl),
           items: state.cart.map(c=>({artworkId:String(c.id), title:c.title, price:c.price, quantity:1})),
           promoCode: state.promo?.code || undefined
         })
@@ -2869,13 +2874,15 @@ async function ckNext(){
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pemesan</span><span style="color:var(--brown)">${nama}</span></div>
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pengiriman</span><span style="color:var(--brown);font-size:12px;max-width:60%;text-align:right">${kurirText}</span></div>
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pembayaran</span><span style="color:var(--brown)">${payment}</span></div>
-        <div style="padding-top:6px;color:var(--muted);font-size:12px;line-height:1.7">Admin akan mengirim detail rekening/QRIS resmi via WhatsApp. Simpan nomor pesanan untuk konfirmasi.</div>
-        ${proof ? `<div style="padding-top:6px;color:var(--muted);font-size:12px">Bukti/catatan: <span style="color:var(--brown)">${escapeHtml(proof)}</span></div>` : ''}
+        <div style="padding-top:6px;color:var(--muted);font-size:12px;line-height:1.7">${paymentConfirmationText(payment)}</div>
+        ${proofUrl ? `<div style="padding-top:6px;color:var(--muted);font-size:12px">Bukti upload: <a href="${escapeHtml(proofUrl)}" target="_blank" rel="noopener" style="color:var(--terra)">Buka file</a></div>` : ''}
+        ${proof ? `<div style="padding-top:6px;color:var(--muted);font-size:12px">Catatan: <span style="color:var(--brown)">${escapeHtml(proof)}</span></div>` : ''}
         ${discount>0?`<div style="display:flex;justify-content:space-between;color:var(--success)"><span>Diskon</span><span>-${fmt(discount)}</span></div>`:''}
         <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid var(--border);font-weight:500"><span style="color:var(--muted)">Total</span><span style="color:var(--terra);font-size:16px">${fmt(finalTotal)}</span></div>
       </div>`;
     state.cart=[];
     state.promo=null;
+    state.paymentProof=null;
     updateCartCount();
     saveState();
     renderCartBody();
@@ -2888,6 +2895,70 @@ async function ckNext(){
 function ckBack(){
   if(state.ckStep>1) state.ckStep--;
   renderCkSteps();
+}
+
+function paymentInstructionHTML(method){
+  const label = {
+    transfer:'Transfer Bank',
+    qris:'QRIS',
+    cod:'COD',
+    dp:'DP 50%',
+    auction_invoice:'Invoice Lelang'
+  }[method] || 'Pembayaran';
+  const copy = {
+    transfer:'Transfer ke rekening resmi Aksara Art House. Admin akan mengirim detail rekening melalui WhatsApp setelah pesanan dibuat. Upload bukti transfer agar verifikasi lebih cepat.',
+    qris:'Admin akan mengirim QRIS resmi melalui WhatsApp. Setelah membayar, upload bukti QRIS atau tulis catatan pembayaran.',
+    cod:'Pembayaran dilakukan saat serah terima. Metode ini hanya berlaku untuk area Yogyakarta dan tetap menunggu konfirmasi admin.',
+    dp:'Bayar DP 50% terlebih dahulu. Admin akan mengirim instruksi DP dan jadwal pelunasan melalui WhatsApp.',
+    auction_invoice:'Admin akan mengirim invoice pemenang lelang dan instruksi pembayaran melalui WhatsApp.'
+  }[method] || 'Admin akan menghubungi Anda untuk instruksi pembayaran.';
+  return `<strong>${label}</strong><br>${copy}<br><span style="color:var(--muted)">Status awal pesanan: menunggu konfirmasi pembayaran.</span>`;
+}
+
+function paymentConfirmationText(method){
+  if(method==='cod') return 'Admin akan menghubungi Anda untuk konfirmasi jadwal serah terima dan pembayaran COD.';
+  if(method==='dp') return 'Admin akan menghubungi Anda untuk instruksi DP 50% dan jadwal pelunasan.';
+  if(method==='qris') return 'Admin akan mengirim QRIS resmi via WhatsApp. Jika bukti sudah diupload, admin akan memverifikasi pembayaran.';
+  return 'Admin akan mengirim detail rekening resmi via WhatsApp. Jika bukti sudah diupload, admin akan memverifikasi pembayaran.';
+}
+
+function buildPaymentNote(method, note, proofUrl){
+  const parts = [`Metode pembayaran: ${method}`];
+  if(proofUrl) parts.push(`Bukti pembayaran: ${proofUrl}`);
+  if(note) parts.push(`Catatan pembayaran: ${note}`);
+  return parts.join('\n');
+}
+
+function updatePaymentInstructions(){
+  const method = document.querySelector('input[name="payment"]:checked')?.value || 'transfer';
+  const el = document.getElementById('payment-instructions');
+  if(el) el.innerHTML = paymentInstructionHTML(method);
+}
+
+async function uploadPaymentProofFile(event){
+  const file = event.target.files?.[0];
+  const statusEl = document.getElementById('ck-payment-proof-status');
+  state.paymentProof = null;
+  if(!file) return;
+  if(file.size > 5 * 1024 * 1024) {
+    if(statusEl) statusEl.innerHTML='<span style="color:var(--danger)">Ukuran file maksimal 5MB.</span>';
+    event.target.value='';
+    return;
+  }
+  if(statusEl) statusEl.innerHTML='<span style="color:var(--muted)">Mengupload bukti pembayaran...</span>';
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/payment-proofs', { method:'POST', body:formData });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || 'Gagal upload bukti pembayaran.');
+    state.paymentProof = { url:data.url, path:data.path, name:file.name };
+    if(statusEl) statusEl.innerHTML=`<span style="color:var(--success)">✓ Bukti pembayaran terupload.</span> <a href="${escapeHtml(data.url)}" target="_blank" rel="noopener" style="color:var(--terra)">Lihat file</a>`;
+  } catch(e) {
+    state.paymentProof = null;
+    event.target.value='';
+    if(statusEl) statusEl.innerHTML=`<span style="color:var(--danger)">${escapeHtml(e.message || 'Gagal upload bukti pembayaran.')}</span>`;
+  }
 }
 
 async function applyPromoCode(){
