@@ -380,6 +380,62 @@ button { cursor:pointer; }
 @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
 
 /* ═══════════════════════════════════════
+   SCROLL MOTION
+═══════════════════════════════════════ */
+[data-scroll] {
+  opacity:0;
+  transform:translateY(26px);
+  transition:
+    opacity .7s cubic-bezier(.2,.7,.2,1),
+    transform .7s cubic-bezier(.2,.7,.2,1),
+    box-shadow .25s ease,
+    border-color .25s ease;
+  transition-delay:var(--scroll-delay, 0ms);
+  will-change:opacity, transform;
+}
+[data-scroll].in-view {
+  opacity:1;
+  transform:translateY(0);
+}
+[data-scroll="fade-left"] { transform:translateX(-26px); }
+[data-scroll="fade-right"] { transform:translateX(26px); }
+[data-scroll="scale"] { transform:translateY(18px) scale(.97); }
+[data-scroll="fade-left"].in-view,
+[data-scroll="fade-right"].in-view,
+[data-scroll="scale"].in-view { transform:translate(0,0) scale(1); }
+.hero .hero-eyebrow,
+.hero h1,
+.hero-sub,
+.hero-cta,
+.hero-stats {
+  animation:heroRise .8s cubic-bezier(.2,.7,.2,1) both;
+}
+.hero h1 { animation-delay:.08s; }
+.hero-sub { animation-delay:.16s; }
+.hero-cta { animation-delay:.24s; }
+.hero-stats { animation-delay:.34s; }
+@keyframes heroRise {
+  from { opacity:0; transform:translateY(18px); }
+  to { opacity:1; transform:translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior:auto; }
+  .marquee-track { animation:none; }
+  .hero .hero-eyebrow,
+  .hero h1,
+  .hero-sub,
+  .hero-cta,
+  .hero-stats {
+    animation:none;
+  }
+  [data-scroll] {
+    opacity:1;
+    transform:none !important;
+    transition:none;
+  }
+}
+
+/* ═══════════════════════════════════════
    PAINTING CARDS
 ═══════════════════════════════════════ */
 .paintings-grid {
@@ -2248,6 +2304,7 @@ function goPage(id) {
   if(id==='gallery') renderGallery();
   if(id==='about') renderAbout();
   window.scrollTo({top:0,behavior:'smooth'});
+  refreshScrollAnimations();
   if(document.getElementById('mobile-menu').classList.contains('open'))
     toggleMobileMenu();
 }
@@ -2256,6 +2313,57 @@ function goBack(){ goPage(state.prevPage||'gallery'); }
 
 function toggleMobileMenu(){
   document.getElementById('mobile-menu').classList.toggle('open');
+}
+
+let scrollObserver = null;
+function setupScrollAnimations(){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  scrollObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting) {
+        entry.target.classList.add('in-view');
+        scrollObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold:.14, rootMargin:'0px 0px -8% 0px' });
+  refreshScrollAnimations();
+}
+
+function refreshScrollAnimations(){
+  if(!scrollObserver) return;
+  requestAnimationFrame(() => {
+    const activePage = document.querySelector('.page.active');
+    if(!activePage) return;
+    const selectors = [
+      '.featured-header',
+      '.section-label',
+      '.section-title',
+      '.p-card',
+      '.marketplace-card',
+      '.auction-card',
+      '.auction-hero-text',
+      '.auction-hero-panel',
+      '.detail-info > *',
+      '.detail-art-wrap',
+      '.support-card',
+      '.exhibition-card',
+      '.bio-text > *',
+      '.bio-portrait',
+      '.award-item'
+    ];
+    activePage.querySelectorAll(selectors.join(',')).forEach((el, index) => {
+      if(el.dataset.scrollReady === '1' || el.closest('.modal-overlay')) return;
+      const variant = el.classList.contains('detail-art-wrap') || el.classList.contains('bio-portrait') ? 'fade-left'
+        : el.classList.contains('auction-hero-panel') ? 'fade-right'
+        : el.classList.contains('p-card') || el.classList.contains('marketplace-card') || el.classList.contains('auction-card') || el.classList.contains('exhibition-card') ? 'scale'
+        : 'fade';
+      el.dataset.scroll = variant;
+      el.dataset.scrollReady = '1';
+      el.style.setProperty('--scroll-delay', `${Math.min(index % 8, 7) * 55}ms`);
+      if(el.getBoundingClientRect().top < window.innerHeight * .92) el.classList.add('in-view');
+      else scrollObserver.observe(el);
+    });
+  });
 }
 
 // ── HOME ──────────────────────────────────
@@ -2269,6 +2377,7 @@ function renderHome(){
   // Grid
   const grid=document.getElementById('home-grid');
   grid.innerHTML=PAINTINGS.slice(0,4).map(p=>cardHTML(p)).join('');
+  refreshScrollAnimations();
 }
 
 // ── CARD HTML ──────────────────────────────────
@@ -2324,6 +2433,7 @@ function renderGallery(){
 
   document.getElementById('gallery-count').textContent=list.length+' karya ditemukan';
   document.getElementById('gallery-grid').innerHTML=list.map(p=>cardHTML(p)).join('');
+  refreshScrollAnimations();
 }
 
 function setFilter(f,btn){
@@ -2378,6 +2488,7 @@ function toggleWishlistPage(){
   const list=PAINTINGS.filter(p=>state.wishlist.includes(p.id));
   document.getElementById('gallery-count').textContent=list.length+' karya tersimpan';
   grid.innerHTML=list.map(p=>cardHTML(p)).join('');
+  refreshScrollAnimations();
 }
 
 // ── DETAIL ──────────────────────────────────
@@ -2662,6 +2773,7 @@ function renderAuction(){
       </div>
     </div>`;
   }).join('');
+  refreshScrollAnimations();
 
   // Timers
   AUCTIONS.forEach(a=>{
@@ -3300,7 +3412,8 @@ async function sendWA(){
 // ── ABOUT PORTRAIT ──────────────────────────────────
 function renderAbout(){
   const el=document.getElementById('about-portrait');
-  if(!el||el.dataset.rendered) return;
+  if(!el) return;
+  if(el.dataset.rendered) { refreshScrollAnimations(); return; }
   el.dataset.rendered='1';
   el.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" style="width:100%;height:100%;display:block">
     <rect width="400" height="500" fill="#C4A882"/>
@@ -3316,6 +3429,7 @@ function renderAbout(){
     <rect x="150" y="305" width="100" height="195" fill="#6A3A18"/>
     <ellipse cx="200" cy="80" rx="30" ry="8" fill="#2A1A10" opacity=".4"/>
   </svg>`;
+  refreshScrollAnimations();
 }
 
 
@@ -3347,6 +3461,7 @@ async function init(){
   renderHome();
   renderGallery();
   renderAuction();
+  setupScrollAnimations();
   // Restore session & wishlist dari Supabase
   await restoreSession();
   await fetchWishlistFromDB();
