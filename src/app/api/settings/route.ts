@@ -4,13 +4,23 @@ import { readSiteSetting, writeSiteSetting } from "@/lib/supabase-rest";
 
 const DEFAULT_CONTACT = {
   studioName: "Aksara Art House",
-  wa: "6281918344549"
+  wa: "6281918344549",
+  transferInfo: "Transfer ke rekening resmi Aksara Art House. Admin akan mengirim detail rekening melalui WhatsApp setelah pesanan dibuat. Upload bukti transfer agar verifikasi lebih cepat.",
+  qrisInfo: "Scan QRIS Aksara Art House, pastikan nama merchant dan nominal sudah sesuai, lalu upload bukti pembayaran.",
+  codInfo: "Pembayaran dilakukan saat serah terima. Metode ini hanya berlaku untuk area Surabaya dan tetap menunggu konfirmasi admin.",
+  dpInfo: "Bayar DP 50% terlebih dahulu. Admin akan mengirim instruksi DP dan jadwal pelunasan melalui WhatsApp.",
+  auctionInfo: "Admin akan mengirim invoice pemenang lelang dan instruksi pembayaran melalui WhatsApp."
 };
 
 function normalizeContact(value: Record<string, unknown> | null) {
   return {
     studioName: String(value?.studioName || DEFAULT_CONTACT.studioName),
-    wa: String(value?.wa || DEFAULT_CONTACT.wa)
+    wa: String(value?.wa || DEFAULT_CONTACT.wa),
+    transferInfo: String(value?.transferInfo || DEFAULT_CONTACT.transferInfo),
+    qrisInfo: String(value?.qrisInfo || DEFAULT_CONTACT.qrisInfo),
+    codInfo: String(value?.codInfo || DEFAULT_CONTACT.codInfo),
+    dpInfo: String(value?.dpInfo || DEFAULT_CONTACT.dpInfo),
+    auctionInfo: String(value?.auctionInfo || DEFAULT_CONTACT.auctionInfo)
   };
 }
 

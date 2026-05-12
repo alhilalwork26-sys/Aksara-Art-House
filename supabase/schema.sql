@@ -81,6 +81,16 @@ create table public.orders (
   shipping_cost integer not null default 0 check (shipping_cost >= 0),
   total integer not null check (total >= 0),
   notes text,
+  tracking_number text,
+  shipping_notes text,
+  estimated_delivery date,
+  discount_amount integer not null default 0,
+  promo_code_id uuid,
+  payment_proof_url text,
+  payment_notes text,
+  payment_verified_at timestamptz,
+  payment_revision_requested_at timestamptz,
+  payment_history jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

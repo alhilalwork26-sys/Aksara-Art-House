@@ -2943,7 +2943,7 @@ function paymentInstructionHTML(method){
   if(method === 'qris') {
     return `
       <strong>QRIS Aksara Art House</strong><br>
-      Scan QRIS di bawah, lalu upload bukti pembayaran agar admin bisa memverifikasi lebih cepat.
+      ${escapeHtml(paymentInstructionCopy('qris'))}
       <div class="qris-payment-card">
         <div>
           <div class="qris-frame">
@@ -2965,14 +2965,8 @@ function paymentInstructionHTML(method){
       </div>
     `;
   }
-  const copy = {
-    transfer:'Transfer ke rekening resmi Aksara Art House. Admin akan mengirim detail rekening melalui WhatsApp setelah pesanan dibuat. Upload bukti transfer agar verifikasi lebih cepat.',
-    qris:'Admin akan mengirim QRIS resmi melalui WhatsApp. Setelah membayar, upload bukti QRIS atau tulis catatan pembayaran.',
-    cod:'Pembayaran dilakukan saat serah terima. Metode ini hanya berlaku untuk area Surabaya dan tetap menunggu konfirmasi admin.',
-    dp:'Bayar DP 50% terlebih dahulu. Admin akan mengirim instruksi DP dan jadwal pelunasan melalui WhatsApp.',
-    auction_invoice:'Admin akan mengirim invoice pemenang lelang dan instruksi pembayaran melalui WhatsApp.'
-  }[method] || 'Admin akan menghubungi Anda untuk instruksi pembayaran.';
-  return `<strong>${label}</strong><br>${copy}<br><span style="color:var(--muted)">Status awal pesanan: menunggu konfirmasi pembayaran.</span>`;
+  const copy = paymentInstructionCopy(method);
+  return `<strong>${label}</strong><br>${escapeHtml(copy)}<br><span style="color:var(--muted)">Status awal pesanan: menunggu konfirmasi pembayaran.</span>`;
 }
 
 function paymentConfirmationText(method){
@@ -2986,6 +2980,21 @@ function paymentMethodLabel(method){
   return {transfer:'Transfer Bank',qris:'QRIS',cod:'COD',dp:'DP 50%',auction_invoice:'Invoice Lelang'}[method] || method || '-';
 }
 
+function paymentStatusLabel(status){
+  return {unpaid:'Belum dibayar',waiting_confirmation:'Menunggu verifikasi',paid:'Pembayaran diterima',failed:'Perlu upload ulang',refunded:'Refund'}[status] || status || 'Menunggu verifikasi';
+}
+
+function paymentInstructionCopy(method){
+  const settings = _publicSettings || {};
+  return {
+    transfer: settings.transferInfo || 'Transfer ke rekening resmi Aksara Art House. Admin akan mengirim detail rekening melalui WhatsApp setelah pesanan dibuat. Upload bukti transfer agar verifikasi lebih cepat.',
+    qris: settings.qrisInfo || 'Scan QRIS Aksara Art House, pastikan nama merchant dan nominal sudah sesuai, lalu upload bukti pembayaran.',
+    cod: settings.codInfo || 'Pembayaran dilakukan saat serah terima. Metode ini hanya berlaku untuk area Surabaya dan tetap menunggu konfirmasi admin.',
+    dp: settings.dpInfo || 'Bayar DP 50% terlebih dahulu. Admin akan mengirim instruksi DP dan jadwal pelunasan melalui WhatsApp.',
+    auction_invoice: settings.auctionInfo || 'Admin akan mengirim invoice pemenang lelang dan instruksi pembayaran melalui WhatsApp.'
+  }[method] || 'Admin akan menghubungi Anda untuk instruksi pembayaran.';
+}
+
 function paymentFollowupHTML(order){
   const method = order.payment_method || 'transfer';
   const proofUrl = String(order.notes || '').match(/https?:\/\/[^\s]+/)?.[0] || '';
@@ -2997,10 +3006,26 @@ function paymentFollowupHTML(order){
     </div>` : '';
   return `
     <div class="payment-followup">
-      <div class="payment-followup-title">${paymentMethodLabel(method)} · ${order.payment_status === 'paid' ? 'Pembayaran diterima' : 'Menunggu verifikasi'}</div>
+      <div class="payment-followup-title">${paymentMethodLabel(method)} · ${paymentStatusLabel(order.payment_status)}</div>
       <div class="payment-followup-text">${paymentConfirmationText(method)}</div>
       ${qrisActions}
       ${proofHtml}
+    </div>`;
+}
+
+function paymentUploadFormHTML(order){
+  if(['paid','refunded'].includes(order.payment_status) || ['done','cancelled'].includes(order.status)) return '';
+  const failedCopy = order.payment_status === 'failed'
+    ? '<div style="font-size:12px;color:var(--danger);line-height:1.6;margin-bottom:.55rem">Admin meminta bukti pembayaran diupload ulang. Pilih file terbaru lalu kirim kembali.</div>'
+    : '<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:.55rem">Jika sudah membayar, upload bukti di sini. Admin akan menerima update dan memverifikasi pembayaran.</div>';
+  return `
+    <div style="margin-top:.7rem;padding:.8rem;border:1px solid var(--border);border-radius:6px;background:rgba(247,243,238,.7)">
+      <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.45rem">Upload Bukti Pembayaran</div>
+      ${failedCopy}
+      <input type="file" id="proof-file-${order.id}" accept="image/*,application/pdf" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:4px;background:var(--cream);margin-bottom:.5rem">
+      <textarea id="proof-note-${order.id}" rows="2" placeholder="Catatan pembayaran, contoh: transfer BCA a.n. Hilal..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:4px;background:var(--cream);resize:vertical"></textarea>
+      <div id="proof-status-${order.id}" style="font-size:12px;color:var(--muted);margin-top:.45rem"></div>
+      <button class="btn btn-primary btn-sm" style="margin-top:.65rem" onclick="uploadOrderPaymentProof('${order.id}')">Kirim Bukti</button>
     </div>`;
 }
 
@@ -3285,7 +3310,7 @@ async function init(){
     o.addEventListener('click',e=>{ if(e.target===o) o.classList.add('hidden'); });
   });
   // Muat data dari Supabase
-  await Promise.all([fetchPaintingsFromDB(), fetchAuctionsFromDB()]);
+  await Promise.all([fetchPaintingsFromDB(), fetchAuctionsFromDB(), getPublicSettings()]);
   syncArtworkCollections();
   renderHome();
   renderGallery();
@@ -3347,6 +3372,7 @@ async function renderMyOrders(){
       <div class="my-order-items">${(o.order_items||[]).map(i=>`${escapeHtml(i.title)} &mdash; <span style="color:var(--terra)">${fmt(i.price)}</span>`).join('<br>')}</div>
       ${o.shipping_city ? `<div style="font-size:12px;color:var(--muted);margin-top:.3rem">📍 ${o.shipping_city} via ${escapeHtml(o.courier||'-')}</div>` : ''}
       ${paymentFollowupHTML(o)}
+      ${paymentUploadFormHTML(o)}
       ${trackingHtml}
       <div class="my-order-footer">
         <div>${discountHtml}<div class="my-order-total">${fmt(o.total)}</div></div>
@@ -3357,6 +3383,42 @@ async function renderMyOrders(){
       </div>
     </div>`;
   }).join('');
+}
+
+async function uploadOrderPaymentProof(orderId){
+  const fileInput = document.getElementById('proof-file-' + orderId);
+  const noteInput = document.getElementById('proof-note-' + orderId);
+  const statusEl = document.getElementById('proof-status-' + orderId);
+  const file = fileInput?.files?.[0];
+  if(!file){ if(statusEl) statusEl.innerHTML='<span style="color:var(--danger)">Pilih file bukti pembayaran dulu.</span>'; return; }
+  if(file.size > 5 * 1024 * 1024){
+    if(statusEl) statusEl.innerHTML='<span style="color:var(--danger)">Ukuran file maksimal 5MB.</span>';
+    fileInput.value='';
+    return;
+  }
+  if(statusEl) statusEl.innerHTML='<span style="color:var(--muted)">Mengupload file...</span>';
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const uploadRes = await fetch('/api/payment-proofs', { method:'POST', body:formData });
+    const uploadData = await uploadRes.json().catch(()=>({}));
+    if(!uploadRes.ok) throw new Error(uploadData.error || 'Gagal upload bukti pembayaran.');
+
+    if(statusEl) statusEl.innerHTML='<span style="color:var(--muted)">Menyimpan bukti ke pesanan...</span>';
+    const saveRes = await fetch(`/api/orders/${orderId}/payment-proof`, {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ proofUrl: uploadData.url, note: noteInput?.value || '' })
+    });
+    const saveData = await saveRes.json().catch(()=>({}));
+    if(!saveRes.ok) throw new Error(saveData.error || 'Gagal menyimpan bukti ke pesanan.');
+
+    if(statusEl) statusEl.innerHTML=`<span style="color:var(--success)">✓ Bukti pembayaran terkirim.</span> <a href="${escapeHtml(uploadData.url)}" target="_blank" rel="noopener" style="color:var(--terra)">Lihat file</a>`;
+    showToast('Bukti pembayaran terkirim ke admin ✓','success');
+    await renderMyOrders();
+  } catch(e) {
+    if(statusEl) statusEl.innerHTML=`<span style="color:var(--danger)">${escapeHtml(e.message || 'Gagal mengirim bukti pembayaran.')}</span>`;
+  }
 }
 
 function openOrderInvoice(orderId){

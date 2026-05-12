@@ -431,6 +431,29 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
         <input type="text" id="set-wa" placeholder="6281918344549">
       </div>
       <div style="background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:1rem;margin-top:.5rem">
+        <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Instruksi Pembayaran Marketplace</div>
+        <div class="form-group">
+          <label>Transfer Bank</label>
+          <textarea id="set-transfer-info" rows="3" placeholder="Instruksi transfer untuk user"></textarea>
+        </div>
+        <div class="form-group">
+          <label>QRIS</label>
+          <textarea id="set-qris-info" rows="3" placeholder="Instruksi QRIS untuk user"></textarea>
+        </div>
+        <div class="form-group">
+          <label>COD</label>
+          <textarea id="set-cod-info" rows="2" placeholder="Instruksi COD"></textarea>
+        </div>
+        <div class="form-group">
+          <label>DP 50%</label>
+          <textarea id="set-dp-info" rows="2" placeholder="Instruksi DP"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Invoice Lelang</label>
+          <textarea id="set-auction-info" rows="2" placeholder="Instruksi invoice lelang"></textarea>
+        </div>
+      </div>
+      <div style="background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:1rem;margin-top:.5rem">
         <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.45rem">Login Admin</div>
         <div style="font-size:13px;color:var(--charcoal);line-height:1.7">Username dan password admin disimpan sebagai Environment Variables di Vercel, bukan di browser. Ini lebih aman untuk production.</div>
       </div>
@@ -727,6 +750,11 @@ const DEFAULT_AUCTIONS = [];
 const DEFAULT_SETTINGS = {
   studioName: 'Aksara Art House',
   wa: '6281918344549',
+  transferInfo: 'Transfer ke rekening resmi Aksara Art House. Admin akan mengirim detail rekening melalui WhatsApp setelah pesanan dibuat. Upload bukti transfer agar verifikasi lebih cepat.',
+  qrisInfo: 'Scan QRIS Aksara Art House, pastikan nama merchant dan nominal sudah sesuai, lalu upload bukti pembayaran.',
+  codInfo: 'Pembayaran dilakukan saat serah terima. Metode ini hanya berlaku untuk area Surabaya dan tetap menunggu konfirmasi admin.',
+  dpInfo: 'Bayar DP 50% terlebih dahulu. Admin akan mengirim instruksi DP dan jadwal pelunasan melalui WhatsApp.',
+  auctionInfo: 'Admin akan mengirim invoice pemenang lelang dan instruksi pembayaran melalui WhatsApp.',
   adminUser: 'admin',
   adminPass: ''
 };
@@ -739,6 +767,15 @@ const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
 })[ch]);
 const linkifyText = value => escapeHtml(value).replace(/https?:\/\/[^\s<]+/g, url => `<a href="${url}" target="_blank" rel="noopener" style="color:var(--terra);text-decoration:underline">Buka bukti pembayaran</a>`);
 const extractFirstUrl = value => String(value || '').match(/https?:\/\/[^\s]+/)?.[0] || '';
+function paymentStatusLabel(status) {
+  return {
+    unpaid:'Belum dibayar',
+    waiting_confirmation:'Menunggu verifikasi',
+    paid:'Lunas',
+    failed:'Perlu upload ulang',
+    refunded:'Refund'
+  }[status] || status || 'Menunggu verifikasi';
+}
 function paymentProofPreviewHTML(notes) {
   const url = extractFirstUrl(notes);
   if(!url) {
@@ -926,7 +963,17 @@ function loadSettings() { return { ...DEFAULT_SETTINGS, ...(_settings||{}) }; }
 async function saveSettingsData(data) {
   _settings = data;
   const res = await fetch('/api/settings', {
-    method:'PATCH', headers: adminHeaders(), body: JSON.stringify({ studioName:data.studioName, wa:data.wa })
+    method:'PATCH',
+    headers: adminHeaders(),
+    body: JSON.stringify({
+      studioName:data.studioName,
+      wa:data.wa,
+      transferInfo:data.transferInfo,
+      qrisInfo:data.qrisInfo,
+      codInfo:data.codInfo,
+      dpInfo:data.dpInfo,
+      auctionInfo:data.auctionInfo
+    })
   });
   if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal menyimpan pengaturan.'); }
 }
@@ -1523,13 +1570,14 @@ function viewOrder(id) {
       </div>
       <div style="background:var(--cream);border-radius:6px;padding:1rem">
         <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">Pembayaran</div>
-        <div style="font-size:13px">${o.payment||'-'} · ${o.paymentStatus||'waiting_confirmation'}</div>
+        <div style="font-size:13px">${o.payment||'-'} · ${paymentStatusLabel(o.paymentStatus||'waiting_confirmation')}</div>
         ${paymentProofPreviewHTML(o.notes)}
         ${o.notes ? `<div style="font-size:12px;color:var(--brown);line-height:1.7;margin-top:.5rem;white-space:pre-wrap">${linkifyText(o.notes)}</div>` : '<div style="font-size:12px;color:var(--muted);margin-top:.5rem">Belum ada bukti/catatan pembayaran.</div>'}
         <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
           <button class="btn btn-secondary btn-sm" onclick="updateOrderPayment('${o.id}','paid')">Tandai Lunas</button>
           <button class="btn btn-ghost btn-sm" onclick="updateOrderPayment('${o.id}','waiting_confirmation')">Menunggu Cek</button>
           <button class="btn btn-danger btn-sm" onclick="updateOrderPayment('${o.id}','failed')">Tolak Pembayaran</button>
+          <button class="btn btn-outline btn-sm" onclick="requestPaymentRevision('${o.id}')">Minta Upload Ulang</button>
         </div>
       </div>
     </div>
@@ -1585,7 +1633,7 @@ function buildInvoiceHTML(o) {
         <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem">Pembayaran & Resi</div>
         <div style="font-size:13px;line-height:1.7;color:var(--charcoal)">
           Metode: <strong>${escapeHtml(o.payment||'-')}</strong><br>
-          Status pembayaran: <strong>${escapeHtml(paymentStatus)}</strong>
+          Status pembayaran: <strong>${escapeHtml(paymentStatusLabel(paymentStatus))}</strong>
           ${tracking ? `<br>Resi: <strong>${escapeHtml(tracking)}</strong>` : ''}
           ${delivery ? `<br>Estimasi tiba: ${escapeHtml(delivery)}` : ''}
           ${shippingNotes ? `<br>${escapeHtml(shippingNotes)}` : ''}
@@ -1641,7 +1689,8 @@ function prepareInvoicePdfAndWhatsApp(id) {
   if(!o) { showToast('Pesanan tidak ditemukan', 'error'); return; }
   const settings = loadSettings();
   printAdminInvoice();
-  const msg = `Halo ${o.name}, berikut invoice pesanan Anda ${o.order_number||o.id} senilai ${fmt(o.total)}. Saya lampirkan PDF invoice pada chat ini. Silakan cek detail pesanan dan konfirmasi pembayaran/pengiriman melalui chat ini.`;
+  const invoiceUrl = `${window.location.origin}/invoice/${o.id}`;
+  const msg = `Halo ${o.name}, berikut invoice pesanan Anda ${o.order_number||o.id} senilai ${fmt(o.total)}.\n\nLink invoice: ${invoiceUrl}\n\nSaya juga bisa lampirkan PDF invoice di chat ini setelah disimpan dari halaman cetak. Silakan cek detail pesanan dan konfirmasi pembayaran/pengiriman melalui chat ini.`;
   setTimeout(() => {
     window.open(`https://wa.me/${settings.wa}?text=${encodeURIComponent(msg)}`, '_blank');
   }, 650);
@@ -1669,6 +1718,7 @@ async function updateOrderPayment(id, payment_status) {
   try {
     const payload = { payment_status };
     if(payment_status === 'paid') payload.status = 'paid';
+    if(payment_status === 'paid') payload.notes = appendAdminPaymentNote(id, 'Riwayat pembayaran: ' + new Date().toISOString() + ' - Admin menandai pembayaran lunas.');
     const res = await fetch('/api/admin/orders/' + id, {
       method:'PATCH', headers: adminHeaders(),
       body: JSON.stringify(payload)
@@ -1679,6 +1729,35 @@ async function updateOrderPayment(id, payment_status) {
     renderDashboard();
     viewOrder(id);
     showToast('Status pembayaran diperbarui ✓', 'success');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+function appendAdminPaymentNote(id, entry) {
+  const o = loadOrders().find(x=>x.id===id);
+  return [o?.notes?.trim(), entry].filter(Boolean).join('\n\n');
+}
+
+async function requestPaymentRevision(id) {
+  const o = loadOrders().find(x=>x.id===id);
+  if(!o) { showToast('Pesanan tidak ditemukan', 'error'); return; }
+  const reason = prompt('Catatan untuk user saat meminta upload ulang bukti pembayaran:', 'Bukti pembayaran belum terbaca jelas. Mohon upload ulang bukti pembayaran.');
+  if(reason === null) return;
+  try {
+    const notes = appendAdminPaymentNote(id, [
+      'Riwayat pembayaran: ' + new Date().toISOString() + ' - Admin meminta upload ulang bukti pembayaran.',
+      'Catatan admin: ' + (reason.trim() || 'Mohon upload ulang bukti pembayaran.')
+    ].join('\n'));
+    const res = await fetch('/api/admin/orders/' + id, {
+      method:'PATCH',
+      headers: adminHeaders(),
+      body: JSON.stringify({ payment_status:'failed', status:o.status || 'pending', notes })
+    });
+    if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal meminta revisi bukti.'); }
+    await fetchAllFromDB();
+    renderOrders();
+    renderDashboard();
+    viewOrder(id);
+    showToast('Permintaan upload ulang dikirim ✓', 'success');
   } catch(e) { showToast(e.message, 'error'); }
 }
 
@@ -1846,6 +1925,11 @@ function openSettings() {
   const s = loadSettings();
   document.getElementById('set-studio').value = s.studioName || '';
   document.getElementById('set-wa').value = s.wa || '';
+  document.getElementById('set-transfer-info').value = s.transferInfo || '';
+  document.getElementById('set-qris-info').value = s.qrisInfo || '';
+  document.getElementById('set-cod-info').value = s.codInfo || '';
+  document.getElementById('set-dp-info').value = s.dpInfo || '';
+  document.getElementById('set-auction-info').value = s.auctionInfo || '';
   openModal('modal-settings');
 }
 
@@ -1853,6 +1937,11 @@ async function saveSettings() {
   const s = loadSettings();
   s.studioName = document.getElementById('set-studio').value.trim() || s.studioName;
   s.wa = document.getElementById('set-wa').value.trim() || s.wa;
+  s.transferInfo = document.getElementById('set-transfer-info').value.trim() || s.transferInfo;
+  s.qrisInfo = document.getElementById('set-qris-info').value.trim() || s.qrisInfo;
+  s.codInfo = document.getElementById('set-cod-info').value.trim() || s.codInfo;
+  s.dpInfo = document.getElementById('set-dp-info').value.trim() || s.dpInfo;
+  s.auctionInfo = document.getElementById('set-auction-info').value.trim() || s.auctionInfo;
   try {
     await saveSettingsData(s);
     closeModal('modal-settings');

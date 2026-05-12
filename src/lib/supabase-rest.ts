@@ -630,6 +630,30 @@ export async function getUserOrders(userId: string, email: string): Promise<Admi
   );
 }
 
+export async function getUserOrderById(id: string, userId: string, email: string): Promise<AdminOrder | null> {
+  const [order] = await supabaseFetch<AdminOrder[]>(
+    `orders?select=*,order_items(artwork_id,title,price,quantity)&id=eq.${encodeURIComponent(id)}&or=(customer_id.eq.${encodeURIComponent(userId)},customer_email.ilike.${encodeURIComponent(email)})&limit=1`,
+    undefined,
+    { serviceRole: true }
+  );
+  return order || null;
+}
+
+export async function getOrderInvoiceById(id: string): Promise<AdminOrder | null> {
+  const [order] = await supabaseFetch<AdminOrder[]>(
+    `orders?select=*,order_items(artwork_id,title,price,quantity)&id=eq.${encodeURIComponent(id)}&limit=1`,
+    undefined,
+    { serviceRole: true }
+  );
+  return order || null;
+}
+
+export function appendOrderNote(notes: string | null | undefined, entry: string) {
+  const cleanEntry = entry.trim();
+  if (!cleanEntry) return notes || null;
+  return [notes?.trim(), cleanEntry].filter(Boolean).join("\n\n");
+}
+
 export async function updateOrder(id: string, data: Partial<AdminOrder>): Promise<AdminOrder> {
   const [previous] = await supabaseFetch<AdminOrder[]>(
     `orders?select=*,order_items(artwork_id,title,price,quantity)&id=eq.${id}&limit=1`,

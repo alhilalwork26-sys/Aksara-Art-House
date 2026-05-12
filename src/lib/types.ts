@@ -93,6 +93,11 @@ export type AdminOrder = {
   discount_amount: number;
   total: number;
   notes: string | null;
+  payment_proof_url?: string | null;
+  payment_notes?: string | null;
+  payment_verified_at?: string | null;
+  payment_revision_requested_at?: string | null;
+  payment_history?: Array<Record<string, unknown>> | null;
   tracking_number: string | null;
   shipping_notes: string | null;
   estimated_delivery: string | null;

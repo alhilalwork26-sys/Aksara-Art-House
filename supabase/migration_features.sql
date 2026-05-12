@@ -14,7 +14,12 @@ alter table public.orders
   add column if not exists shipping_notes text,
   add column if not exists estimated_delivery date,
   add column if not exists discount_amount integer not null default 0,
-  add column if not exists promo_code_id uuid;
+  add column if not exists promo_code_id uuid,
+  add column if not exists payment_proof_url text,
+  add column if not exists payment_notes text,
+  add column if not exists payment_verified_at timestamptz,
+  add column if not exists payment_revision_requested_at timestamptz,
+  add column if not exists payment_history jsonb not null default '[]'::jsonb;
 
 -- ── 3. TABEL PROMO CODES ──────────────────────────────────
 create table if not exists public.promo_codes (
