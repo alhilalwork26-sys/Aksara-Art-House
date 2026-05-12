@@ -671,6 +671,10 @@ export async function updateOrder(id: string, data: Partial<AdminOrder>): Promis
     await restoreOrderStock(previous).catch(() => {});
   }
 
+  if ((data.payment_status === "paid" || data.status === "paid") && previous) {
+    await markPaidOrderItemsSold(previous).catch(() => {});
+  }
+
   return row;
 }
 
@@ -800,7 +804,8 @@ export async function createOrder(input: CheckoutInput) {
     });
   }
 
-  // Kurangi stok artwork yang dipesan
+  // Kurangi stok artwork yang dipesan sebagai reservasi. Status "sold" baru
+  // dipasang setelah pembayaran ditandai lunas oleh admin.
   await Promise.all(
     verifiedItems
       .filter((item) => !String(item.artworkId).startsWith("demo-"))
@@ -810,11 +815,6 @@ export async function createOrder(input: CheckoutInput) {
           { method: "POST", body: JSON.stringify({ p_artwork_id: item.artworkId, p_qty: item.quantity }) },
           { serviceRole: true }
         );
-
-        const remainingStock = Math.max(0, item.stockBefore - item.quantity);
-        if (remainingStock <= 0) {
-          await updateArtwork(item.artworkId, { status: "sold", stock: 0 });
-        }
       })
   );
 
@@ -875,6 +875,24 @@ async function restoreOrderStock(order: AdminOrder): Promise<void> {
         stock: nextStock,
         status: artwork.status === "sold" ? "available" : artwork.status
       });
+    })
+  );
+}
+
+async function markPaidOrderItemsSold(order: AdminOrder): Promise<void> {
+  const items = (order.order_items || []).filter((item) => item.artwork_id);
+  await Promise.all(
+    items.map(async (item) => {
+      if (!item.artwork_id) return;
+      const [artwork] = await supabaseFetch<Artwork[]>(
+        `artworks?select=*&id=eq.${item.artwork_id}&limit=1`,
+        undefined,
+        { serviceRole: true }
+      );
+      if (!artwork || artwork.status !== "available") return;
+      if (Number(artwork.stock || 0) <= 0) {
+        await updateArtwork(item.artwork_id, { status: "sold", stock: 0 });
+      }
     })
   );
 }
