@@ -39,11 +39,28 @@ export async function PATCH(request: Request, context: RouteContext) {
       note ? `Catatan pembayaran: ${note}` : ""
     ].filter(Boolean).join("\n");
 
-    const updated = await updateOrder(order.id, {
-      payment_status: "waiting_confirmation",
-      status: order.status === "pending" ? "pending" : order.status,
+    const basePayload = {
+      payment_status: "waiting_confirmation" as const,
+      status: order.status === "pending" ? ("pending" as const) : order.status,
       notes: appendOrderNote(order.notes, history)
-    });
+    };
+
+    let updated;
+    try {
+      updated = await updateOrder(order.id, {
+        ...basePayload,
+        payment_proof_url: proofUrl,
+        payment_notes: note || null,
+        payment_history: [
+          ...((Array.isArray(order.payment_history) ? order.payment_history : []) as Array<Record<string, unknown>>),
+          { at: new Date().toISOString(), actor: "customer", action: "upload_payment_proof", proofUrl, note }
+        ]
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (!/payment_proof_url|payment_notes|payment_history|schema cache|column/i.test(message)) throw error;
+      updated = await updateOrder(order.id, basePayload);
+    }
 
     await notifyOrderUpdated(updated).catch((error) => {
       console.warn("Gagal mengirim notifikasi upload bukti:", error);

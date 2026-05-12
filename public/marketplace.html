@@ -2980,6 +2980,10 @@ function paymentMethodLabel(method){
   return {transfer:'Transfer Bank',qris:'QRIS',cod:'COD',dp:'DP 50%',auction_invoice:'Invoice Lelang'}[method] || method || '-';
 }
 
+function proofUrlFromOrder(order){
+  return order?.payment_proof_url || String(order?.notes || '').match(/https?:\/\/[^\s]+/)?.[0] || '';
+}
+
 function paymentStatusLabel(status){
   return {unpaid:'Belum dibayar',waiting_confirmation:'Menunggu verifikasi',paid:'Pembayaran diterima',failed:'Perlu upload ulang',refunded:'Refund'}[status] || status || 'Menunggu verifikasi';
 }
@@ -2997,7 +3001,7 @@ function paymentInstructionCopy(method){
 
 function paymentFollowupHTML(order){
   const method = order.payment_method || 'transfer';
-  const proofUrl = String(order.notes || '').match(/https?:\/\/[^\s]+/)?.[0] || '';
+  const proofUrl = proofUrlFromOrder(order);
   const proofHtml = proofUrl ? `<div style="margin-top:.45rem"><a href="${escapeHtml(proofUrl)}" target="_blank" rel="noopener" style="color:var(--terra);text-decoration:underline">Lihat bukti pembayaran</a></div>` : '';
   const qrisActions = method === 'qris' ? `
     <div class="qris-actions">
@@ -3010,6 +3014,36 @@ function paymentFollowupHTML(order){
       <div class="payment-followup-text">${paymentConfirmationText(method)}</div>
       ${qrisActions}
       ${proofHtml}
+    </div>`;
+}
+
+function orderTimelineHTML(order){
+  const steps = [
+    { key:'order', label:'Pesanan dibuat', done:true },
+    { key:'proof', label: order.payment_status === 'failed' ? 'Bukti perlu upload ulang' : 'Bukti pembayaran', done:['waiting_confirmation','paid'].includes(order.payment_status), warn:order.payment_status === 'failed' },
+    { key:'paid', label:'Pembayaran lunas', done:order.payment_status === 'paid' || ['paid','packed','shipped','done'].includes(order.status) },
+    { key:'packed', label:'Dikemas', done:['packed','shipped','done'].includes(order.status) },
+    { key:'shipped', label:'Dikirim', done:['shipped','done'].includes(order.status) },
+    { key:'done', label:'Selesai', done:order.status === 'done' }
+  ];
+  return `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.55rem;margin-top:.75rem">
+      ${steps.map(step=>`<div style="border:1px solid ${step.warn?'rgba(160,55,55,.35)':step.done?'rgba(70,112,68,.28)':'var(--border)'};background:${step.warn?'rgba(160,55,55,.06)':step.done?'rgba(70,112,68,.06)':'var(--cream)'};border-radius:6px;padding:.65rem">
+        <div style="font-size:18px;line-height:1">${step.warn?'!':step.done?'✓':'·'}</div>
+        <div style="font-size:11px;color:${step.warn?'var(--danger)':step.done?'var(--success)':'var(--muted)'};line-height:1.45;margin-top:.25rem">${step.label}</div>
+      </div>`).join('')}
+    </div>`;
+}
+
+function paymentHistoryHTML(order){
+  const entries = Array.isArray(order.payment_history) ? order.payment_history : [];
+  const notesHistory = String(order.notes || '').split('\n').filter(line => /Riwayat pembayaran|Catatan admin|Bukti pembayaran|Catatan pembayaran/i.test(line));
+  if(!entries.length && !notesHistory.length) return '';
+  return `
+    <div style="margin-top:.75rem;padding:.75rem;border:1px solid var(--border);border-radius:6px;background:var(--cream)">
+      <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem">Riwayat Pembayaran</div>
+      ${entries.map(e=>`<div style="font-size:12px;color:var(--muted);line-height:1.6">${escapeHtml(e.at || '')} · ${escapeHtml(e.action || 'update')}</div>`).join('')}
+      ${notesHistory.map(line=>`<div style="font-size:12px;color:var(--muted);line-height:1.6">${escapeHtml(line)}</div>`).join('')}
     </div>`;
 }
 
@@ -3372,6 +3406,7 @@ async function renderMyOrders(){
       <div class="my-order-items">${(o.order_items||[]).map(i=>`${escapeHtml(i.title)} &mdash; <span style="color:var(--terra)">${fmt(i.price)}</span>`).join('<br>')}</div>
       ${o.shipping_city ? `<div style="font-size:12px;color:var(--muted);margin-top:.3rem">📍 ${o.shipping_city} via ${escapeHtml(o.courier||'-')}</div>` : ''}
       ${paymentFollowupHTML(o)}
+      ${orderTimelineHTML(o)}
       ${paymentUploadFormHTML(o)}
       ${trackingHtml}
       <div class="my-order-footer">
@@ -3430,7 +3465,8 @@ function openOrderInvoice(orderId){
   const subtotal = Number(order.subtotal || items.reduce((sum,i)=>sum+Number(i.price||0)*Number(i.quantity||1),0));
   const discount = Number(order.discount_amount || 0);
   const total = Number(order.total || Math.max(0, subtotal - discount));
-  const proofUrl = String(order.notes || '').match(/https?:\/\/[^\s]+/)?.[0] || '';
+  const proofUrl = proofUrlFromOrder(order);
+  const invoiceUrl = `${window.location.origin}/invoice/${order.id}`;
   document.getElementById('invoice-body').innerHTML = `
     <div class="invoice-wrap" id="invoice-print-area">
       <div class="invoice-head">
@@ -3471,6 +3507,8 @@ function openOrderInvoice(orderId){
           ${order.estimated_delivery ? `<br>Estimasi tiba: ${escapeHtml(order.estimated_delivery)}</span>` : ''}
           ${proofUrl ? `<br>Bukti: <a href="${escapeHtml(proofUrl)}" target="_blank" rel="noopener" style="color:var(--terra);text-decoration:underline">Buka file</a>` : ''}
         </div>
+        ${orderTimelineHTML(order)}
+        ${paymentHistoryHTML(order)}
       </div>
       <table class="invoice-table">
         <thead><tr><th>Karya</th><th style="text-align:center">Qty</th><th style="text-align:right">Harga</th></tr></thead>
@@ -3487,6 +3525,7 @@ function openOrderInvoice(orderId){
     </div>
     <div class="invoice-actions">
       <button class="btn btn-outline btn-sm" onclick="printOrderInvoice()">Cetak Invoice</button>
+      <a class="btn btn-outline btn-sm" href="${escapeHtml(invoiceUrl)}" target="_blank" rel="noopener">Buka Link Invoice</a>
       <button class="btn btn-secondary btn-sm" onclick="contactAboutOrder('${order.order_number}','${items.map(i=>i.title).join(', ')}')">Tanya via WhatsApp</button>
     </div>`;
   openModal('modal-invoice');
