@@ -1780,15 +1780,12 @@ footer {
         <div class="form-group">
           <label>Layanan Pengiriman</label>
           <select id="ck-kurir">
-            <option value="">Pilih pengiriman...</option>
-            <option value="jne">JNE Reguler (5-7 hari) — Rp 85.000</option>
-            <option value="jnt">J&T Express (3-5 hari) — Rp 95.000</option>
-            <option value="sicepat">SiCepat (3-4 hari) — Rp 90.000</option>
-            <option value="ambil">Ambil di Studio (Gratis)</option>
+            <option value="included" selected>Pengiriman standar Aksara — sudah termasuk harga karya</option>
+            <option value="pickup">Ambil di Studio Aksara</option>
           </select>
         </div>
         <div style="font-size:12px;color:var(--muted);margin-top:.5rem;line-height:1.7">
-          &#9432; Semua lukisan dikemas dengan material khusus anti-lembap dan bingkai pelindung sudut untuk memastikan karya sampai dalam kondisi sempurna.
+          &#9432; Harga lukisan sudah termasuk ongkos kirim standar ke alamat pembeli. Semua karya dikemas dengan material khusus anti-lembap dan pelindung sudut; admin akan mengatur ekspedisi terbaik setelah pembayaran dikonfirmasi.
         </div>
       </div>
       <!-- Step 3: Pembayaran -->
@@ -2798,9 +2795,9 @@ function renderCartBody(){
   }).join('');
   footer.innerHTML=`
     <div class="cart-subtotal"><span>Subtotal (${state.cart.length} karya)</span><span>${fmt(total)}</span></div>
-    <div class="cart-subtotal"><span>Estimasi pengiriman</span><span style="color:var(--muted)">Dihitung saat checkout</span></div>
+    <div class="cart-subtotal"><span>Pengiriman standar</span><span style="color:var(--success)">Termasuk</span></div>
     <div class="cart-total"><span>Total</span><span>${fmt(total)}</span></div>
-    <div class="cart-note">Harga belum termasuk ongkos kirim</div>
+    <div class="cart-note">Harga lukisan sudah termasuk ongkos kirim standar</div>
     <button class="btn btn-primary btn-full" onclick="closeCart();openCheckout()">Lanjut ke Checkout</button>
     <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeCart()">Lanjut Belanja</button>
   `;
@@ -2854,7 +2851,7 @@ async function ckNext(){
   if(state.ckStep===2){
     const a=document.getElementById('ck-alamat').value;
     const k=document.getElementById('ck-kurir').value;
-    if(!a||!k){ showToast('Mohon lengkapi alamat dan pilih pengiriman','error'); return; }
+    if(!a){ showToast('Mohon lengkapi alamat pengiriman','error'); return; }
   }
   if(state.ckStep===3){
     // Confirm & simpan pesanan ke Supabase
@@ -2868,7 +2865,7 @@ async function ckNext(){
     const proof=document.getElementById('ck-payment-proof').value.trim();
     const proofUrl=state.paymentProof?.url || '';
     const kurir=document.getElementById('ck-kurir');
-    const kurirText=kurir.options[kurir.selectedIndex]?.text||'-';
+    const kurirText=kurir.options[kurir.selectedIndex]?.text||'Pengiriman standar Aksara — sudah termasuk harga karya';
   const payment=document.querySelector('input[name="payment"]:checked')?.value||'-';
   if(!wa){ showToast('Mohon isi nomor WhatsApp','error'); return; }
     if(nextBtn){ nextBtn.disabled=true; nextBtn.textContent='Menyimpan...'; }
@@ -2908,6 +2905,7 @@ async function ckNext(){
         ${orderNumber ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Nomor Pesanan</span><span style="color:var(--brown)">${orderNumber}</span></div>` : ''}
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pemesan</span><span style="color:var(--brown)">${nama}</span></div>
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pengiriman</span><span style="color:var(--brown);font-size:12px;max-width:60%;text-align:right">${kurirText}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Ongkos kirim</span><span style="color:var(--success)">Termasuk harga</span></div>
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Pembayaran</span><span style="color:var(--brown)">${payment}</span></div>
         <div style="padding-top:6px;color:var(--muted);font-size:12px;line-height:1.7">${paymentConfirmationText(payment)}</div>
         ${proofUrl ? `<div style="padding-top:6px;color:var(--muted);font-size:12px">Bukti upload: <a href="${escapeHtml(proofUrl)}" target="_blank" rel="noopener" style="color:var(--terra)">Buka file</a></div>` : ''}
