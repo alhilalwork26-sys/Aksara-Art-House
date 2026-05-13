@@ -2408,6 +2408,83 @@ body {
   }
 }
 
+/* Final polish: lighter hero, crisp cart, tidy consult CTA */
+#page-home .hero-video-bg {
+  filter:saturate(1) contrast(1.02) brightness(.88);
+}
+#page-home .hero-feature::before {
+  background:
+    linear-gradient(180deg, rgba(97,59,43,.14), rgba(97,59,43,.52)),
+    radial-gradient(circle at 50% 42%, rgba(206,108,66,.14), transparent 48%);
+}
+#page-home .hero-feature::after {
+  height:22%;
+  background:linear-gradient(0deg, rgba(97,59,43,.46), transparent);
+}
+.nav-cart-btn {
+  color:var(--cream);
+}
+.cart-icon-shape {
+  position:relative;
+  width:22px;
+  height:18px;
+  display:inline-block;
+  border-bottom:3px solid currentColor;
+  border-left:3px solid currentColor;
+  transform:skewX(-8deg);
+}
+.cart-icon-shape::before {
+  content:'';
+  position:absolute;
+  left:2px;
+  top:3px;
+  width:15px;
+  border-top:3px solid currentColor;
+  transform:skewX(8deg);
+}
+.cart-icon-shape::after {
+  content:'';
+  position:absolute;
+  left:1px;
+  bottom:-8px;
+  width:22px;
+  height:5px;
+  background:
+    radial-gradient(circle, currentColor 0 2px, transparent 2.2px) left center/10px 5px no-repeat,
+    radial-gradient(circle, currentColor 0 2px, transparent 2.2px) right center/10px 5px no-repeat;
+  transform:skewX(8deg);
+}
+#page-home .hero-cta .btn-ghost {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  min-width:170px;
+  color:var(--cream);
+  background:rgba(253,248,244,.10);
+  border-color:rgba(253,248,244,.46);
+}
+#page-home .hero-cta .btn-ghost:hover {
+  background:var(--terra);
+  border-color:var(--terra);
+  color:var(--cream);
+}
+@media (max-width:720px) {
+  .cart-icon-shape {
+    width:20px;
+    height:16px;
+    border-bottom-width:2.5px;
+    border-left-width:2.5px;
+  }
+  .cart-icon-shape::before {
+    width:14px;
+    border-top-width:2.5px;
+  }
+  #page-home .hero-cta .btn-ghost {
+    width:min(260px, 100%);
+  }
+}
+
 /* ═══════════════════════════════════════
    MY ORDERS
 ═══════════════════════════════════════ */
@@ -2464,7 +2541,7 @@ body {
       <button class="nav-icon-btn" onclick="toggleWishlistPage()" title="Wishlist">&#9825;
         <span class="cart-count" id="wish-count" style="display:none">0</span>
       </button>
-      <button class="nav-icon-btn" onclick="openCart()" title="Keranjang">&#128722;
+      <button class="nav-icon-btn nav-cart-btn" onclick="openCart()" title="Keranjang"><span class="cart-icon-shape" aria-hidden="true"></span>
         <span class="cart-count" id="cart-count" style="display:none">0</span>
       </button>
       
