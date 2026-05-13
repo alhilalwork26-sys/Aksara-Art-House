@@ -1417,6 +1417,332 @@ footer {
   .detail-support-grid { grid-template-columns:1fr; }
 }
 
+/* ═══════════════════════════════════════
+   THROTTLE-INSPIRED STOREFRONT SKIN
+═══════════════════════════════════════ */
+body {
+  background:#111;
+}
+#page-home.page.active {
+  width:100%;
+  max-width:none;
+  margin:0;
+  border:0;
+  border-radius:0;
+  background:#fff;
+  box-shadow:none;
+}
+#navbar {
+  top:0;
+  width:100%;
+  margin:0;
+  border:0;
+  border-radius:0;
+  background:rgba(10,10,10,.82);
+  box-shadow:none;
+  backdrop-filter:blur(18px);
+}
+.nav-inner {
+  max-width:1420px;
+  padding:0 clamp(1rem, 3vw, 3rem);
+}
+.nav-brand,
+.hamburger,
+.nav-icon-btn,
+.nav-user-btn,
+.nav-link {
+  color:#fff;
+}
+.nav-brand {
+  font-family:var(--fb);
+  font-size:17px;
+  font-weight:500;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+}
+.nav-brand em {
+  color:#fff;
+  font-style:normal;
+}
+.nav-link {
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-size:11px;
+}
+.nav-link:hover,
+.nav-link.active {
+  color:#fff;
+  border-color:rgba(255,255,255,.22);
+  background:rgba(255,255,255,.12);
+}
+.nav-icon-btn:hover,
+.nav-user-btn:hover {
+  color:#fff;
+}
+.nav-user-btn {
+  border-color:rgba(255,255,255,.2);
+  background:rgba(255,255,255,.08);
+}
+.mobile-menu {
+  top:72px;
+  background:rgba(12,12,12,.96);
+  border-color:rgba(255,255,255,.12);
+}
+.mobile-nav-link {
+  color:rgba(255,255,255,.72);
+  border-bottom-color:rgba(255,255,255,.12);
+}
+.mobile-nav-link:hover,
+.mobile-nav-link.active {
+  color:#fff;
+}
+#page-home .marquee-wrap {
+  background:#0a0a0a;
+  border-color:rgba(255,255,255,.12);
+}
+#page-home .marquee-item {
+  color:rgba(255,255,255,.68);
+}
+#page-home .marquee-dot {
+  color:#fff;
+}
+#page-home .hero {
+  min-height:calc(100vh - 72px);
+  padding:0;
+  background:#0b0b0b;
+}
+#page-home .hero-layout {
+  display:block;
+  min-height:calc(100vh - 72px);
+}
+#page-home .hero-feature {
+  min-height:calc(100vh - 72px);
+  border-radius:0;
+  padding:clamp(2rem, 7vw, 7rem);
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+#page-home .hero-feature::before {
+  background:linear-gradient(180deg, rgba(0,0,0,.28), rgba(0,0,0,.62)), radial-gradient(circle at 50% 40%, rgba(255,255,255,.08), transparent 46%);
+}
+#page-home .hero-feature::after {
+  height:34%;
+  background:linear-gradient(0deg, rgba(0,0,0,.78), transparent);
+}
+#page-home .hero-art-fill svg,
+#page-home .hero-art-fill img {
+  transform:scale(1.06);
+  filter:saturate(.78) contrast(1.06) brightness(.78);
+}
+#page-home .hero-copy {
+  width:min(980px, 100%);
+  max-width:none;
+  align-items:center;
+  justify-content:center;
+  min-height:calc(100vh - 72px);
+}
+#page-home .hero-copy > div:first-child {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+#page-home .hero-eyebrow {
+  background:rgba(255,255,255,.13);
+  border-color:rgba(255,255,255,.22);
+  color:rgba(255,255,255,.84);
+  letter-spacing:.22em;
+}
+#page-home .hero h1 {
+  font-family:var(--fb);
+  font-size:clamp(44px, 9.4vw, 128px);
+  font-weight:500;
+  line-height:.92;
+  letter-spacing:0;
+  text-transform:uppercase;
+  color:#fff;
+  max-width:1000px;
+  margin-bottom:1.2rem;
+}
+#page-home .hero h1 em {
+  color:#fff;
+  font-style:normal;
+}
+#page-home .hero-sub {
+  max-width:650px;
+  margin-bottom:2.2rem;
+  color:rgba(255,255,255,.76);
+  font-size:clamp(14px, 1.7vw, 18px);
+}
+#page-home .hero-cta {
+  justify-content:center;
+}
+#page-home .hero .btn {
+  min-height:48px;
+  border-radius:999px;
+  padding:12px 26px;
+  letter-spacing:.12em;
+}
+#page-home .hero .btn-primary {
+  background:#fff;
+  color:#0c0c0c;
+}
+#page-home .hero .btn-primary:hover {
+  background:#f2f2f2;
+  box-shadow:0 12px 30px rgba(255,255,255,.2);
+}
+#page-home .hero .btn-secondary,
+#page-home .hero .btn-ghost {
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.32);
+}
+#page-home .hero-stats {
+  position:absolute;
+  left:50%;
+  bottom:clamp(1rem, 4vw, 2.8rem);
+  transform:translateX(-50%);
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  width:min(760px, calc(100% - 2rem));
+}
+#page-home .hero-stats > div {
+  background:rgba(0,0,0,.34);
+  border-color:rgba(255,255,255,.14);
+}
+#page-home .hero-side {
+  display:none;
+}
+#page-home .featured-section,
+#page-home .section-sm {
+  background:#fff;
+}
+#page-home .featured-section {
+  padding:clamp(3rem, 6vw, 5.5rem) 0;
+}
+#page-home .featured-header {
+  align-items:center;
+  margin-bottom:2rem;
+}
+#page-home .section-title {
+  font-family:var(--fb);
+  color:#050505;
+  font-size:clamp(28px, 4vw, 48px);
+  font-weight:500;
+  letter-spacing:0;
+}
+#page-home .latest-badge {
+  background:#0c0c0c;
+  color:#fff;
+}
+#page-home .featured-header .btn,
+#page-home .marketplace-card .btn {
+  border-radius:999px;
+}
+#page-home .p-card-img-wrap {
+  background:#f1f1f1;
+  border:0;
+  border-radius:18px;
+}
+#page-home .p-card:hover .p-card-img-wrap {
+  box-shadow:0 22px 55px rgba(0,0,0,.12);
+}
+#page-home .p-card-title,
+#page-home .p-card-price {
+  color:#080808;
+}
+#page-home .p-card-meta {
+  color:#6c6c6c;
+}
+#page-home .p-card-badge {
+  right:auto;
+  left:12px;
+  top:12px;
+  background:#0c0c0c;
+  color:#fff;
+}
+#page-home .p-card-wishlist {
+  left:auto;
+  right:12px;
+  top:12px;
+  border:0;
+  color:#111;
+}
+#page-home .marketplace-strip {
+  padding-bottom:clamp(3rem, 6vw, 5rem);
+}
+#page-home .marketplace-card {
+  background:#0d0d0d;
+  border:0;
+  border-radius:20px;
+  color:#fff;
+  min-height:220px;
+}
+#page-home .marketplace-card-icon {
+  background:#fff;
+  color:#0d0d0d;
+}
+#page-home .marketplace-card h4 {
+  font-family:var(--fb);
+  color:#fff;
+  font-size:18px;
+}
+#page-home .marketplace-card p {
+  color:rgba(255,255,255,.68);
+}
+@media (max-width:900px) {
+  .nav-brand {
+    order:1;
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+  }
+  .nav-right { order:2; margin-left:auto; }
+  .hamburger { order:0; }
+  #page-home .hero-feature {
+    padding:2rem 1.25rem 7.5rem;
+  }
+}
+@media (max-width:600px) {
+  #page-home .hero,
+  #page-home .hero-layout,
+  #page-home .hero-feature,
+  #page-home .hero-copy {
+    min-height:calc(100vh - 72px);
+  }
+  #page-home .hero h1 {
+    font-size:clamp(38px, 12vw, 58px);
+    max-width:100%;
+  }
+  #page-home .hero-sub {
+    font-size:14px;
+    line-height:1.7;
+  }
+  #page-home .hero-cta {
+    width:100%;
+  }
+  #page-home .hero-cta .btn {
+    width:min(280px, 100%);
+  }
+  #page-home .hero-stats {
+    display:none;
+  }
+  #page-home .featured-header {
+    align-items:flex-start;
+  }
+  #page-home .paintings-grid {
+    gap:.9rem;
+  }
+  .nav-brand {
+    max-width:170px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:14px;
+  }
+  .nav-right > .nav-icon-btn:first-child {
+    display:none;
+  }
+}
+
 
 /* ═══════════════════════════════════════
    ADMIN PANEL
@@ -1701,8 +2027,8 @@ footer {
         <div class="hero-copy">
           <div>
             <div class="hero-eyebrow">Original Art Marketplace</div>
-            <h1>Setiap Lukisan<br>Punya <em>Ceritanya</em></h1>
-            <p class="hero-sub">Koleksi original oil on canvas, acrylic, dan mixed media dari studio Aksara Art House untuk ruang yang lebih hidup.</p>
+            <h1>Seni Original<br>Untuk <em>Ruang Hidup</em></h1>
+            <p class="hero-sub">Koleksi lukisan original Aksara Art House yang siap dipajang, dikoleksi, dan dikirim aman ke seluruh Indonesia.</p>
             <div class="hero-cta">
               <button class="btn btn-primary" onclick="goPage('gallery')">Jelajahi Koleksi</button>
               <button class="btn btn-secondary" onclick="goPage('auction')">Ikut Lelang</button>
