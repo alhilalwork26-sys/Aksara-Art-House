@@ -250,6 +250,14 @@ button { cursor:pointer; }
   font-size:18px; padding:4px;
 }
 .nav-icon-btn:hover { color:var(--terra); }
+.nav-icon-label {
+  display:none;
+  margin-left:7px;
+  font-size:10px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:currentColor;
+}
 .cart-count {
   position:absolute; top:-4px; right:-4px;
   background:var(--terra); color:#fff;
@@ -895,6 +903,36 @@ button { cursor:pointer; }
 }
 .price-note { font-size:12px; color:var(--muted); }
 .detail-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.spec-list {
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:.65rem;
+  margin-top:1rem;
+}
+.spec-item {
+  border:1px solid var(--border);
+  background:rgba(253,248,244,.68);
+  border-radius:6px;
+  padding:.75rem .85rem;
+}
+.spec-label {
+  font-size:10px;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:.25rem;
+}
+.spec-value {
+  font-size:13px;
+  color:var(--brown);
+}
+.availability-note {
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--terra);
+  margin-top:8px;
+}
 
 /* ═══════════════════════════════════════
    AUCTION PAGE
@@ -1015,6 +1053,20 @@ button { cursor:pointer; }
   transition:border-color .2s;
 }
 .bid-input:focus { border-color:var(--terra); }
+.bid-error {
+  min-height:16px;
+  font-size:11px;
+  color:#8B2E2E;
+  margin:-4px 0 8px;
+}
+.auction-rule-note {
+  font-size:11px;
+  line-height:1.65;
+  color:var(--muted);
+  margin-top:.6rem;
+  padding-top:.6rem;
+  border-top:1px solid var(--border);
+}
 .bid-history-toggle {
   width:100%; background:none;
   border:none; border-top:1px solid var(--border);
@@ -2484,6 +2536,20 @@ body {
     width:min(260px, 100%);
   }
 }
+@media (min-width:1120px) {
+  .nav-icon-btn {
+    width:auto;
+    padding-inline:12px;
+  }
+  .nav-icon-label {
+    display:inline;
+  }
+}
+@media (max-width:600px) {
+  .spec-list {
+    grid-template-columns:1fr;
+  }
+}
 
 /* ═══════════════════════════════════════
    MY ORDERS
@@ -2538,10 +2604,10 @@ body {
       <button class="nav-link" id="nl-about" onclick="goPage('about')">Tentang</button>
     </div>
     <div class="nav-right">
-      <button class="nav-icon-btn" onclick="toggleWishlistPage()" title="Wishlist">&#9825;
+      <button class="nav-icon-btn" onclick="toggleWishlistPage()" title="Wishlist" aria-label="Buka wishlist">&#9825;<span class="nav-icon-label">Wishlist</span>
         <span class="cart-count" id="wish-count" style="display:none">0</span>
       </button>
-      <button class="nav-icon-btn nav-cart-btn" onclick="openCart()" title="Keranjang"><span class="cart-icon-shape" aria-hidden="true"></span>
+      <button class="nav-icon-btn nav-cart-btn" onclick="openCart()" title="Keranjang" aria-label="Buka keranjang"><span class="cart-icon-shape" aria-hidden="true"></span><span class="nav-icon-label">Keranjang</span>
         <span class="cart-count" id="cart-count" style="display:none">0</span>
       </button>
       
@@ -2721,9 +2787,9 @@ body {
           <div class="dims-card">
             <div class="dims-label">&#8614; Dimensi Karya</div>
             <div class="dims-grid">
-              <div class="dim-item"><div class="dim-name">Panjang</div><div class="dim-value" id="d-pjg"></div><div class="dim-unit">cm</div></div>
+              <div class="dim-item"><div class="dim-name">Width</div><div class="dim-value" id="d-pjg"></div><div class="dim-unit">cm</div></div>
               <div class="dim-item"><div class="dim-name">Tinggi</div><div class="dim-value" id="d-tgg"></div><div class="dim-unit">cm</div></div>
-              <div class="dim-item"><div class="dim-name">Lebar</div><div class="dim-value" id="d-lbr"></div><div class="dim-unit">cm</div></div>
+              <div class="dim-item"><div class="dim-name">Depth</div><div class="dim-value" id="d-lbr"></div><div class="dim-unit">cm</div></div>
               <div class="dim-item"><div class="dim-name">Tebal</div><div class="dim-value" id="d-tbl"></div><div class="dim-unit">cm</div></div>
             </div>
           </div>
@@ -2755,6 +2821,7 @@ body {
           </div>
           <div class="purchase-note" id="d-purchase-note">Setelah checkout, tim studio akan menghubungi Anda untuk konfirmasi pembayaran, pengiriman, dan detail penempatan karya bila diperlukan.</div>
           <div class="detail-actions" id="d-actions"></div>
+          <div class="spec-list" id="d-specs"></div>
           <div id="reviews-section"></div>
         </div>
       </div>
@@ -2945,12 +3012,12 @@ body {
         <div class="form-group">
           <label>Layanan Pengiriman</label>
           <select id="ck-kurir">
-            <option value="included" selected>Pengiriman standar Aksara — sudah termasuk harga karya</option>
+            <option value="included" selected>Pengiriman standar Aksara — termasuk harga karya (ETA 3-7 hari kerja)</option>
             <option value="pickup">Ambil di Studio Aksara</option>
           </select>
         </div>
         <div style="font-size:12px;color:var(--muted);margin-top:.5rem;line-height:1.7">
-          &#9432; Harga lukisan sudah termasuk ongkos kirim standar ke alamat pembeli. Semua karya dikemas dengan material khusus anti-lembap dan pelindung sudut; admin akan mengatur ekspedisi terbaik setelah pembayaran dikonfirmasi.
+          &#9432; Ringkas: keranjang dipakai untuk beli langsung, ongkir standar sudah termasuk, estimasi tiba 3-7 hari kerja setelah pembayaran dikonfirmasi. Semua karya dikemas dengan material anti-lembap dan pelindung sudut.
         </div>
       </div>
       <!-- Step 3: Pembayaran -->
@@ -3143,6 +3210,35 @@ const jsArg = value => JSON.stringify(String(value));
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
   '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
 })[ch]);
+const artworkWidth = p => Number(p.w ?? p.p ?? p.l ?? 0) || 0;
+const artworkHeight = p => Number(p.h ?? p.t ?? 0) || 0;
+const artworkDepth = p => Number(p.d ?? p.k ?? 0) || 0;
+function artworkDimensionText(p){
+  const w=artworkWidth(p), h=artworkHeight(p), d=artworkDepth(p);
+  return `${w || '-'} × ${h || '-'}${d ? ` × ${d}` : ''} cm`;
+}
+function artworkOrientation(p){
+  const w=artworkWidth(p), h=artworkHeight(p);
+  if(!w || !h) return 'Belum ditentukan';
+  if(Math.abs(w-h)<=4) return 'Square';
+  return w > h ? 'Landscape' : 'Portrait';
+}
+function artworkFrameText(p){
+  return p.frame || p.frame_status || 'Frame opsional, konsultasikan sebelum checkout';
+}
+function artworkConditionText(p){
+  return p.condition || 'Siap koleksi, diverifikasi studio';
+}
+function auctionEndText(a){
+  if(a?.endsAt) {
+    try { return new Date(a.endsAt).toLocaleString('id-ID', { dateStyle:'medium', timeStyle:'short', timeZone:'Asia/Jakarta' }) + ' WIB'; }
+    catch(e) {}
+  }
+  return `${fmtTime(Number(a?.endsIn)||0)} lagi · WIB`;
+}
+function auctionForPainting(id){
+  return AUCTIONS.find(a=>(a.paintingId||a.id)===id);
+}
 const linkifyText = value => escapeHtml(value).replace(/https?:\/\/[^\s<]+/g, url => `<a href="${url}" target="_blank" rel="noopener" style="color:var(--terra);text-decoration:underline">Buka file</a>`);
 const artworkImageUrl = p => p && (p.image_url || p.image || '');
 const fmtTime = s => {
@@ -3510,15 +3606,16 @@ function renderHome(){
 
 // ── CARD HTML ──────────────────────────────────
 function cardHTML(p){
+  const statusInfo = getStatusInfo(p);
   const badge=p.status==='lelang'
     ? `<span class="p-card-badge badge-auction">Lelang</span>`
     : p.status==='terjual' ? `<span class="p-card-badge badge-sold">Terjual</span>`
     : `<span class="p-card-badge badge-avail">Tersedia</span>`;
   const inWish=state.wishlist.includes(p.id);
-  const auc=AUCTIONS.find(a=>(a.paintingId||a.id)===p.id);
+  const auc=auctionForPainting(p.id);
   const priceHTML=p.status==='terjual' ? '' :
     p.status==='lelang' ? `<div class="p-card-price">Bid: ${fmt(auc?.currentBid||p.price)}</div>` :
-    `<div class="p-card-price">${fmt(p.price)}</div>`;
+    `<div class="p-card-price">${fmt(p.price)}</div><div class="availability-note">Beli langsung</div>`;
   return `<div class="p-card" onclick='openDetail(${jsArg(p.id)})'>
     <div class="p-card-img-wrap">
       <button class="p-card-wishlist ${inWish?'active':''}" onclick='event.stopPropagation();toggleWishlist(${jsArg(p.id)})' title="${inWish?'Hapus dari wishlist':'Simpan ke wishlist'}">${inWish?'&#9829;':'&#9825;'}</button>
@@ -3527,7 +3624,7 @@ function cardHTML(p){
     </div>
     <div class="p-card-info">
       <div class="p-card-title">${escapeHtml(p.title)}</div>
-      <div class="p-card-meta">${escapeHtml(p.medium)} &middot; ${escapeHtml(p.year)}</div>
+      <div class="p-card-meta">${escapeHtml(p.medium)} &middot; ${escapeHtml(p.year)} &middot; ${escapeHtml(statusInfo.label)}</div>
       ${priceHTML}
     </div>
   </div>`;
@@ -3619,6 +3716,21 @@ function toggleWishlistPage(){
   refreshScrollAnimations();
 }
 
+function goAuctionForArtwork(paintingId){
+  const a = auctionForPainting(paintingId);
+  goPage('auction');
+  setTimeout(()=>{
+    const card = a ? document.getElementById('auction-card-'+CSS.escape(String(a.id))) : null;
+    const input = a ? document.getElementById('bid-'+a.id) : null;
+    if(card) {
+      card.scrollIntoView({ behavior:'smooth', block:'center' });
+      card.style.boxShadow='0 0 0 3px rgba(206,108,66,.28), 0 18px 44px rgba(97,59,43,.16)';
+      setTimeout(()=>card.style.boxShadow='', 1800);
+    }
+    if(input) input.focus();
+  }, 120);
+}
+
 // ── DETAIL ──────────────────────────────────
 function openDetail(id){
   const p=PAINTINGS.find(x=>x.id===id);
@@ -3636,14 +3748,20 @@ function openDetail(id){
   document.getElementById('d-eyebrow').textContent=p.cat.charAt(0).toUpperCase()+p.cat.slice(1)+' · '+p.medium;
   document.getElementById('d-title').textContent=p.title;
   document.getElementById('d-sub').textContent='Oleh '+p.artist+' · '+p.year;
-  document.getElementById('d-pjg').textContent=p.p;
-  document.getElementById('d-tgg').textContent=p.t;
-  document.getElementById('d-lbr').textContent=p.l;
-  document.getElementById('d-tbl').textContent=p.k;
+  document.getElementById('d-pjg').textContent=artworkWidth(p) || '-';
+  document.getElementById('d-tgg').textContent=artworkHeight(p) || '-';
+  document.getElementById('d-lbr').textContent=artworkDepth(p) || '-';
+  document.getElementById('d-tbl').textContent=p.k || p.thickness || '-';
   document.getElementById('d-desc').textContent=p.desc;
   document.getElementById('d-medium').textContent=p.medium;
   document.getElementById('d-year').textContent=p.year;
   document.getElementById('d-tags').innerHTML=(p.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('');
+  document.getElementById('d-specs').innerHTML = `
+    <div class="spec-item"><div class="spec-label">Format Dimensi</div><div class="spec-value">${escapeHtml(artworkDimensionText(p))}</div></div>
+    <div class="spec-item"><div class="spec-label">Orientasi</div><div class="spec-value">${escapeHtml(artworkOrientation(p))}</div></div>
+    <div class="spec-item"><div class="spec-label">Frame</div><div class="spec-value">${escapeHtml(artworkFrameText(p))}</div></div>
+    <div class="spec-item"><div class="spec-label">Kondisi</div><div class="spec-value">${escapeHtml(artworkConditionText(p))}</div></div>
+  `;
   const statusInfo=getStatusInfo(p);
   const statusEl=document.getElementById('d-status-chip');
   statusEl.textContent=statusInfo.label;
@@ -3660,7 +3778,7 @@ function openDetail(id){
       : 'Setelah checkout, tim studio akan menghubungi Anda untuk konfirmasi pembayaran, pengiriman, dan detail penempatan karya bila diperlukan.';
 
   // Price & Actions
-  const auc=AUCTIONS.find(a=>(a.paintingId||a.id)===id);
+  const auc=auctionForPainting(id);
   const pl=document.getElementById('d-price-lbl');
   const pv=document.getElementById('d-price-val');
   const acts=document.getElementById('d-actions');
@@ -3672,7 +3790,7 @@ function openDetail(id){
   } else if(p.status==='lelang'&&auc){
     pl.textContent='Penawaran Tertinggi Saat Ini';
     pv.textContent=fmt(auc.currentBid);
-    acts.innerHTML=`<button class="btn btn-primary" onclick="goPage('auction')">Ikut Lelang →</button><button class="btn btn-secondary" onclick='openContact(${jsArg(p.title)})'>Tanya via WhatsApp</button><button class="btn btn-ghost" onclick='toggleWishlist(${jsArg(p.id)})'>&#9825; Simpan</button>`;
+    acts.innerHTML=`<button class="btn btn-primary" onclick='goAuctionForArtwork(${jsArg(p.id)})'>Masuk ke Bid Karya Ini →</button><button class="btn btn-secondary" onclick='openContact(${jsArg(p.title)})'>Tanya via WhatsApp</button><button class="btn btn-ghost" onclick='toggleWishlist(${jsArg(p.id)})'>&#9825; Simpan</button>`;
   } else {
     pl.textContent='Harga';
     pv.textContent=fmt(p.price);
@@ -3870,12 +3988,12 @@ function renderAuction(){
     if(!p) return '';
     const auctionId = jsArg(a.id);
     const minNext=a.currentBid+a.minStep;
-    return `<div class="auction-card">
+    return `<div class="auction-card" id="auction-card-${escapeHtml(a.id)}">
       <div class="auction-card-img" onclick='openDetail(${jsArg(p.id)})'>${paintingSVG(p)}</div>
       <div class="auction-card-body">
         <div class="auction-card-title" onclick='openDetail(${jsArg(p.id)})'>${escapeHtml(p.title)}</div>
         <div class="auction-card-meta">${p.artist} &middot; ${p.medium} &middot; ${p.year}</div>
-        <div class="auction-dims">${p.p} &times; ${p.t} &times; ${p.k} cm</div>
+        <div class="auction-dims">${escapeHtml(artworkDimensionText(p))} &middot; ${escapeHtml(artworkOrientation(p))}</div>
         <div class="bid-row">
           <div class="bid-info-col">
             <div class="bid-lbl">Penawaran Tertinggi</div>
@@ -3883,18 +4001,20 @@ function renderAuction(){
             <div class="bid-cnt">${Number(a.bids)||0} penawaran &middot; Mulai ${fmt(a.startBid)}</div>
           </div>
           <div class="timer-col">
-            <div class="timer-lbl">Berakhir dalam</div>
+            <div class="timer-lbl">Berakhir</div>
             <div class="timer-val${a.endsIn<3600?' urgent':''}" id="timer-${a.id}">${fmtTime(a.endsIn)}</div>
           </div>
         </div>
         <div class="bid-input-row" style="margin-bottom:10px">
-          <input class="bid-input" type="number" id="bid-${a.id}" placeholder="${minNext.toLocaleString('id-ID')}" min="${minNext}" step="${a.minStep}">
+          <input class="bid-input" type="text" inputmode="numeric" id="bid-${a.id}" placeholder="${fmt(minNext)}" data-min="${minNext}" data-step="${a.minStep}" oninput='formatBidInput(this)' onblur='validateBidInput(${auctionId})'>
           <button class="btn btn-primary btn-sm" onclick='placeBid(${auctionId})'>Tawar</button>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Min. penawaran: ${fmt(minNext)} (+${fmt(a.minStep)})</div>
+        <div id="bid-error-${a.id}" class="bid-error"></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Min. penawaran: ${fmt(minNext)} · Increment ${fmt(a.minStep)} · Berakhir ${escapeHtml(auctionEndText(a))}</div>
+        <div class="auction-rule-note">Riwayat penawaran terbuka. Waktu memakai WIB. Tidak ada buyer premium; pengiriman standar sudah termasuk harga akhir kecuali permintaan pengiriman khusus.</div>
       </div>
       <button class="bid-history-toggle" onclick='toggleBidHistory(${auctionId},this)'>
-        Riwayat Penawaran <span>&#9660;</span>
+        Lihat Riwayat Penawaran <span>&#9660;</span>
       </button>
       <div class="bid-history-list hidden" id="bh-${a.id}">
         ${(a.history||[]).length ? (a.history||[]).map(h=>`<div class="bid-history-item"><span class="bid-bidder">${escapeHtml(h.name)}</span><span class="bid-time-ago">${escapeHtml(h.ago)}</span><span class="bid-hist-amt">${fmt(h.amt)}</span></div>`).join('') : '<div class="bid-history-item"><span class="bid-time-ago">Belum ada penawaran</span></div>'}
@@ -3926,10 +4046,17 @@ async function placeBid(auctionId){
   const val=parseInt(raw)||0;
   const minNext=a.currentBid+a.minStep;
   if(val<minNext){
+    setBidError(auctionId, `Penawaran minimal ${fmt(minNext)}.`);
     showToast(`Penawaran minimal ${fmt(minNext)}`,'error');
     return;
   }
+  if((val - a.currentBid) % a.minStep !== 0){
+    setBidError(auctionId, `Gunakan kelipatan increment ${fmt(a.minStep)} dari bid saat ini.`);
+    showToast(`Increment minimal ${fmt(a.minStep)}`,'error');
+    return;
+  }
   if(!state.user){
+    setBidError(auctionId, 'Masuk atau daftar dulu untuk mengirim penawaran.');
     showToast('Silakan masuk atau daftar untuk ikut lelang','error');
     openAuth('login'); return;
   }
@@ -3942,12 +4069,51 @@ async function placeBid(auctionId){
     const data = await res.json();
     if(!res.ok) throw new Error(data.error||'Gagal menyimpan penawaran.');
     input.value='';
+    setBidError(auctionId, '');
     await fetchAuctionsFromDB();
     renderAuction();
     showToast(`Penawaran ${fmt(val)} berhasil tersimpan! ✓`,'success');
   } catch(e) {
     showToast(e.message||'Gagal menyimpan penawaran.','error');
   }
+}
+
+function bidValue(input){
+  return Number(String(input?.value||'').replace(/\D/g,'')) || 0;
+}
+
+function formatBidInput(input){
+  const n = bidValue(input);
+  input.value = n ? fmt(n) : '';
+  const auctionId = input.id.replace('bid-','');
+  if(n) validateBidInput(auctionId, false);
+}
+
+function validateBidInput(auctionId, showEmpty=true){
+  const a=AUCTIONS.find(x=>String(x.id)===String(auctionId));
+  const input=document.getElementById('bid-'+auctionId);
+  if(!a || !input) return true;
+  const val=bidValue(input);
+  const minNext=a.currentBid+a.minStep;
+  if(!val) {
+    setBidError(auctionId, showEmpty ? `Masukkan minimal ${fmt(minNext)}.` : '');
+    return false;
+  }
+  if(val<minNext) {
+    setBidError(auctionId, `Minimal ${fmt(minNext)}.`);
+    return false;
+  }
+  if((val - a.currentBid) % a.minStep !== 0) {
+    setBidError(auctionId, `Harus kelipatan ${fmt(a.minStep)}.`);
+    return false;
+  }
+  setBidError(auctionId, '');
+  return true;
+}
+
+function setBidError(auctionId, message){
+  const el=document.getElementById('bid-error-'+auctionId);
+  if(el) el.textContent=message||'';
 }
 
 function toggleBidHistory(id, btn){
@@ -4037,7 +4203,7 @@ function renderCartBody(){
     <div class="cart-subtotal"><span>Subtotal (${state.cart.length} karya)</span><span>${fmt(total)}</span></div>
     <div class="cart-subtotal"><span>Pengiriman standar</span><span style="color:var(--success)">Termasuk</span></div>
     <div class="cart-total"><span>Total</span><span>${fmt(total)}</span></div>
-    <div class="cart-note">Harga lukisan sudah termasuk ongkos kirim standar</div>
+    <div class="cart-note">Keranjang dipakai untuk beli langsung. Ongkir standar termasuk; estimasi tiba 3-7 hari kerja setelah pembayaran dikonfirmasi.</div>
     <button class="btn btn-primary btn-full" onclick="closeCart();openCheckout()">Lanjut ke Checkout</button>
     <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeCart()">Lanjut Belanja</button>
   `;
