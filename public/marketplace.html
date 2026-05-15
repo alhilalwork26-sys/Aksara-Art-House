@@ -3068,7 +3068,7 @@ input:focus, textarea:focus, select:focus {
           <div>
             <div class="hero-eyebrow">Original Art Marketplace</div>
             <h1>Seni Original<br>Untuk <em>Ruang Hidup</em></h1>
-            <p class="hero-sub">Koleksi lukisan original Aksara Art House yang siap dipajang, dikoleksi, dan dikirim aman ke seluruh Indonesia.</p>
+            <p class="hero-sub" id="dyn-hero-sub">Koleksi lukisan original Aksara Art House yang siap dipajang, dikoleksi, dan dikirim aman ke seluruh Indonesia.</p>
             <div class="hero-cta">
               <button class="btn btn-primary" onclick="goPage('gallery')">Jelajahi Koleksi</button>
               <button class="btn btn-secondary" onclick="goPage('auction')">Ikut Lelang</button>
@@ -3163,9 +3163,9 @@ input:focus, textarea:focus, select:focus {
           </div>
           <select class="sort-select" onchange="sortGallery(this.value)" id="sort-sel">
             <option value="newest">Terbaru</option>
-            <option value="price-asc">Harga ↑</option>
-            <option value="price-desc">Harga ↓</option>
-            <option value="az">A — Z</option>
+            <option value="price-asc">Harga: Rendah ke Tinggi</option>
+            <option value="price-desc">Harga: Tinggi ke Rendah</option>
+            <option value="az">A &mdash; Z</option>
           </select>
           <button class="gallery-filter-btn" id="gallery-filter-toggle" onclick="togglePricePanel()">
             Filter <span class="gf-arrow" id="gf-arrow">▾</span>
@@ -3304,7 +3304,7 @@ input:focus, textarea:focus, select:focus {
           <div><div class="about-stat-val" id="dyn-about-karya">48</div><div class="about-stat-lbl">Karya</div></div>
           <div><div class="about-stat-val" id="dyn-about-pameran">12</div><div class="about-stat-lbl">Pameran</div></div>
           <div><div class="about-stat-val" id="dyn-about-kolektor">200+</div><div class="about-stat-lbl">Kolektor</div></div>
-          <div><div class="about-stat-val">3 Neg</div><div class="about-stat-lbl">Distribusi</div></div>
+          <div><div class="about-stat-val" id="dyn-about-tahun">7</div><div class="about-stat-lbl">Tahun</div></div>
         </div>
       </div>
     </div>
@@ -5314,14 +5314,19 @@ async function getPublicSettings(){
 async function applyPublicSettings(){
   try {
     const s = await getPublicSettings();
-    const setEl = (id, val) => { const el=document.getElementById(id); if(el&&val) el.textContent=val; };
-    setEl('dyn-stat-karya', s.statKarya);
-    setEl('dyn-stat-pameran', s.statPameran);
+    const setEl = (id, val) => { const el=document.getElementById(id); if(el && val != null && val !== '') el.textContent=val; };
+    // Hero stats
+    setEl('dyn-stat-karya',    s.statKarya);
+    setEl('dyn-stat-pameran',  s.statPameran);
     setEl('dyn-stat-kolektor', s.statKolektor);
-    setEl('dyn-stat-tahun', s.statTahun);
-    setEl('dyn-about-karya', s.statKarya);
+    setEl('dyn-stat-tahun',    s.statTahun);
+    // Hero subtitle
+    setEl('dyn-hero-sub',      s.heroSubtitle);
+    // About page stats
+    setEl('dyn-about-karya',   s.statKarya);
     setEl('dyn-about-pameran', s.statPameran);
-    setEl('dyn-about-kolektor', s.statKolektor);
+    setEl('dyn-about-kolektor',s.statKolektor);
+    setEl('dyn-about-tahun',   s.statTahun);
   } catch(e){ console.warn('applyPublicSettings:', e); }
 }
 
