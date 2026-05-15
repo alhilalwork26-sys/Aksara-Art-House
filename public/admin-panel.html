@@ -540,8 +540,19 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
 
     <!-- ═══ DASHBOARD ═══ -->
     <div id="section-dashboard" class="tab-panel active">
-      <div class="dashboard-hero" id="dashboard-hero"></div>
-      <div class="stats-grid" id="stats-grid"></div>
+      <div class="dashboard-hero" id="dashboard-hero">
+        <div>
+          <h2>Memuat Dashboard</h2>
+          <p>Mengambil data terbaru dari Supabase untuk pesanan, karya, lelang, promo, dan ulasan.</p>
+        </div>
+        <div class="dashboard-hero-meta"><span class="dashboard-pill">Sinkronisasi</span></div>
+      </div>
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card"><div class="stat-val">…</div><div class="stat-lbl">Total Karya</div><div class="stat-sub">Memuat data koleksi</div></div>
+        <div class="stat-card"><div class="stat-val">…</div><div class="stat-lbl">Total Pesanan</div><div class="stat-sub">Memuat data order</div></div>
+        <div class="stat-card"><div class="stat-val">…</div><div class="stat-lbl">Lelang Aktif</div><div class="stat-sub">Memuat data lelang</div></div>
+        <div class="stat-card"><div class="stat-val">…</div><div class="stat-lbl">Omzet Order</div><div class="stat-sub">Memuat ringkasan transaksi</div></div>
+      </div>
       <div class="dashboard-grid">
         <div class="dashboard-stack">
           <div class="panel">
@@ -553,7 +564,7 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
               <div class="table-wrap">
                 <table>
                   <thead><tr><th>Pesanan</th><th>Pemesan</th><th>Total</th><th>Status</th></tr></thead>
-                  <tbody id="dash-orders-tbody"></tbody>
+                  <tbody id="dash-orders-tbody"><tr><td colspan="4"><div class="dashboard-empty-row">Memuat pesanan terbaru...</div></td></tr></tbody>
                 </table>
               </div>
             </div>
@@ -568,7 +579,7 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
               <div class="table-wrap">
                 <table id="dash-artworks-table">
                   <thead><tr><th></th><th>Judul</th><th>Harga</th><th>Status</th></tr></thead>
-                  <tbody id="dash-artworks-tbody"></tbody>
+                  <tbody id="dash-artworks-tbody"><tr><td colspan="4"><div class="dashboard-empty-row">Memuat karya terbaru...</div></td></tr></tbody>
                 </table>
               </div>
             </div>
@@ -580,11 +591,11 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
               <h3>Perlu Tindakan</h3>
               <button class="btn btn-ghost btn-sm" onclick="showSection('orders',document.querySelector('[data-section=orders]'))">Buka Pesanan</button>
             </div>
-            <div class="panel-body" id="dash-actions"></div>
+            <div class="panel-body" id="dash-actions"><div class="dashboard-empty-row">Memuat prioritas admin...</div></div>
           </div>
           <div class="panel">
             <div class="panel-head"><h3>Lelang & Stok</h3></div>
-            <div class="panel-body" id="dash-summary"></div>
+            <div class="panel-body" id="dash-summary"><div class="dashboard-empty-row">Memuat ringkasan stok dan lelang...</div></div>
           </div>
         </div>
       </div>
@@ -1075,15 +1086,16 @@ function doAdminLogout() {
 // APP INIT
 // ══════════════════════════════════════════
 async function initApp() {
-  await fetchAllFromDB();
   renderDashboard();
-  await renderArtworksTable();
-  await renderOrders();
-  renderAuctionsAdmin();
-  renderPromos();
-  renderAdminReviews();
+  await refreshAdminData(true);
   // Poll untuk data terbaru dari Supabase
   setInterval(async () => {
+    await refreshAdminData(false);
+  }, 15000);
+}
+
+async function refreshAdminData(showToastOnSuccess = false) {
+  try {
     await fetchAllFromDB();
     renderDashboard();
     await renderArtworksTable();
@@ -1092,7 +1104,12 @@ async function initApp() {
     renderPromos();
     renderAdminReviews();
     updateOrderBadge();
-  }, 15000);
+    if(showToastOnSuccess) showToast('Dashboard tersinkron dengan database ✓', 'success');
+  } catch(e) {
+    console.error('Gagal refresh dashboard:', e);
+    renderDashboardError(e);
+    showToast(e.message || 'Gagal memuat dashboard.', 'error');
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1155,9 +1172,10 @@ function closeConfirm() { document.getElementById('confirm-overlay').classList.a
 // DASHBOARD
 // ══════════════════════════════════════════
 function renderDashboard() {
-  const paintings = loadPaintings();
-  const orders = loadOrders();
-  const auctions = loadAuctions();
+  try {
+  const paintings = Array.isArray(loadPaintings()) ? loadPaintings() : [];
+  const orders = Array.isArray(loadOrders()) ? loadOrders() : [];
+  const auctions = Array.isArray(loadAuctions()) ? loadAuctions() : [];
   const promos = Array.isArray(_promos) ? _promos : [];
   const reviews = Array.isArray(_reviews) ? _reviews : [];
   const now = Date.now();
@@ -1175,7 +1193,7 @@ function renderDashboard() {
     const end = new Date(a.endsAt).getTime();
     return Number.isFinite(end) && end >= now && end - now <= day;
   });
-  const pendingReviews = reviews.filter(r=>!r.is_approved);
+  const pendingReviews = reviews.filter(r=>!r.is_approved && !r.is_rejected);
   const activePromos = promos.filter(p=>p.is_active !== false);
   const revenue = orders.filter(o=>o.status!=='cancelled').reduce((s,o)=>s+Number(o.total||0),0);
   const availableValue = paintings.filter(p=>p.status==='tersedia').reduce((s,p)=>s+Number(p.price||0),0);
@@ -1217,7 +1235,7 @@ function renderDashboard() {
     </tr>
   `).join('') : `<tr><td colspan="4"><div class="dashboard-empty-row">Belum ada pesanan masuk.</div></td></tr>`;
 
-  const recent = paintings.slice(0,5);
+  const recent = [...paintings].sort((a,b)=>getTime(b.created_at || b.createdAt || b.id)-getTime(a.created_at || a.createdAt || a.id)).slice(0,5);
   function dashThumb(p){
     const imageUrl = p.image_url || p.image;
     return imageUrl ? `<img src="${escapeHtml(imageUrl)}" style="width:48px;height:60px;object-fit:cover;border-radius:3px;border:1px solid var(--border)">` : paintingSVG(p,48,60);
@@ -1290,6 +1308,37 @@ function renderDashboard() {
   `;
 
   updateOrderBadge();
+  } catch(e) {
+    console.error('Dashboard render gagal:', e);
+    renderDashboardError(e);
+  }
+}
+
+function renderDashboardError(error) {
+  const message = escapeHtml(error?.message || 'Data dashboard belum bisa dimuat.');
+  const hero = document.getElementById('dashboard-hero');
+  const stats = document.getElementById('stats-grid');
+  const orders = document.getElementById('dash-orders-tbody');
+  const artworks = document.getElementById('dash-artworks-tbody');
+  const actions = document.getElementById('dash-actions');
+  const summary = document.getElementById('dash-summary');
+  if(hero) hero.innerHTML = `
+    <div>
+      <h2>Dashboard Perlu Sinkronisasi</h2>
+      <p>${message} Klik muat ulang data untuk mengambil ulang pesanan, karya, lelang, promo, dan ulasan dari database.</p>
+    </div>
+    <div class="dashboard-hero-meta"><span class="dashboard-pill">Perlu cek</span></div>
+  `;
+  if(stats) stats.innerHTML = `
+    <div class="stat-card is-warn"><div class="stat-val">!</div><div class="stat-lbl">Data Belum Lengkap</div><div class="stat-sub">${message}</div></div>
+    <div class="stat-card"><div class="stat-val">0</div><div class="stat-lbl">Pesanan</div><div class="stat-sub">Menunggu sinkronisasi</div></div>
+    <div class="stat-card"><div class="stat-val">0</div><div class="stat-lbl">Karya</div><div class="stat-sub">Menunggu sinkronisasi</div></div>
+    <div class="stat-card"><div class="stat-val">0</div><div class="stat-lbl">Lelang</div><div class="stat-sub">Menunggu sinkronisasi</div></div>
+  `;
+  if(orders) orders.innerHTML = `<tr><td colspan="4"><div class="dashboard-empty-row">Pesanan belum bisa dimuat. Buka menu Pesanan atau klik Muat Ulang Data.</div></td></tr>`;
+  if(artworks) artworks.innerHTML = `<tr><td colspan="4"><div class="dashboard-empty-row">Karya belum bisa dimuat. Buka menu Kelola Karya atau klik Muat Ulang Data.</div></td></tr>`;
+  if(actions) actions.innerHTML = `<div class="dashboard-actions"><div class="dash-action is-empty"><div class="dash-action-icon">↻</div><div><div class="dash-action-title">Muat ulang data</div><div class="dash-action-sub">Ambil data terbaru dari Supabase.</div></div><button class="btn btn-secondary btn-sm" onclick="refreshAdminData(true)">Muat</button></div></div>`;
+  if(summary) summary.innerHTML = `<div class="dashboard-empty-row">Ringkasan stok dan lelang akan tampil setelah data berhasil dimuat.</div>`;
 }
 
 function updateOrderBadge() {
@@ -2044,13 +2093,8 @@ async function saveSettings() {
 
 function confirmRefreshData() {
   showConfirm('Muat Ulang Data?', 'Data terbaru akan diambil ulang dari database Supabase.', async () => {
-    await fetchAllFromDB();
-    renderDashboard();
-    renderArtworksTable();
-    renderOrders();
-    renderAuctionsAdmin();
+    await refreshAdminData(true);
     closeModal('modal-settings');
-    showToast('Data berhasil dimuat ulang ✓', 'success');
   }, '↻');
 }
 
