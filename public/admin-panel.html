@@ -842,13 +842,13 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
     <div id="section-artworks" class="tab-panel">
       <div class="search-bar">
         <input class="search-input" type="text" id="art-search" placeholder="Cari judul karya..." oninput="_debouncedRenderArtworks()">
-        <select class="filter-select" id="art-filter-status" onchange="renderArtworksTable()">
+        <select class="filter-select" id="art-filter-status" onchange="_debouncedRenderArtworks()">
           <option value="">Semua Status</option>
           <option value="tersedia">Tersedia</option>
           <option value="terjual">Terjual</option>
           <option value="lelang">Lelang</option>
         </select>
-        <select class="filter-select" id="art-filter-cat" onchange="renderArtworksTable()">
+        <select class="filter-select" id="art-filter-cat" onchange="_debouncedRenderArtworks()">
           <option value="">Semua Kategori</option>
           <option value="abstrak">Abstrak</option>
           <option value="figuratif">Figuratif</option>
@@ -983,12 +983,22 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
     <!-- ═══ REVIEWS ═══ -->
     <div id="section-reviews" class="tab-panel">
       <div class="search-bar">
+        <input class="search-input" type="text" id="review-search" placeholder="Cari nama reviewer atau isi ulasan..." oninput="_debouncedRenderReviews()" style="flex:1;min-width:160px">
         <select class="filter-select" id="review-filter" onchange="renderAdminReviews()">
           <option value="">Semua Ulasan</option>
           <option value="pending">Menunggu Moderasi</option>
           <option value="approved">Disetujui</option>
           <option value="rejected">Ditolak</option>
         </select>
+        <select class="filter-select" id="review-rating-filter" onchange="renderAdminReviews()" style="width:auto">
+          <option value="">Semua Rating</option>
+          <option value="5">★★★★★ (5)</option>
+          <option value="4">★★★★☆ (4)</option>
+          <option value="3">★★★☆☆ (3)</option>
+          <option value="2">★★☆☆☆ (2)</option>
+          <option value="1">★☆☆☆☆ (1)</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="bulkApproveReviews()">✓ Setujui Semua Pending</button>
       </div>
       <div id="reviews-admin-container"></div>
     </div>
@@ -1339,12 +1349,19 @@ function doAdminLogout() {
 async function initApp() {
   renderDashboard();
   await refreshAdminData(true);
-  // Poll untuk data terbaru dari Supabase
-  startRefreshCountdown(30);
+  // Inisialisasi notifikasi browser
+  _lastOrderCount = (_orders || []).length;
+  if(Notification.permission === 'granted') {
+    _notifEnabled = true;
+    const btn = document.getElementById('notif-btn');
+    if(btn) btn.textContent = '🔔 Notif Aktif';
+  }
+  // Poll order baru setiap 15 detik (digabung dengan refresh utama)
+  startRefreshCountdown(15);
   setInterval(async () => {
     await refreshAdminData(false);
-    startRefreshCountdown(30);
-  }, 30000);
+    startRefreshCountdown(15);
+  }, 15000);
 }
 
 async function refreshAdminData(showToastOnSuccess = false) {
@@ -1443,6 +1460,7 @@ function debounce(fn, ms=280){
 }
 const _debouncedRenderOrders = debounce(() => renderOrders(false));
 const _debouncedRenderArtworks = debounce(() => renderArtworksTable(false));
+const _debouncedRenderReviews = debounce(() => renderAdminReviews());
 
 // ══════════════════════════════════════════
 // NOTIFICATION BELL SYSTEM
@@ -3053,6 +3071,13 @@ function renderAdminReviews() {
   if(filter === 'pending') list = list.filter(r => !r.is_approved && !r.is_rejected);
   else if(filter === 'approved') list = list.filter(r => r.is_approved);
   else if(filter === 'rejected') list = list.filter(r => r.is_rejected);
+  const q = (document.getElementById('review-search')?.value || '').toLowerCase();
+  if(q) list = list.filter(r =>
+    (r.reviewer_name||r.name||'').toLowerCase().includes(q) ||
+    (r.body||r.content||r.comment||r.review_text||r.comment||'').toLowerCase().includes(q)
+  );
+  const ratingFilter = document.getElementById('review-rating-filter')?.value;
+  if(ratingFilter) list = list.filter(r => String(r.rating) === ratingFilter);
 
   const container = document.getElementById('reviews-admin-container');
   if(!container) return;
@@ -3083,6 +3108,26 @@ function renderAdminReviews() {
       </div>
     </div>`;
   }).join('');
+}
+
+async function bulkApproveReviews() {
+  const pending = (_reviews||[]).filter(r => !r.is_approved && !r.is_rejected);
+  if(!pending.length) { showToast('Tidak ada ulasan pending', 'error'); return; }
+  showConfirm(`Setujui ${pending.length} Ulasan?`, 'Semua ulasan pending akan langsung tampil di marketplace.', async () => {
+    let success = 0;
+    for(const r of pending) {
+      try {
+        const res = await fetch('/api/admin/reviews/' + r.id, {
+          method:'PATCH', headers: adminHeaders(),
+          body: JSON.stringify({ is_approved: true, is_rejected: false })
+        });
+        if(res.ok) { r.is_approved = true; r.is_rejected = false; success++; }
+      } catch {}
+    }
+    renderAdminReviews();
+    renderNotifPanel();
+    showToast(`${success} ulasan berhasil disetujui ✓`, 'success');
+  }, '✓');
 }
 
 async function approveReview(id) {
@@ -3125,20 +3170,7 @@ async function deleteAdminReview(id) {
   } catch(e) { showToast(e.message, 'error'); }
 }
 
-// Patch initApp to set up notification polling
-const _origInitApp = initApp;
-async function initApp() {
-  await _origInitApp();
-  _lastOrderCount = loadOrders().length;
-  // Check for notification permission state on load
-  if(Notification.permission === 'granted') {
-    _notifEnabled = true;
-    updateNotifBtn();
-  }
-  // More frequent polling for order notifications (every 5s)
-  clearInterval(window._orderPoller);
-  window._orderPoller = setInterval(checkNewOrders, 5000);
-}
+// initApp sudah digabung di atas — patch dihapus
 
 
 </script>
