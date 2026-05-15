@@ -287,17 +287,17 @@ button { cursor:pointer; }
   color:var(--brown); font-size:22px;
 }
 .mobile-menu {
-  display:none;
+  display:none; /* JS sets display:flex before opening */
   position:fixed; top:96px; left:20px; right:20px;
-  background:rgba(255,253,249,.96);
+  background:rgba(255,253,249,.97);
   border:1px solid var(--border);
   border-radius:22px;
   padding:1rem 2rem;
   z-index:199;
   flex-direction:column; gap:4px;
   box-shadow:0 18px 60px rgba(44,35,32,.16);
+  backdrop-filter:blur(8px);
 }
-.mobile-menu.open { display:flex; }
 .mobile-nav-link {
   padding:10px 0;
   font-size:13px; letter-spacing:.08em; text-transform:uppercase;
@@ -691,9 +691,11 @@ button { cursor:pointer; }
   margin-bottom:2rem;
 }
 .gallery-top {
-  display:flex; align-items:flex-end;
+  display:flex; align-items:center;
   justify-content:space-between;
-  margin-bottom:1.5rem;
+  gap:1rem;
+  margin-bottom:1.25rem;
+  flex-wrap:wrap;
 }
 .gallery-count {
   font-size:13px; color:var(--muted);
@@ -2767,6 +2769,230 @@ input:focus, textarea:focus, select:focus {
   to   { opacity:1; transform:translateX(0); }
 }
 
+/* ─── GALLERY CONTROLS (search + sort + filter) ─── */
+.gallery-controls {
+  display:flex; align-items:center; gap:.6rem;
+  flex-wrap:wrap;
+}
+.gallery-search-inline {
+  position:relative;
+  display:flex; align-items:center;
+}
+.gs-icon {
+  position:absolute; left:.7rem;
+  font-size:13px; color:var(--muted);
+  pointer-events:none;
+  line-height:1;
+}
+.gs-input {
+  padding:.46rem 2rem .46rem 2.1rem;
+  border:1px solid var(--border);
+  border-radius:2px;
+  background:var(--warm-white);
+  font-family:var(--fb);
+  font-size:11px; letter-spacing:.04em;
+  color:var(--charcoal);
+  width:200px;
+  transition:border-color .2s, width .3s ease, box-shadow .2s;
+}
+.gs-input:focus {
+  outline:none;
+  border-color:var(--terra);
+  width:240px;
+  box-shadow:0 0 0 2px rgba(176,90,62,.08);
+}
+.gs-clear {
+  position:absolute; right:.45rem;
+  background:none; border:none;
+  color:var(--muted); font-size:13px;
+  cursor:pointer; display:none; line-height:1;
+  padding:2px;
+  transition:color .15s;
+}
+.gs-clear:hover { color:var(--terra); }
+.gs-clear.visible { display:block; }
+
+/* Filter toggle button */
+.gallery-filter-btn {
+  position:relative;
+  padding:.46rem .9rem;
+  border:1px solid var(--border);
+  border-radius:2px;
+  background:var(--warm-white);
+  font-family:var(--fb);
+  font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--muted);
+  cursor:pointer;
+  white-space:nowrap;
+  transition:border-color .2s, color .2s, background .2s;
+}
+.gallery-filter-btn:hover { border-color:var(--terra); color:var(--terra); }
+.gallery-filter-btn.active {
+  background:var(--terra); color:#fff; border-color:var(--terra);
+}
+.gf-arrow { font-size:10px; margin-left:3px; display:inline-block; transition:transform .2s; }
+.gallery-filter-btn.active .gf-arrow { transform:rotate(180deg); }
+.gf-dot {
+  position:absolute; top:5px; right:5px;
+  width:6px; height:6px; border-radius:50%;
+  background:var(--terra);
+}
+.gf-dot.visible { display:block !important; }
+
+/* Price panel (collapsible) */
+.gallery-price-panel {
+  display:flex; align-items:center; gap:.6rem;
+  flex-wrap:wrap;
+  padding:.75rem 1rem;
+  background:var(--warm);
+  border:1px solid var(--border);
+  border-radius:4px;
+  margin-top:.75rem;
+  animation:fadeSlideIn .2s ease both;
+}
+.gallery-price-panel.hidden { display:none; }
+.gallery-price-lbl {
+  font-family:var(--fb); font-size:10px;
+  letter-spacing:.08em; text-transform:uppercase;
+  color:var(--muted); white-space:nowrap;
+}
+.gallery-price-input {
+  width:130px; padding:.42rem .7rem;
+  border:1px solid var(--border); border-radius:2px;
+  font-family:var(--fs); font-size:12px; color:var(--charcoal);
+  background:var(--warm-white); transition:border-color .2s;
+}
+.gallery-price-input:focus { outline:none; border-color:var(--terra); }
+.gallery-price-sep { color:var(--muted); font-size:13px; }
+.gallery-price-reset {
+  font-size:10px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--terra); background:none;
+  border:1px solid var(--terra);
+  cursor:pointer; padding:4px 10px; border-radius:2px;
+  transition:background .15s, color .15s;
+  font-family:var(--fb);
+}
+.gallery-price-reset:hover { background:var(--terra); color:#fff; }
+.gallery-price-reset.hidden { display:none; }
+
+/* ─── LIGHTBOX ───────────────────────── */
+#lightbox-overlay {
+  position:fixed; inset:0;
+  background:rgba(20,14,10,.92);
+  z-index:9000;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none;
+  transition:opacity .3s ease;
+}
+#lightbox-overlay.open {
+  opacity:1; pointer-events:all;
+}
+#lightbox-img-wrap {
+  position:relative;
+  max-width:90vw; max-height:90vh;
+  display:flex; align-items:center; justify-content:center;
+  transform:scale(.92);
+  transition:transform .32s cubic-bezier(.22,.68,0,1.25);
+}
+#lightbox-overlay.open #lightbox-img-wrap {
+  transform:scale(1);
+}
+#lightbox-img {
+  max-width:90vw; max-height:88vh;
+  object-fit:contain;
+  border-radius:4px;
+  display:block;
+  box-shadow:0 24px 80px rgba(0,0,0,.6);
+}
+#lightbox-close {
+  position:fixed; top:1.2rem; right:1.5rem;
+  background:rgba(255,255,255,.12); border:none;
+  color:#fff; font-size:26px; cursor:pointer;
+  border-radius:50%; width:44px; height:44px;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .2s, transform .2s;
+  z-index:9001;
+}
+#lightbox-close:hover { background:rgba(255,255,255,.25); transform:rotate(90deg) scale(1.1); }
+#lightbox-caption {
+  position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%);
+  color:rgba(255,255,255,.75); font-size:13px; font-family:var(--fs);
+  letter-spacing:.04em; white-space:nowrap;
+}
+.painting-display { cursor:zoom-in; }
+.painting-display img { cursor:zoom-in; }
+
+/* ─── WISHLIST HEART POP ─────────────── */
+@keyframes heartPop {
+  0%   { transform:scale(1); }
+  40%  { transform:scale(1.55); }
+  65%  { transform:scale(.85); }
+  85%  { transform:scale(1.15); }
+  100% { transform:scale(1); }
+}
+.p-card-wishlist.popping { animation:heartPop .42s cubic-bezier(.36,.07,.19,.97) forwards; }
+
+/* ─── CART COUNT BOUNCE ──────────────── */
+@keyframes cartBounce {
+  0%   { transform:scale(1); }
+  35%  { transform:scale(1.6); }
+  60%  { transform:scale(.8); }
+  80%  { transform:scale(1.15); }
+  100% { transform:scale(1); }
+}
+.cart-count.bouncing { animation:cartBounce .4s cubic-bezier(.36,.07,.19,.97) forwards; }
+
+/* ─── MOBILE MENU SLIDE ──────────────── */
+.mobile-menu {
+  transform:translateY(-12px);
+  opacity:0;
+  transition:opacity .22s ease, transform .22s cubic-bezier(.22,.68,0,1.2);
+  pointer-events:none;
+}
+.mobile-menu.open {
+  display:flex !important;
+  transform:translateY(0);
+  opacity:1;
+  pointer-events:all;
+}
+
+/* ─── GALLERY CARD STAGGER ───────────── */
+@keyframes cardStagger {
+  from { opacity:0; transform:translateY(18px) scale(.97); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+.p-card.stagger-in {
+  animation:cardStagger .38s cubic-bezier(.22,.68,0,1.1) both;
+}
+
+/* ─── FILTER BTN POLISH ──────────────── */
+.filter-btn {
+  transition:background .18s, color .18s, border-color .18s, transform .15s, box-shadow .18s;
+}
+.filter-btn:active { transform:scale(.94); }
+.filter-btn.active {
+  box-shadow:0 2px 10px rgba(176,90,62,.22);
+}
+
+/* ─── AUCTION CARD REAL IMG ──────────── */
+.auction-card-img img {
+  width:100%; height:100%; object-fit:cover; display:block;
+  transition:transform .5s ease;
+}
+.auction-card:hover .auction-card-img img { transform:scale(1.05); }
+
+/* ─── DETAIL IMG ZOOM HINT ───────────── */
+.painting-display[data-has-photo="1"]::after {
+  content:'🔍 Klik untuk perbesar';
+  display:block;
+  text-align:center;
+  font-size:11px;
+  color:var(--muted);
+  margin-top:.35rem;
+  opacity:.75;
+  letter-spacing:.02em;
+}
+
 </style>
 </head>
 <body>
@@ -2774,6 +3000,15 @@ input:focus, textarea:focus, select:focus {
 
 <!-- TOAST -->
 <div id="toast"></div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox-overlay" onclick="closeLightbox(event)">
+  <button id="lightbox-close" onclick="event.stopPropagation();closeLightbox()" aria-label="Tutup">&#10005;</button>
+  <div id="lightbox-img-wrap">
+    <img id="lightbox-img" src="" alt="Karya">
+  </div>
+  <div id="lightbox-caption"></div>
+</div>
 
 <!-- WHATSAPP FLOAT -->
 <button class="wa-float" onclick="openWA()" title="Hubungi via WhatsApp">&#9742;</button>
@@ -2919,12 +3154,32 @@ input:focus, textarea:focus, select:focus {
           <div class="section-title">Semua Karya</div>
           <div class="gallery-count" id="gallery-count"></div>
         </div>
-        <select class="sort-select" onchange="sortGallery(this.value)" id="sort-sel">
-          <option value="newest">Terbaru</option>
-          <option value="price-asc">Harga: Rendah ke Tinggi</option>
-          <option value="price-desc">Harga: Tinggi ke Rendah</option>
-          <option value="az">A &mdash; Z</option>
-        </select>
+        <!-- Controls row: search + sort + filter toggle -->
+        <div class="gallery-controls">
+          <div class="gallery-search-inline" id="gallery-search-wrap">
+            <span class="gs-icon">&#128269;</span>
+            <input class="gs-input" id="gallery-search" type="text" placeholder="Cari karya, seniman..." oninput="onGallerySearch(this)">
+            <button class="gs-clear" id="gallery-search-clear" onclick="clearGallerySearch()" title="Hapus">&#10005;</button>
+          </div>
+          <select class="sort-select" onchange="sortGallery(this.value)" id="sort-sel">
+            <option value="newest">Terbaru</option>
+            <option value="price-asc">Harga ↑</option>
+            <option value="price-desc">Harga ↓</option>
+            <option value="az">A — Z</option>
+          </select>
+          <button class="gallery-filter-btn" id="gallery-filter-toggle" onclick="togglePricePanel()">
+            Filter <span class="gf-arrow" id="gf-arrow">▾</span>
+            <span class="gf-dot hidden" id="gf-dot"></span>
+          </button>
+        </div>
+      </div>
+      <!-- Price panel (collapsible) -->
+      <div class="gallery-price-panel hidden" id="gallery-price-panel">
+        <span class="gallery-price-lbl">Rentang Harga</span>
+        <input class="gallery-price-input" id="price-min" type="text" inputmode="numeric" placeholder="Min (Rp)" oninput="onPriceFilter()" onblur="formatPriceInput(this)">
+        <span class="gallery-price-sep">—</span>
+        <input class="gallery-price-input" id="price-max" type="text" inputmode="numeric" placeholder="Max (Rp)" oninput="onPriceFilter()" onblur="formatPriceInput(this)">
+        <button class="gallery-price-reset hidden" id="price-reset" onclick="clearPriceFilter()">Reset</button>
       </div>
       <div class="filters-wrap" id="filters"></div>
     </div>
@@ -2946,7 +3201,7 @@ input:focus, textarea:focus, select:focus {
       <div class="detail-layout">
         <!-- LEFT -->
         <div class="detail-left">
-          <div class="painting-display" id="detail-painting-display"></div>
+          <div class="painting-display" id="detail-painting-display" onclick="openLightbox()"></div>
           <!-- Room preview -->
           <div class="room-section">
             <div class="room-section-label">&#127968; Visualisasi di Ruangan</div>
@@ -3381,6 +3636,7 @@ let state = {
   currentPage:'home', prevPage:'gallery',
   currentPainting:null, currentRoom:'living',
   filter:'semua', sort:'newest',
+  gallerySearch:'', priceMin:0, priceMax:Infinity,
   ckStep:1,
   postAuthAction:null,
   myOrders: [],
@@ -3691,7 +3947,7 @@ function goPage(id) {
   if(mnl) mnl.classList.add('active');
   state.currentPage=id;
   if(id==='auction') renderAuction();
-  if(id==='gallery') renderGallery();
+  if(id==='gallery') renderGallery(true);
   if(id==='about') renderAbout();
   window.scrollTo({top:0,behavior:'smooth'});
   refreshScrollAnimations();
@@ -3702,8 +3958,102 @@ function goPage(id) {
 function goBack(){ goPage(state.prevPage||'gallery'); }
 
 function toggleMobileMenu(){
-  document.getElementById('mobile-menu').classList.toggle('open');
+  const m=document.getElementById('mobile-menu');
+  const opening=!m.classList.contains('open');
+  m.classList.toggle('open');
+  // Ensure display:flex is set before transition can run
+  if(opening){ m.style.display='flex'; }
+  else { setTimeout(()=>{ if(!m.classList.contains('open')) m.style.display=''; }, 240); }
 }
+
+// ── GALLERY SEARCH ──────────────────────────────
+let _gallerySearchTimer=null;
+function onGallerySearch(input){
+  const v=input.value;
+  document.getElementById('gallery-search-clear').classList.toggle('visible', v.length>0);
+  clearTimeout(_gallerySearchTimer);
+  _gallerySearchTimer=setTimeout(()=>{
+    state.gallerySearch=v;
+    renderGallery(true);
+  }, 220);
+}
+function clearGallerySearch(){
+  const inp=document.getElementById('gallery-search');
+  inp.value='';
+  state.gallerySearch='';
+  document.getElementById('gallery-search-clear').classList.remove('visible');
+  renderGallery(true);
+  inp.focus();
+}
+
+// ── PRICE RANGE FILTER ──────────────────────────
+function togglePricePanel(){
+  const panel=document.getElementById('gallery-price-panel');
+  const btn=document.getElementById('gallery-filter-toggle');
+  const isOpen=!panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', isOpen);
+  btn.classList.toggle('active', !isOpen);
+}
+function rawPrice(input){ return Number(String(input.value||'').replace(/\D/g,'')); }
+function formatPriceInput(input){
+  const n=rawPrice(input);
+  if(n>0) input.value='Rp '+n.toLocaleString('id-ID'); else input.value='';
+}
+let _priceTimer=null;
+function onPriceFilter(){
+  clearTimeout(_priceTimer);
+  _priceTimer=setTimeout(()=>{
+    const minEl=document.getElementById('price-min');
+    const maxEl=document.getElementById('price-max');
+    const mn=rawPrice(minEl)||0;
+    const mx=rawPrice(maxEl)||Infinity;
+    state.priceMin=mn; state.priceMax=mx;
+    const active=mn>0||mx<Infinity;
+    // Tampilkan reset button & dot indikator
+    document.getElementById('price-reset').classList.toggle('hidden', !active);
+    document.getElementById('gf-dot').classList.toggle('visible', active);
+    renderGallery(true);
+  }, 350);
+}
+function clearPriceFilter(){
+  document.getElementById('price-min').value='';
+  document.getElementById('price-max').value='';
+  state.priceMin=0; state.priceMax=Infinity;
+  document.getElementById('price-reset').classList.add('hidden');
+  document.getElementById('gf-dot').classList.remove('visible');
+  renderGallery(true);
+}
+
+// ── LIGHTBOX ─────────────────────────────────────
+function openLightbox(){
+  const p=state.currentPainting;
+  const imgUrl = p && artworkImageUrl(p);
+  if(!imgUrl) return; // no real photo, don't open
+  const lb=document.getElementById('lightbox-overlay');
+  const img=document.getElementById('lightbox-img');
+  const cap=document.getElementById('lightbox-caption');
+  img.src=imgUrl;
+  img.alt=p.title||'Karya';
+  cap.textContent=p.title+(p.artist?' · '+p.artist:'')+(p.year?' · '+p.year:'');
+  lb.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeLightbox(e){
+  // Called with no arg from close btn, or with event from overlay click
+  if(e instanceof Event){
+    const lb=document.getElementById('lightbox-overlay');
+    if(e.target!==lb) return; // only close when clicking backdrop, not image
+  }
+  const lb=document.getElementById('lightbox-overlay');
+  lb.classList.remove('open');
+  document.body.style.overflow='';
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    const lb=document.getElementById('lightbox-overlay');
+    if(lb && lb.classList.contains('open')){ lb.classList.remove('open'); document.body.style.overflow=''; }
+  }
+});
 
 let scrollObserver = null;
 function setupScrollAnimations(){
@@ -3809,7 +4159,7 @@ function cardHTML(p){
     `<div class="p-card-price">${fmt(p.price)}</div><div class="availability-note">Beli langsung</div>`;
   return `<div class="p-card" onclick='openDetail(${jsArg(p.id)})'>
     <div class="p-card-img-wrap">
-      <button class="p-card-wishlist ${inWish?'active':''}" onclick='event.stopPropagation();toggleWishlist(${jsArg(p.id)})' title="${inWish?'Hapus dari wishlist':'Simpan ke wishlist'}">${inWish?'&#9829;':'&#9825;'}</button>
+      <button class="p-card-wishlist ${inWish?'active':''}" id="wish-btn-${p.id}" onclick='event.stopPropagation();toggleWishlist(${jsArg(p.id)})' title="${inWish?'Hapus dari wishlist':'Simpan ke wishlist'}">${inWish?'&#9829;':'&#9825;'}</button>
       ${paintingSVG(p)}
       ${badge}
     </div>
@@ -3829,17 +4179,34 @@ const FILTERS=[
   {key:'figuratif',lbl:'Figuratif'},
 ];
 
-function renderGallery(){
+function renderGallery(stagger=false){
   // Render filters
   const fw=document.getElementById('filters');
   fw.innerHTML=FILTERS.map(f=>`<button class="filter-btn${state.filter===f.key?' active':''}" onclick="setFilter('${f.key}',this)">${f.lbl}</button>`).join('');
 
+  const searchQ=(state.gallerySearch||'').trim().toLowerCase();
+  const priceMin=state.priceMin||0;
+  const priceMax=state.priceMax||Infinity;
+
   let list=PAINTINGS.filter(p=>{
-    if(state.filter==='semua') return true;
-    if(state.filter==='tersedia') return p.status==='tersedia';
-    if(state.filter==='lelang') return p.status==='lelang';
-    if(state.filter==='terjual') return p.status==='terjual';
-    return p.cat===state.filter;
+    // Status/category filter
+    let pass=true;
+    if(state.filter==='tersedia') pass=p.status==='tersedia';
+    else if(state.filter==='lelang') pass=p.status==='lelang';
+    else if(state.filter==='terjual') pass=p.status==='terjual';
+    else if(state.filter!=='semua') pass=p.cat===state.filter;
+    if(!pass) return false;
+    // Search
+    if(searchQ){
+      const haystack=((p.title||'')+' '+(p.artist||'')+' '+(p.medium||'')).toLowerCase();
+      if(!haystack.includes(searchQ)) return false;
+    }
+    // Price range (only for non-sold)
+    if(p.status!=='terjual' && (priceMin>0||priceMax<Infinity)){
+      const price=p.price||0;
+      if(price<priceMin||price>priceMax) return false;
+    }
+    return true;
   });
   // Sort
   if(state.sort==='price-asc') list=[...list].sort((a,b)=>a.price-b.price);
@@ -3848,19 +4215,35 @@ function renderGallery(){
   else list=[...list].sort((a,b)=>b.year-a.year||b.id-a.id);
 
   document.getElementById('gallery-count').textContent=list.length+' karya ditemukan';
-  document.getElementById('gallery-grid').innerHTML=list.length ? list.map(p=>cardHTML(p)).join('') : `<div class="empty-state" style="grid-column:1/-1;text-align:center;padding:2.5rem 1rem;border:1px solid var(--border);background:var(--warm);border-radius:18px">
-    <div style="font-family:var(--fd);font-size:26px;color:var(--brown);margin-bottom:.5rem">Belum ada karya untuk filter ini</div>
-    <div style="color:var(--muted);line-height:1.7">${state.filter==='tersedia' ? 'Tidak ada karya berstatus Tersedia saat ini. Karya Terjual tetap tampil sebagai arsip koleksi, tetapi tidak bisa dibeli.' : 'Coba pilih filter lain atau muat ulang koleksi terbaru.'}</div>
-    <button class="btn btn-outline" style="margin-top:1rem" onclick="setFilter('semua')">Tampilkan Semua</button>
+
+  const emptyMsg = searchQ
+    ? `Tidak ada karya yang cocok dengan pencarian "<strong>${escapeHtml(searchQ)}</strong>". Coba kata kunci lain.`
+    : state.filter==='tersedia'
+      ? 'Tidak ada karya berstatus Tersedia saat ini.'
+      : 'Coba pilih filter lain atau muat ulang koleksi terbaru.';
+
+  const grid=document.getElementById('gallery-grid');
+  grid.innerHTML=list.length ? list.map(p=>cardHTML(p)).join('') : `<div class="empty-state" style="grid-column:1/-1;text-align:center;padding:2.5rem 1rem;border:1px solid var(--border);background:var(--warm);border-radius:18px">
+    <div style="font-family:var(--fd);font-size:26px;color:var(--brown);margin-bottom:.5rem">Tidak Ditemukan</div>
+    <div style="color:var(--muted);line-height:1.7">${emptyMsg}</div>
+    <button class="btn btn-outline" style="margin-top:1rem" onclick="setFilter('semua');clearGallerySearch()">Tampilkan Semua</button>
   </div>`;
+
+  // Stagger animation on cards
+  if(stagger){
+    grid.querySelectorAll('.p-card').forEach((card,i)=>{
+      card.style.animationDelay=`${i*45}ms`;
+      card.classList.add('stagger-in');
+    });
+  }
   refreshScrollAnimations();
 }
 
 function setFilter(f,btn){
   state.filter=f;
-  renderGallery();
+  renderGallery(true);
 }
-function sortGallery(v){ state.sort=v; renderGallery(); }
+function sortGallery(v){ state.sort=v; renderGallery(true); }
 
 // ── WISHLIST ──────────────────────────────────
 async function toggleWishlist(id){
@@ -3869,6 +4252,9 @@ async function toggleWishlist(id){
   // Optimistic update
   if(removing){ state.wishlist.splice(idx,1); } else { state.wishlist.push(id); }
   updateWishCount();
+  // Heart pop animation on the card button
+  const wb=document.getElementById('wish-btn-'+id);
+  if(wb){ wb.classList.remove('popping'); void wb.offsetWidth; wb.classList.add('popping'); setTimeout(()=>wb.classList.remove('popping'),500); }
   if(state.currentPage==='gallery') renderGallery();
   if(state.currentPage==='home') renderHome();
 
@@ -3938,9 +4324,11 @@ function openDetail(id){
 
   // Painting
   const _imgUrl = artworkImageUrl(p);
-  document.getElementById('detail-painting-display').innerHTML = _imgUrl
+  const _dispEl = document.getElementById('detail-painting-display');
+  _dispEl.innerHTML = _imgUrl
     ? `<img src="${_imgUrl}" alt="${escapeHtml(p.title)}" style="width:100%;display:block;aspect-ratio:3/4;max-height:480px;object-fit:cover;">`
     : paintingSVG(p,600,800);
+  _dispEl.dataset.hasPhoto = _imgUrl ? '1' : '0';
 
   // Info
   document.getElementById('d-eyebrow').textContent=p.cat.charAt(0).toUpperCase()+p.cat.slice(1)+' · '+p.medium;
@@ -4364,7 +4752,7 @@ function addToCart(id, directCheckout=false){
     return;
   }
   state.cart.push({id:p.id,title:p.title,price:p.price,medium:p.medium,stock:p.stock ?? 1,status:p.status});
-  updateCartCount();
+  updateCartCount(true);
   saveState();
   renderCartBody();
   if(directCheckout){
@@ -4387,10 +4775,15 @@ function removeFromCart(id){
   renderCartBody();
 }
 
-function updateCartCount(){
+function updateCartCount(bounce=false){
   const el=document.getElementById('cart-count');
   el.textContent=state.cart.length;
   el.style.display=state.cart.length?'flex':'none';
+  if(bounce && state.cart.length){
+    el.classList.remove('bouncing'); void el.offsetWidth;
+    el.classList.add('bouncing');
+    setTimeout(()=>el.classList.remove('bouncing'),500);
+  }
 }
 
 function openCart(){
