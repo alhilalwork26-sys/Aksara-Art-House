@@ -2844,10 +2844,10 @@ input:focus, textarea:focus, select:focus {
             </div>
           </div>
           <div class="hero-stats">
-            <div><div class="hero-stat-val">48</div><div class="hero-stat-lbl">Karya</div></div>
-            <div><div class="hero-stat-val">12</div><div class="hero-stat-lbl">Pameran</div></div>
-            <div><div class="hero-stat-val">200+</div><div class="hero-stat-lbl">Kolektor</div></div>
-            <div><div class="hero-stat-val">7</div><div class="hero-stat-lbl">Tahun</div></div>
+            <div><div class="hero-stat-val" id="dyn-stat-karya">48</div><div class="hero-stat-lbl">Karya</div></div>
+            <div><div class="hero-stat-val" id="dyn-stat-pameran">12</div><div class="hero-stat-lbl">Pameran</div></div>
+            <div><div class="hero-stat-val" id="dyn-stat-kolektor">200+</div><div class="hero-stat-lbl">Kolektor</div></div>
+            <div><div class="hero-stat-val" id="dyn-stat-tahun">7</div><div class="hero-stat-lbl">Tahun</div></div>
           </div>
         </div>
       </div>
@@ -3049,9 +3049,9 @@ input:focus, textarea:focus, select:focus {
         <p>Sebagai wujud komitmen dalam memperluas jangkauan seni, Aksara Art House secara aktif berpartisipasi dalam berbagai pameran, show, dan event. Keikutsertaan ini menjadi ruang untuk menampilkan karya-karya terkurasi yang merepresentasikan kekuatan identitas, nilai artistik, dan narasi visual yang khas.</p>
         <p>Melalui berbagai partisipasi tersebut, Aksara Art House tidak hanya memperkenalkan karya kepada publik yang lebih luas, tetapi juga membangun ruang interaksi antara seniman dan audiens, memperluas jejaring seni, serta mendorong dialog kreatif yang memperkaya pengalaman apresiasi seni secara berkelanjutan.</p>
         <div class="about-stats">
-          <div><div class="about-stat-val">48</div><div class="about-stat-lbl">Karya</div></div>
-          <div><div class="about-stat-val">12</div><div class="about-stat-lbl">Pameran</div></div>
-          <div><div class="about-stat-val">200+</div><div class="about-stat-lbl">Kolektor</div></div>
+          <div><div class="about-stat-val" id="dyn-about-karya">48</div><div class="about-stat-lbl">Karya</div></div>
+          <div><div class="about-stat-val" id="dyn-about-pameran">12</div><div class="about-stat-lbl">Pameran</div></div>
+          <div><div class="about-stat-val" id="dyn-about-kolektor">200+</div><div class="about-stat-lbl">Kolektor</div></div>
           <div><div class="about-stat-val">3 Neg</div><div class="about-stat-lbl">Distribusi</div></div>
         </div>
       </div>
@@ -4921,6 +4921,20 @@ async function getPublicSettings(){
   return _publicSettings;
 }
 
+async function applyPublicSettings(){
+  try {
+    const s = await getPublicSettings();
+    const setEl = (id, val) => { const el=document.getElementById(id); if(el&&val) el.textContent=val; };
+    setEl('dyn-stat-karya', s.statKarya);
+    setEl('dyn-stat-pameran', s.statPameran);
+    setEl('dyn-stat-kolektor', s.statKolektor);
+    setEl('dyn-stat-tahun', s.statTahun);
+    setEl('dyn-about-karya', s.statKarya);
+    setEl('dyn-about-pameran', s.statPameran);
+    setEl('dyn-about-kolektor', s.statKolektor);
+  } catch(e){ console.warn('applyPublicSettings:', e); }
+}
+
 function openWA(){
   openModal('modal-contact');
 }
@@ -4987,7 +5001,7 @@ async function init(){
     o.addEventListener('click',e=>{ if(e.target===o) o.classList.add('hidden'); });
   });
   // Muat data dari Supabase
-  await Promise.all([fetchPaintingsFromDB(), fetchAuctionsFromDB(), getPublicSettings()]);
+  await Promise.all([fetchPaintingsFromDB(), fetchAuctionsFromDB(), applyPublicSettings()]);
   syncArtworkCollections();
   renderHome();
   renderGallery();

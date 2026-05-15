@@ -198,8 +198,7 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
 .tab-btn{padding:.7rem 1.3rem;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:var(--tr)}
 .tab-btn.active{color:var(--terra);border-bottom-color:var(--terra)}
 .tab-btn:hover{color:var(--brown)}
-.tab-panel{display:none}
-.tab-panel.active{display:block}
+/* tab-panel styles defined below with animation */
 
 /* ── AUCTION MANAGE ── */
 .auction-manage-item{display:flex;align-items:center;gap:1rem;padding:.9rem;border:1px solid var(--border);border-radius:6px;background:var(--cream);margin-bottom:.75rem}
@@ -338,6 +337,7 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
 
 .hamburger-btn{display:none;align-items:center;justify-content:center;background:none;border:none;font-size:22px;color:var(--brown);cursor:pointer;padding:4px}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -361,7 +361,7 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
     <button class="btn btn-primary btn-full" onclick="doAdminLogin()">Masuk ke Panel Admin</button>
     <div style="margin-top:1rem;text-align:center;font-size:12px;color:var(--muted)">
       Gunakan kredensial admin yang dikonfigurasi di server.
-      &nbsp;·&nbsp; <button class="user-link" onclick="window.open('index.html','_blank')">Buka Halaman User →</button>
+      &nbsp;·&nbsp; <button class="user-link" onclick="window.open('marketplace.html','_blank')">Buka Halaman User →</button>
     </div>
   </div>
 </div>
@@ -526,6 +526,31 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
         <input type="text" id="set-wa" placeholder="6281918344549">
       </div>
       <div style="background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:1rem;margin-top:.5rem">
+        <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Konten Halaman Marketplace</div>
+        <div class="form-group">
+          <label>Tagline Hero (teks di bawah judul utama)</label>
+          <textarea id="set-hero-subtitle" rows="2" placeholder="Koleksi original oil on canvas..."></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Jumlah Karya</label>
+            <input type="text" id="set-stat-karya" placeholder="48">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Jumlah Pameran</label>
+            <input type="text" id="set-stat-pameran" placeholder="12">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Jumlah Kolektor</label>
+            <input type="text" id="set-stat-kolektor" placeholder="200+">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Tahun Berkarya</label>
+            <input type="text" id="set-stat-tahun" placeholder="7">
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:1rem;margin-top:.5rem">
         <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Instruksi Pembayaran Marketplace</div>
         <div class="form-group">
           <label>Transfer Bank</label>
@@ -598,7 +623,7 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
     <button class="nav-item" onclick="openSettings()">
       <span class="nav-icon">⚙️</span> Pengaturan
     </button>
-    <button class="nav-item" onclick="window.open('index.html','_blank')">
+    <button class="nav-item" onclick="window.open('marketplace.html','_blank')">
       <span class="nav-icon">🛍️</span> Lihat Halaman User
     </button>
   </nav>
@@ -694,6 +719,14 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
             <div class="panel-body" id="dash-summary"><div class="dashboard-empty-row">Memuat ringkasan stok dan lelang...</div></div>
           </div>
         </div>
+    <div class="dash-panel" style="margin-top:1.5rem">
+      <div class="dash-panel-head">
+        <div class="dash-panel-title">📈 Omzet per Bulan</div>
+      </div>
+      <div style="padding:1rem;position:relative;height:200px">
+        <canvas id="revenue-chart"></canvas>
+      </div>
+    </div>
       </div>
     </div>
 
@@ -865,6 +898,11 @@ const DEFAULT_AUCTIONS = [];
 const DEFAULT_SETTINGS = {
   studioName: 'Aksara Art House',
   wa: '6281918344549',
+  heroSubtitle: 'Koleksi original oil on canvas, acrylic, dan mixed media dari studio Aksara Art House — karya yang lahir dari jiwa, untuk menghiasi ruang Anda.',
+  statKarya: '48',
+  statPameran: '12',
+  statKolektor: '200+',
+  statTahun: '7',
   transferInfo: 'Transfer ke rekening resmi Aksara Art House. Admin akan mengirim detail rekening melalui WhatsApp setelah pesanan dibuat. Upload bukti transfer agar verifikasi lebih cepat.',
   qrisInfo: 'Scan QRIS Aksara Art House, pastikan nama merchant dan nominal sudah sesuai, lalu upload bukti pembayaran.',
   codInfo: 'Pembayaran dilakukan saat serah terima. Metode ini hanya berlaku untuk area Surabaya dan tetap menunggu konfirmasi admin.',
@@ -1090,16 +1128,19 @@ function loadSettings() { return { ...DEFAULT_SETTINGS, ...(_settings||{}) }; }
 async function saveSettingsData(data) {
   _settings = data;
   const res = await fetch('/api/settings', {
-    method:'PATCH',
-    headers: adminHeaders(),
-    body: JSON.stringify({
-      studioName:data.studioName,
-      wa:data.wa,
-      transferInfo:data.transferInfo,
-      qrisInfo:data.qrisInfo,
-      codInfo:data.codInfo,
-      dpInfo:data.dpInfo,
-      auctionInfo:data.auctionInfo
+    method:'PATCH', headers: adminHeaders(), body: JSON.stringify({
+      studioName: data.studioName,
+      wa: data.wa,
+      heroSubtitle: data.heroSubtitle,
+      statKarya: data.statKarya,
+      statPameran: data.statPameran,
+      statKolektor: data.statKolektor,
+      statTahun: data.statTahun,
+      transferInfo: data.transferInfo,
+      qrisInfo: data.qrisInfo,
+      codInfo: data.codInfo,
+      dpInfo: data.dpInfo,
+      auctionInfo: data.auctionInfo
     })
   });
   if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal menyimpan pengaturan.'); }
@@ -1494,6 +1535,8 @@ function renderDashboard() {
   `;
 
   updateOrderBadge();
+  // Revenue Chart
+  try { renderRevenueChart(orders); } catch(_){}
   } catch(e) {
     console.error('Dashboard render gagal:', e);
     renderDashboardError(e);
@@ -1525,6 +1568,46 @@ function renderDashboardError(error) {
   if(artworks) artworks.innerHTML = `<tr><td colspan="4"><div class="dashboard-empty-row">Karya belum bisa dimuat. Buka menu Kelola Karya atau klik Muat Ulang Data.</div></td></tr>`;
   if(actions) actions.innerHTML = `<div class="dashboard-actions"><div class="dash-action is-empty"><div class="dash-action-icon">↻</div><div><div class="dash-action-title">Muat ulang data</div><div class="dash-action-sub">Ambil data terbaru dari Supabase.</div></div><button class="btn btn-secondary btn-sm" onclick="refreshAdminData(true)">Muat</button></div></div>`;
   if(summary) summary.innerHTML = `<div class="dashboard-empty-row">Ringkasan stok dan lelang akan tampil setelah data berhasil dimuat.</div>`;
+}
+
+function renderRevenueChart(orders) {
+  const canvas = document.getElementById('revenue-chart');
+  if(!canvas) return;
+  const now = new Date();
+  const months = Array.from({length:6}, (_,i) => {
+    const d = new Date(now.getFullYear(), now.getMonth()-5+i, 1);
+    return { label: d.toLocaleDateString('id-ID',{month:'short',year:'2-digit'}), year: d.getFullYear(), month: d.getMonth() };
+  });
+  const data = months.map(m =>
+    orders.filter(o => {
+      const d = new Date(o.created_at || o.date || 0);
+      return d.getFullYear()===m.year && d.getMonth()===m.month && o.status!=='cancelled';
+    }).reduce((s,o)=>s+Number(o.total||0),0)
+  );
+  if(window._revenueChart) window._revenueChart.destroy();
+  window._revenueChart = new Chart(canvas, {
+    type:'bar',
+    data:{
+      labels: months.map(m=>m.label),
+      datasets:[{
+        label:'Omzet (Rp)',
+        data,
+        backgroundColor:'rgba(193,113,75,.25)',
+        borderColor:'rgba(193,113,75,.8)',
+        borderWidth:2,
+        borderRadius:4,
+        hoverBackgroundColor:'rgba(193,113,75,.45)'
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>'Rp '+ctx.raw.toLocaleString('id-ID') } } },
+      scales:{
+        y:{ ticks:{ callback: v=>'Rp '+(v/1e6).toFixed(0)+'jt', font:{size:10} }, grid:{color:'rgba(0,0,0,.04)'} },
+        x:{ ticks:{ font:{size:10} }, grid:{display:false} }
+      }
+    }
+  });
 }
 
 function updateOrderBadge() {
@@ -2230,6 +2313,11 @@ function openSettings() {
   const s = loadSettings();
   document.getElementById('set-studio').value = s.studioName || '';
   document.getElementById('set-wa').value = s.wa || '';
+  document.getElementById('set-hero-subtitle').value = s.heroSubtitle || '';
+  document.getElementById('set-stat-karya').value = s.statKarya || '';
+  document.getElementById('set-stat-pameran').value = s.statPameran || '';
+  document.getElementById('set-stat-kolektor').value = s.statKolektor || '';
+  document.getElementById('set-stat-tahun').value = s.statTahun || '';
   document.getElementById('set-transfer-info').value = s.transferInfo || '';
   document.getElementById('set-qris-info').value = s.qrisInfo || '';
   document.getElementById('set-cod-info').value = s.codInfo || '';
@@ -2266,6 +2354,11 @@ async function saveSettings() {
   const s = loadSettings();
   s.studioName = document.getElementById('set-studio').value.trim() || s.studioName;
   s.wa = document.getElementById('set-wa').value.trim() || s.wa;
+  s.heroSubtitle = document.getElementById('set-hero-subtitle').value.trim() || s.heroSubtitle;
+  s.statKarya = document.getElementById('set-stat-karya').value.trim() || s.statKarya;
+  s.statPameran = document.getElementById('set-stat-pameran').value.trim() || s.statPameran;
+  s.statKolektor = document.getElementById('set-stat-kolektor').value.trim() || s.statKolektor;
+  s.statTahun = document.getElementById('set-stat-tahun').value.trim() || s.statTahun;
   s.transferInfo = document.getElementById('set-transfer-info').value.trim() || s.transferInfo;
   s.qrisInfo = document.getElementById('set-qris-info').value.trim() || s.qrisInfo;
   s.codInfo = document.getElementById('set-cod-info').value.trim() || s.codInfo;
