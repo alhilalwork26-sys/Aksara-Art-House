@@ -733,7 +733,7 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
     <!-- ═══ ARTWORKS ═══ -->
     <div id="section-artworks" class="tab-panel">
       <div class="search-bar">
-        <input class="search-input" type="text" id="art-search" placeholder="Cari judul karya..." oninput="renderArtworksTable()">
+        <input class="search-input" type="text" id="art-search" placeholder="Cari judul karya..." oninput="_debouncedRenderArtworks()">
         <select class="filter-select" id="art-filter-status" onchange="renderArtworksTable()">
           <option value="">Semua Status</option>
           <option value="tersedia">Tersedia</option>
@@ -1242,6 +1242,12 @@ async function initApp() {
 async function refreshAdminData(showToastOnSuccess = false) {
   if(_isRefreshing) return;
   _isRefreshing = true;
+  // Tampilkan skeleton saat pertama load (data belum ada)
+  if(!_paintings && !_orders) {
+    skeletonStats();
+    skeletonRows('dash-orders-tbody', 4, 4);
+    skeletonRows('dash-artworks-tbody', 4, 4);
+  }
   try {
     await fetchAllFromDB();
     renderDashboard();
@@ -1315,7 +1321,7 @@ function startRefreshCountdown(seconds=30){
   if(!el) return;
   let remaining = seconds;
   const tick = () => {
-    el.textContent = `↻ auto-refresh dalam ${remaining}d`;
+    el.textContent = `↻ refresh dalam ${remaining}dtk`;
     if(--remaining < 0) remaining = seconds;
   };
   tick();
@@ -2084,7 +2090,7 @@ async function updateOrderStatus(id, status) {
     const o = orders.find(x=>x.id===id);
     if(o) o.status = status;
     renderOrders();
-    renderDashboard();
+    if(_activeSection === 'dashboard') renderDashboard();
     showToast(`Status pesanan diperbarui ✓`, 'success');
     return true;
   } catch(e) { showToast(e.message, 'error'); return false; }
@@ -2114,7 +2120,7 @@ async function updateOrderPayment(id, payment_status) {
     if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal update pembayaran.'); }
     await fetchAllFromDB();
     renderOrders();
-    renderDashboard();
+    if(_activeSection === 'dashboard') renderDashboard();
     viewOrder(id);
     showToast('Status pembayaran diperbarui ✓', 'success');
   } catch(e) { showToast(e.message, 'error'); }
@@ -2143,7 +2149,7 @@ async function requestPaymentRevision(id) {
     if(!res.ok) { const d=await res.json(); throw new Error(d.error||'Gagal meminta revisi bukti.'); }
     await fetchAllFromDB();
     renderOrders();
-    renderDashboard();
+    if(_activeSection === 'dashboard') renderDashboard();
     viewOrder(id);
     showToast('Permintaan upload ulang dikirim ✓', 'success');
   } catch(e) { showToast(e.message, 'error'); }
@@ -2564,21 +2570,38 @@ function updateNotifBtn() {
   }
 }
 
-function checkNewOrders() {
-  const orders = loadOrders();
-  const newCount = orders.length;
-  if(_notifEnabled && Notification.permission === 'granted' && newCount > _lastOrderCount) {
-    const diff = newCount - _lastOrderCount;
-    const latest = orders[orders.length - 1];
-    new Notification(`🛍️ Pesanan Baru Masuk! (${diff})`, {
-      body: `${latest.name} memesan "${(latest.items||[]).map(i=>i.title).join(', ')}" — ${new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:0}).format(latest.total)}`,
-      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="%23C1714B" rx="6"/><text x="16" y="22" text-anchor="middle" font-size="18">🖼️</text></svg>'
-    });
+async function checkNewOrders() {
+  // Fetch ringan: hanya cek jumlah order terbaru dari server
+  try {
+    const res = await fetch('/api/admin/orders', { headers: adminHeaders(), cache: 'no-store' });
+    if (!res.ok) return;
+    const rawOrders = await res.json();
+    const newCount = Array.isArray(rawOrders) ? rawOrders.length : 0;
+    if (newCount > _lastOrderCount && _lastOrderCount > 0) {
+      // Ada pesanan baru — update cache dan render
+      _orders = normalizeOrders(rawOrders);
+      updateOrderBadge();
+      if (_notifEnabled && Notification.permission === 'granted') {
+        const diff = newCount - _lastOrderCount;
+        const latest = _orders[_orders.length - 1];
+        new Notification(`🛍️ Pesanan Baru Masuk! (${diff})`, {
+          body: `${latest?.name || 'Pembeli'} — ${new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:0}).format(latest?.total || 0)}`,
+          icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="%23C1714B" rx="6"/><text x="16" y="22" text-anchor="middle" font-size="18">🖼️</text></svg>'
+        });
+      }
+      showToast('🛍️ Ada pesanan baru masuk!', 'success');
+      // Hanya re-render section yang sedang aktif
+      if (_activeSection === 'orders') renderOrders(false);
+      if (_activeSection === 'dashboard') renderDashboard();
+    } else if (_lastOrderCount === 0) {
+      // Init pertama kali
+      _orders = normalizeOrders(rawOrders);
+      updateOrderBadge();
+    }
+    _lastOrderCount = newCount;
+  } catch(e) {
+    // Silent fail — jangan ganggu UI
   }
-  _lastOrderCount = newCount;
-  updateOrderBadge();
-  renderOrders();
-  renderDashboard();
 }
 
 // ══════════════════════════════════════════
@@ -2608,7 +2631,7 @@ async function saveOrderShipping(id) {
       if(payload.status) o.status = payload.status;
     }
     renderOrders();
-    renderDashboard();
+    if(_activeSection === 'dashboard') renderDashboard();
     if(o) viewOrder(id);
     showToast(tracking_number ? 'Info resi disimpan dan status dikirim ✓' : 'Info pengiriman disimpan ✓', 'success');
   } catch(e) { showToast(e.message, 'error'); }
