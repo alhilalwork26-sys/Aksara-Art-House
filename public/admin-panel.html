@@ -212,6 +212,100 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:#3a6b3a}
 .sync-dot.syncing{background:var(--ochre);animation:pulse .8s infinite}
 
+/* ── NOTIFICATION BELL ── */
+.notif-wrap { position:relative; }
+.notif-bell-btn {
+  position:relative; background:none; border:none; cursor:pointer;
+  width:38px; height:38px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; transition:background .18s;
+  color:var(--brown);
+}
+.notif-bell-btn:hover { background:rgba(193,113,75,.1); }
+.notif-badge {
+  position:absolute; top:2px; right:2px;
+  min-width:16px; height:16px; border-radius:999px;
+  background:var(--terra); color:#fff;
+  font-size:9px; font-weight:700; letter-spacing:0;
+  display:flex; align-items:center; justify-content:center;
+  padding:0 4px; border:2px solid var(--warm);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1);
+}
+.notif-badge.hidden { display:none; }
+.notif-badge.pop { animation:badgePop .35s cubic-bezier(.34,1.56,.64,1); }
+@keyframes badgePop { 0%{transform:scale(0)} 70%{transform:scale(1.25)} 100%{transform:scale(1)} }
+
+/* Bell shake animation */
+@keyframes bellShake {
+  0%,100% { transform:rotate(0); }
+  10%,50%  { transform:rotate(14deg); }
+  30%,70%  { transform:rotate(-12deg); }
+  90%      { transform:rotate(8deg); }
+}
+.notif-bell-btn.has-unread .notif-bell-icon {
+  display:inline-block;
+  animation:bellShake 1.8s cubic-bezier(.36,.07,.19,.97) infinite;
+  transform-origin:50% 0;
+}
+
+/* Dropdown panel */
+.notif-panel {
+  position:absolute; top:calc(100% + 10px); right:0;
+  width:340px; max-height:460px;
+  background:var(--warm); border:1px solid var(--border);
+  border-radius:10px; box-shadow:0 16px 48px rgba(44,35,32,.18);
+  z-index:999; overflow:hidden;
+  animation:notifPanelIn .25s cubic-bezier(.4,0,.2,1) both;
+}
+.notif-panel.hidden { display:none; }
+@keyframes notifPanelIn {
+  from { opacity:0; transform:translateY(-8px) scale(.97); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+.notif-panel-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:.85rem 1rem .7rem;
+  border-bottom:1px solid var(--border);
+}
+.notif-panel-title { font-size:13px; font-weight:600; color:var(--brown); letter-spacing:.04em; }
+.notif-mark-read {
+  font-size:11px; color:var(--terra); background:none; border:none;
+  cursor:pointer; letter-spacing:.04em; padding:0;
+  transition:opacity .15s;
+}
+.notif-mark-read:hover { opacity:.7; }
+.notif-panel-body { overflow-y:auto; max-height:380px; }
+.notif-empty {
+  padding:2rem 1rem; text-align:center;
+  font-size:13px; color:var(--muted); line-height:1.7;
+}
+.notif-item {
+  display:grid; grid-template-columns:36px minmax(0,1fr);
+  gap:.65rem; padding:.75rem 1rem;
+  border-bottom:1px solid rgba(0,0,0,.04);
+  cursor:pointer; transition:background .15s;
+  position:relative;
+}
+.notif-item:hover { background:rgba(193,113,75,.05); }
+.notif-item.unread { background:rgba(193,113,75,.06); }
+.notif-item.unread::before {
+  content:''; position:absolute; left:0; top:0; bottom:0;
+  width:3px; background:var(--terra); border-radius:0 2px 2px 0;
+}
+.notif-item-icon {
+  width:36px; height:36px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; flex-shrink:0;
+  background:rgba(193,113,75,.1);
+}
+.notif-item-icon.type-order { background:rgba(91,62,47,.1); }
+.notif-item-icon.type-payment { background:rgba(70,112,68,.1); }
+.notif-item-icon.type-review { background:rgba(193,153,75,.1); }
+.notif-item-icon.type-auction { background:rgba(180,60,60,.1); }
+.notif-item-title { font-size:12px; font-weight:600; color:var(--brown); margin-bottom:2px; line-height:1.4; }
+.notif-item-sub { font-size:11px; color:var(--muted); line-height:1.5; }
+.notif-item-time { font-size:10px; color:var(--muted); margin-top:3px; }
+
 /* ── USER LINK ── */
 .user-link{font-size:12px;color:var(--terra);text-decoration:underline;cursor:pointer;background:none;border:none}
 .user-link:hover{color:var(--terra-dk)}
@@ -652,7 +746,21 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
         <span id="sync-label">Data tersinkron</span>
         <span id="refresh-countdown"></span>
       </div>
-      <button class="btn btn-ghost btn-sm" id="notif-btn" onclick="requestNotifPermission()" title="Aktifkan notifikasi pesanan baru">🔔 Notifikasi</button>
+      <div class="notif-wrap" id="notif-wrap">
+        <button class="notif-bell-btn" id="notif-bell-btn" onclick="toggleNotifPanel(event)" title="Notifikasi">
+          <span class="notif-bell-icon">🔔</span>
+          <span class="notif-badge hidden" id="notif-badge">0</span>
+        </button>
+        <div class="notif-panel hidden" id="notif-panel">
+          <div class="notif-panel-head">
+            <span class="notif-panel-title">🔔 Notifikasi</span>
+            <button class="notif-mark-read" onclick="markAllNotifsRead()">Tandai semua dibaca</button>
+          </div>
+          <div class="notif-panel-body" id="notif-panel-body">
+            <div class="notif-empty">Memuat notifikasi...</div>
+          </div>
+        </div>
+      </div>
       <button class="btn btn-primary btn-sm" onclick="openArtworkModal()">+ Karya Baru</button>
     </div>
   </div>
@@ -1253,6 +1361,7 @@ async function refreshAdminData(showToastOnSuccess = false) {
     renderDashboard();
     await renderActiveSection();
     updateOrderBadge();
+    renderNotifPanel();
     if(showToastOnSuccess) showToast('Dashboard tersinkron dengan database ✓', 'success');
   } catch(e) {
     console.error('Gagal refresh dashboard:', e);
@@ -1334,6 +1443,204 @@ function debounce(fn, ms=280){
 }
 const _debouncedRenderOrders = debounce(() => renderOrders(false));
 const _debouncedRenderArtworks = debounce(() => renderArtworksTable(false));
+
+// ══════════════════════════════════════════
+// NOTIFICATION BELL SYSTEM
+// ══════════════════════════════════════════
+const NOTIF_STORAGE_KEY = 'aksara_notif_read_ids';
+
+function getReadNotifIds() {
+  try { return new Set(JSON.parse(localStorage.getItem(NOTIF_STORAGE_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+function saveReadNotifIds(ids) {
+  try { localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify([...ids].slice(-200))); }
+  catch {}
+}
+
+function buildNotifications() {
+  const items = [];
+  const now = Date.now();
+  const day = 86400000;
+  const orders = Array.isArray(_orders) ? _orders : [];
+  const reviews = Array.isArray(_reviews) ? _reviews : [];
+  const auctions = Array.isArray(_auctions) ? _auctions : [];
+
+  // 1. Pesanan baru (pending)
+  orders.filter(o => o.status === 'pending').forEach(o => {
+    items.push({
+      id: 'order-new-' + o.id,
+      type: 'order',
+      icon: '🛍️',
+      title: 'Pesanan baru masuk',
+      sub: `${o.name || 'Pembeli'} · ${fmt(o.total || 0)}`,
+      time: o.created_at || o.date,
+      section: 'orders'
+    });
+  });
+
+  // 2. Bukti pembayaran diunggah, menunggu verifikasi
+  orders.filter(o =>
+    ['waiting_confirmation','unpaid'].includes(o.paymentStatus || 'waiting_confirmation') &&
+    (o.paymentProofUrl || '').length > 0
+  ).forEach(o => {
+    items.push({
+      id: 'order-proof-' + o.id,
+      type: 'payment',
+      icon: '💳',
+      title: 'Bukti pembayaran diunggah',
+      sub: `${o.name || 'Pembeli'} menunggu verifikasi`,
+      time: o.created_at || o.date,
+      section: 'orders'
+    });
+  });
+
+  // 3. Pesanan lunas perlu resi
+  orders.filter(o =>
+    ['paid','packed'].includes(o.status || '') &&
+    !(o.trackingNumber || o.tracking_number)
+  ).forEach(o => {
+    items.push({
+      id: 'order-ship-' + o.id,
+      type: 'order',
+      icon: '🚚',
+      title: 'Pesanan perlu nomor resi',
+      sub: `${o.name || 'Pembeli'} · sudah lunas`,
+      time: o.created_at || o.date,
+      section: 'orders'
+    });
+  });
+
+  // 4. Ulasan menunggu moderasi
+  reviews.filter(r => !r.is_approved && !r.is_rejected).forEach(r => {
+    items.push({
+      id: 'review-pending-' + r.id,
+      type: 'review',
+      icon: '⭐',
+      title: 'Ulasan baru menunggu moderasi',
+      sub: `${r.reviewer_name || r.name || 'Kolektor'} · ${r.rating || 0}/5 bintang`,
+      time: r.created_at,
+      section: 'reviews'
+    });
+  });
+
+  // 5. Lelang hampir selesai (< 24 jam)
+  auctions.filter(a => {
+    const end = new Date(a.endsAt).getTime();
+    return a.status === 'active' && end >= now && (end - now) <= day;
+  }).forEach(a => {
+    const painting = (Array.isArray(_paintings) ? _paintings : []).find(p => p.id === a.paintingId);
+    const hoursLeft = Math.round((new Date(a.endsAt).getTime() - now) / 3600000);
+    items.push({
+      id: 'auction-end-' + a.id,
+      type: 'auction',
+      icon: '🔨',
+      title: 'Lelang hampir berakhir',
+      sub: `${painting ? painting.title : 'Karya'} · ${hoursLeft} jam lagi · Bid: ${fmt(a.currentBid || a.startBid)}`,
+      time: a.endsAt,
+      section: 'auctions'
+    });
+  });
+
+  // Sort: terbaru dulu (by time)
+  items.sort((a, b) => {
+    const ta = a.time ? new Date(a.time).getTime() : 0;
+    const tb = b.time ? new Date(b.time).getTime() : 0;
+    return tb - ta;
+  });
+
+  return items;
+}
+
+function renderNotifPanel() {
+  const body = document.getElementById('notif-panel-body');
+  const badge = document.getElementById('notif-badge');
+  const bell = document.getElementById('notif-bell-btn');
+  if (!body) return;
+
+  const items = buildNotifications();
+  const readIds = getReadNotifIds();
+  const unread = items.filter(i => !readIds.has(i.id));
+
+  // Update badge
+  if (unread.length > 0) {
+    badge.textContent = unread.length > 99 ? '99+' : String(unread.length);
+    badge.classList.remove('hidden');
+    if (!badge.dataset.prevCount || badge.dataset.prevCount !== String(unread.length)) {
+      badge.classList.remove('pop');
+      void badge.offsetWidth;
+      badge.classList.add('pop');
+      badge.dataset.prevCount = String(unread.length);
+    }
+    bell.classList.add('has-unread');
+  } else {
+    badge.classList.add('hidden');
+    bell.classList.remove('has-unread');
+  }
+
+  if (items.length === 0) {
+    body.innerHTML = `<div class="notif-empty">🎉 Semua beres!<br><span style="font-size:12px">Tidak ada notifikasi baru saat ini.</span></div>`;
+    return;
+  }
+
+  body.innerHTML = items.map(item => {
+    const isUnread = !readIds.has(item.id);
+    const timeStr = item.time ? timeAgo(item.time) : '';
+    const sectionArg = JSON.stringify(item.section);
+    return `
+      <div class="notif-item ${isUnread ? 'unread' : ''}" onclick="handleNotifClick(${JSON.stringify(item.id)}, ${sectionArg})">
+        <div class="notif-item-icon type-${item.type}">${item.icon}</div>
+        <div>
+          <div class="notif-item-title">${escapeHtml(item.title)}</div>
+          <div class="notif-item-sub">${escapeHtml(item.sub)}</div>
+          ${timeStr ? `<div class="notif-item-time">${escapeHtml(timeStr)}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function handleNotifClick(id, section) {
+  // Mark this item as read
+  const readIds = getReadNotifIds();
+  readIds.add(id);
+  saveReadNotifIds(readIds);
+  // Navigate to section
+  const btn = document.querySelector(`[data-section="${section}"]`);
+  showSection(section, btn);
+  closeNotifPanel();
+  renderNotifPanel();
+}
+
+function markAllNotifsRead() {
+  const items = buildNotifications();
+  const readIds = getReadNotifIds();
+  items.forEach(i => readIds.add(i.id));
+  saveReadNotifIds(readIds);
+  renderNotifPanel();
+}
+
+let _notifPanelOpen = false;
+function toggleNotifPanel(e) {
+  if (e) e.stopPropagation();
+  const panel = document.getElementById('notif-panel');
+  if (!panel) return;
+  _notifPanelOpen = !_notifPanelOpen;
+  panel.classList.toggle('hidden', !_notifPanelOpen);
+  if (_notifPanelOpen) renderNotifPanel();
+}
+function closeNotifPanel() {
+  _notifPanelOpen = false;
+  const panel = document.getElementById('notif-panel');
+  if (panel) panel.classList.add('hidden');
+}
+
+// Close panel saat klik di luar
+document.addEventListener('click', e => {
+  if (_notifPanelOpen && !document.getElementById('notif-wrap')?.contains(e.target)) {
+    closeNotifPanel();
+  }
+});
 
 // ══════════════════════════════════════════
 // SYNC INDICATOR
