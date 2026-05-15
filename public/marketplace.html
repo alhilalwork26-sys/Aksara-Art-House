@@ -3579,9 +3579,10 @@ function renderHome(){
   const html=items.map(i=>`<span class="marquee-item">${i}</span><span class="marquee-dot">&#11044;</span>`).join('');
   track.innerHTML=html+html; // doubled for seamless loop
 
-  const available = PAINTINGS.filter(p=>p.status!=='terjual');
-  const heroFeature = available[0] || PAINTINGS[0];
-  const heroSide = available[1] || available[0] || PAINTINGS[1] || PAINTINGS[0];
+  const available = PAINTINGS.filter(p=>p.status==='tersedia');
+  const marketable = PAINTINGS.filter(p=>p.status!=='terjual');
+  const heroFeature = available[0] || marketable[0] || PAINTINGS[0];
+  const heroSide = available[1] || available[0] || marketable[1] || marketable[0] || PAINTINGS[1] || PAINTINGS[0];
   const featureArt = document.getElementById('hero-feature-art');
   const sideArt = document.getElementById('hero-side-art');
   const sideTitle = document.getElementById('hero-side-title');
@@ -3600,7 +3601,12 @@ function renderHome(){
 
   // Grid
   const grid=document.getElementById('home-grid');
-  grid.innerHTML=PAINTINGS.slice(0,4).map(p=>cardHTML(p)).join('');
+  const homeList = available.length ? available.slice(0,4) : [];
+  grid.innerHTML=homeList.length ? homeList.map(p=>cardHTML(p)).join('') : `<div class="empty-state" style="grid-column:1/-1;text-align:center;padding:2.5rem 1rem;border:1px solid var(--border);background:var(--warm);border-radius:18px">
+    <div style="font-family:var(--fd);font-size:26px;color:var(--brown);margin-bottom:.5rem">Karya tersedia sedang dikurasi</div>
+    <div style="color:var(--muted);line-height:1.7">Saat ini belum ada karya dengan status Tersedia. Anda masih bisa melihat karya lelang atau menghubungi studio untuk konsultasi koleksi.</div>
+    <button class="btn btn-secondary" style="margin-top:1rem" onclick="goPage('auction')">Lihat Lelang</button>
+  </div>`;
   refreshScrollAnimations();
 }
 
@@ -3657,7 +3663,11 @@ function renderGallery(){
   else list=[...list].sort((a,b)=>b.year-a.year||b.id-a.id);
 
   document.getElementById('gallery-count').textContent=list.length+' karya ditemukan';
-  document.getElementById('gallery-grid').innerHTML=list.map(p=>cardHTML(p)).join('');
+  document.getElementById('gallery-grid').innerHTML=list.length ? list.map(p=>cardHTML(p)).join('') : `<div class="empty-state" style="grid-column:1/-1;text-align:center;padding:2.5rem 1rem;border:1px solid var(--border);background:var(--warm);border-radius:18px">
+    <div style="font-family:var(--fd);font-size:26px;color:var(--brown);margin-bottom:.5rem">Belum ada karya untuk filter ini</div>
+    <div style="color:var(--muted);line-height:1.7">${state.filter==='tersedia' ? 'Tidak ada karya berstatus Tersedia saat ini. Karya Terjual tetap tampil sebagai arsip koleksi, tetapi tidak bisa dibeli.' : 'Coba pilih filter lain atau muat ulang koleksi terbaru.'}</div>
+    <button class="btn btn-outline" style="margin-top:1rem" onclick="setFilter('semua')">Tampilkan Semua</button>
+  </div>`;
   refreshScrollAnimations();
 }
 
@@ -4127,8 +4137,11 @@ function toggleBidHistory(id, btn){
 function addToCart(id, directCheckout=false){
   const p=PAINTINGS.find(x=>x.id===id);
   if(!p) return;
-  if(p.status==='terjual' || Number(p.stock ?? 1) <= 0){
-    showToast('Karya ini sudah terjual atau stok habis.','error');
+  if(p.status!=='tersedia' || Number(p.stock ?? 1) <= 0){
+    const msg = p.status==='lelang'
+      ? 'Karya ini sedang dilelang. Gunakan tombol bid di halaman lelang.'
+      : 'Karya ini sudah terjual atau belum tersedia untuk pembelian langsung.';
+    showToast(msg,'error');
     return;
   }
   if(state.cart.find(c=>c.id===id)){
@@ -4250,14 +4263,18 @@ function renderCkSteps(){
 async function ckNext(){
   const nextBtn=document.getElementById('ck-next-btn');
   if(state.ckStep===1){
-    const n=document.getElementById('ck-nama').value;
-    const e=document.getElementById('ck-email').value;
-    if(!n||!e){ showToast('Mohon lengkapi data diri','error'); return; }
+    const n=document.getElementById('ck-nama').value.trim();
+    const e=document.getElementById('ck-email').value.trim();
+    const wa=document.getElementById('ck-wa').value.trim();
+    if(!n||!e||!wa){ showToast('Nama, email, dan nomor WhatsApp wajib diisi','error'); return; }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){ showToast('Format email belum valid','error'); return; }
+    if(wa.replace(/\D/g,'').length < 9){ showToast('Nomor WhatsApp terlalu pendek','error'); return; }
   }
   if(state.ckStep===2){
-    const a=document.getElementById('ck-alamat').value;
+    const a=document.getElementById('ck-alamat').value.trim();
+    const city=document.getElementById('ck-kota').value.trim();
     const k=document.getElementById('ck-kurir').value;
-    if(!a){ showToast('Mohon lengkapi alamat pengiriman','error'); return; }
+    if(!a||!city||!k){ showToast('Alamat, kota, dan metode pengiriman wajib diisi','error'); return; }
   }
   if(state.ckStep===3){
     // Confirm & simpan pesanan ke Supabase
@@ -4272,8 +4289,9 @@ async function ckNext(){
     const proofUrl=state.paymentProof?.url || '';
     const kurir=document.getElementById('ck-kurir');
     const kurirText=kurir.options[kurir.selectedIndex]?.text||'Pengiriman standar Aksara — sudah termasuk harga karya';
-  const payment=document.querySelector('input[name="payment"]:checked')?.value||'-';
-  if(!wa){ showToast('Mohon isi nomor WhatsApp','error'); return; }
+    const payment=document.querySelector('input[name="payment"]:checked')?.value||'';
+    if(!payment){ showToast('Pilih metode pembayaran terlebih dahulu','error'); return; }
+    if(!state.cart.length){ showToast('Keranjang masih kosong','error'); return; }
     if(nextBtn){ nextBtn.disabled=true; nextBtn.textContent='Menyimpan...'; }
     let orderNumber = '';
     try {

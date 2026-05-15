@@ -1473,7 +1473,7 @@ async function saveArtwork() {
 function confirmDeleteArtwork(id) {
   const paintings = loadPaintings();
   const p = paintings.find(x=>x.id===id);
-  showConfirm('Hapus Karya?', `"${p?.title}" akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.`, () => deleteArtwork(id), '🗑️');
+  showConfirm('Arsipkan Karya?', `"${p?.title}" akan diarsipkan dan tidak tampil di marketplace publik.`, () => deleteArtwork(id), '🗑️');
 }
 
 async function deleteArtwork(id) {
@@ -1486,7 +1486,7 @@ async function deleteArtwork(id) {
     renderArtworksTable();
     renderDashboard();
     renderAuctionsAdmin();
-    showToast('Karya berhasil dihapus');
+    showToast('Karya berhasil diarsipkan');
   } catch(e) { showToast(e.message, 'error'); }
 }
 
@@ -1537,7 +1537,7 @@ async function renderOrders(forceRefresh = false) {
           <span class="order-date">${o.date||''}</span>
         </div>
       </div>
-      <div class="order-buyer">👤 ${o.name} · 📱 ${o.wa||'-'} · 📧 ${o.email||'-'}</div>
+      <div class="order-buyer">👤 ${escapeHtml(o.name||'-')} · kontak lengkap tersedia di detail pesanan</div>
       <div class="order-items" style="margin:6px 0">${(o.items||[]).map(i=>i.title).join(', ')}</div>
       ${orderProofUrl(o) ? `<div style="font-size:12px;color:var(--terra);margin:6px 0">Bukti pembayaran tersedia dan perlu dicek</div>` : o.notes ? `<div style="font-size:12px;color:var(--terra);margin:6px 0">Catatan pembayaran tersedia</div>` : ''}
       ${orderNeedsShipping(o) ? `<div style="font-size:12px;color:#1a5c8a;margin:6px 0">Perlu input resi / proses pengiriman</div>` : ''}
@@ -1546,7 +1546,7 @@ async function renderOrders(forceRefresh = false) {
         <div style="display:flex;gap:8px">
           <button class="btn btn-ghost btn-sm" onclick="viewOrder('${o.id}')">Detail</button>
           <button class="btn btn-secondary btn-sm" onclick="openAdminInvoice('${o.id}')">Invoice</button>
-          <select class="filter-select" style="font-size:11px;padding:5px 9px" onchange="updateOrderStatus('${o.id}',this.value)">
+          <select class="filter-select" style="font-size:11px;padding:5px 9px" data-current-status="${escapeHtml(o.status||'pending')}" onchange="confirmOrderStatusChange('${o.id}',this)">
             <option value="pending" ${o.status==='pending'?'selected':''}>Menunggu</option>
             <option value="confirmed" ${o.status==='confirmed'?'selected':''}>Konfirmasi</option>
             <option value="paid" ${o.status==='paid'?'selected':''}>Dibayar</option>
@@ -1602,9 +1602,9 @@ function viewOrder(id) {
         ${paymentProofPreviewHTML(o)}
         ${o.notes ? `<div style="font-size:12px;color:var(--brown);line-height:1.7;margin-top:.5rem;white-space:pre-wrap">${linkifyText(o.notes)}</div>` : '<div style="font-size:12px;color:var(--muted);margin-top:.5rem">Belum ada bukti/catatan pembayaran.</div>'}
         <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
-          <button class="btn btn-secondary btn-sm" onclick="updateOrderPayment('${o.id}','paid')">Tandai Lunas</button>
-          <button class="btn btn-ghost btn-sm" onclick="updateOrderPayment('${o.id}','waiting_confirmation')">Menunggu Cek</button>
-          <button class="btn btn-danger btn-sm" onclick="updateOrderPayment('${o.id}','failed')">Tolak Pembayaran</button>
+          <button class="btn btn-secondary btn-sm" onclick="confirmOrderPayment('${o.id}','paid')">Tandai Lunas</button>
+          <button class="btn btn-ghost btn-sm" onclick="confirmOrderPayment('${o.id}','waiting_confirmation')">Menunggu Cek</button>
+          <button class="btn btn-danger btn-sm" onclick="confirmOrderPayment('${o.id}','failed')">Tolak Pembayaran</button>
           <button class="btn btn-outline btn-sm" onclick="requestPaymentRevision('${o.id}')">Minta Upload Ulang</button>
         </div>
       </div>
@@ -1725,6 +1725,32 @@ function prepareInvoicePdfAndWhatsApp(id) {
   showToast('Simpan invoice sebagai PDF, lalu lampirkan di WhatsApp yang terbuka.', 'success');
 }
 
+function confirmOrderStatusChange(id, selectEl) {
+  const nextStatus = selectEl.value;
+  const previousStatus = selectEl.dataset.currentStatus || 'pending';
+  if(nextStatus === previousStatus) return;
+  const labels = {
+    pending:'Menunggu',
+    confirmed:'Dikonfirmasi',
+    paid:'Dibayar',
+    packed:'Dikemas',
+    shipped:'Dikirim',
+    done:'Selesai',
+    cancelled:'Dibatalkan'
+  };
+  showConfirm(
+    'Ubah Status Pesanan?',
+    `Status akan diubah dari "${labels[previousStatus]||previousStatus}" menjadi "${labels[nextStatus]||nextStatus}".`,
+    async () => {
+      const ok = await updateOrderStatus(id, nextStatus);
+      if(ok) selectEl.dataset.currentStatus = nextStatus;
+      else selectEl.value = previousStatus;
+    },
+    '✓'
+  );
+  selectEl.value = previousStatus;
+}
+
 async function updateOrderStatus(id, status) {
   try {
     const res = await fetch('/api/admin/orders/' + id, {
@@ -1739,7 +1765,20 @@ async function updateOrderStatus(id, status) {
     renderOrders();
     renderDashboard();
     showToast(`Status pesanan diperbarui ✓`, 'success');
-  } catch(e) { showToast(e.message, 'error'); }
+    return true;
+  } catch(e) { showToast(e.message, 'error'); return false; }
+}
+
+function confirmOrderPayment(id, paymentStatus) {
+  const labels = {
+    paid:'Tandai pembayaran lunas?',
+    waiting_confirmation:'Ubah pembayaran menjadi menunggu cek?',
+    failed:'Tolak pembayaran ini?'
+  };
+  const msg = paymentStatus === 'failed'
+    ? 'Buyer perlu mengirim bukti pembayaran ulang setelah status ini disimpan.'
+    : 'Perubahan status pembayaran akan tersimpan ke database dan terlihat di detail pesanan.';
+  showConfirm(labels[paymentStatus] || 'Ubah status pembayaran?', msg, () => updateOrderPayment(id, paymentStatus), '✓');
 }
 
 async function updateOrderPayment(id, payment_status) {
@@ -2298,6 +2337,13 @@ async function createPromo() {
 
   if(!code || !discount_type || !discount_value) {
     showToast('Kode, tipe, dan nilai diskon wajib diisi', 'error'); return;
+  }
+  if(discount_value <= 0) { showToast('Nilai diskon harus lebih besar dari 0', 'error'); return; }
+  if(discount_type === 'percentage' && discount_value > 100) { showToast('Diskon persentase maksimal 100%', 'error'); return; }
+  if(max_uses !== null && max_uses < 1) { showToast('Kuota promo harus minimal 1 atau dikosongkan', 'error'); return; }
+  if(min_purchase < 0) { showToast('Minimum pembelian tidak boleh negatif', 'error'); return; }
+  if(valid_from && valid_until && new Date(valid_from) > new Date(valid_until)) {
+    showToast('Tanggal mulai promo tidak boleh setelah tanggal selesai', 'error'); return;
   }
   try {
     const res = await fetch('/api/admin/promo', {

@@ -260,7 +260,15 @@ export async function ensureAuctionRecords(): Promise<void> {
 export async function deleteArtwork(id: string): Promise<void> {
   await supabaseFetch<null>(
     `artworks?id=eq.${id}`,
-    { method: "DELETE", headers: { Prefer: "return=minimal" } },
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({
+        status: "archived",
+        stock: 0,
+        updated_at: new Date().toISOString()
+      })
+    },
     { serviceRole: true }
   );
 }

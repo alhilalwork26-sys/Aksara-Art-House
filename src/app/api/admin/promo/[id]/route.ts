@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminToken, verifyAdminToken } from "@/lib/admin-auth";
+import { validatePromoPayload } from "@/lib/promo-validation";
 import { deletePromoCode, updatePromoCode } from "@/lib/supabase-rest";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -9,6 +10,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try {
     const { id } = await params;
     const data = await request.json();
+    const validationError = validatePromoPayload(data);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
+    }
     const promo = await updatePromoCode(id, data);
     return NextResponse.json(promo);
   } catch (error) {

@@ -9,7 +9,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     authenticated: true,
-    username: process.env.ADMIN_USERNAME || "admin"
+    username: process.env.ADMIN_USERNAME || "Admin"
   });
 }
 

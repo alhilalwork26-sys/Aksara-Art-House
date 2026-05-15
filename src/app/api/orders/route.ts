@@ -8,8 +8,25 @@ function validateCheckout(input: CheckoutInput) {
     return "Nama, email, dan WhatsApp wajib diisi.";
   }
 
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.customerEmail)) {
+    return "Format email belum valid.";
+  }
+
+  if (input.customerPhone.replace(/\D/g, "").length < 9) {
+    return "Nomor WhatsApp belum valid.";
+  }
+
   if (!input.shippingAddress || !input.shippingCity) {
     return "Alamat dan kota wajib diisi.";
+  }
+
+  if (!input.courier || !input.paymentMethod) {
+    return "Metode pengiriman dan pembayaran wajib dipilih.";
+  }
+
+  const allowedPayments = new Set(["transfer", "qris", "cod", "dp", "auction_invoice"]);
+  if (!allowedPayments.has(input.paymentMethod)) {
+    return "Metode pembayaran tidak valid.";
   }
 
   if (!Array.isArray(input.items) || input.items.length === 0) {

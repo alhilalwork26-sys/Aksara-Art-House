@@ -1,27 +1,40 @@
 import { createHmac } from "crypto";
 
-const SECRET = process.env.ADMIN_PASSWORD || "changeme";
-const USERNAME = process.env.ADMIN_USERNAME || "admin";
 export const ADMIN_COOKIE_NAME = "aksara_admin_token";
 
+function getAdminConfig() {
+  const username = process.env.ADMIN_USERNAME;
+  const password = process.env.ADMIN_PASSWORD;
+  if (!username || !password) return null;
+  return { username, password };
+}
+
 export function verifyAdminCredentials(username: string, password: string): boolean {
-  return username === USERNAME && password === SECRET;
+  const config = getAdminConfig();
+  if (!config) return false;
+  return username === config.username && password === config.password;
 }
 
 export function createAdminToken(): string {
-  const payload = `${USERNAME}:${Date.now()}`;
-  const sig = createHmac("sha256", SECRET).update(payload).digest("hex");
+  const config = getAdminConfig();
+  if (!config) throw new Error("ADMIN_USERNAME dan ADMIN_PASSWORD belum dikonfigurasi.");
+  const payload = `${config.username}:${Date.now()}`;
+  const sig = createHmac("sha256", config.password).update(payload).digest("hex");
   return Buffer.from(`${payload}:${sig}`).toString("base64url");
 }
 
 export function verifyAdminToken(token: string): boolean {
   try {
+    const config = getAdminConfig();
+    if (!config) return false;
     const decoded = Buffer.from(token, "base64url").toString();
     const lastColon = decoded.lastIndexOf(":");
     const payload = decoded.slice(0, lastColon);
     const sig = decoded.slice(lastColon + 1);
-    const expected = createHmac("sha256", SECRET).update(payload).digest("hex");
+    const expected = createHmac("sha256", config.password).update(payload).digest("hex");
     if (sig !== expected) return false;
+    const username = payload.split(":")[0];
+    if (username !== config.username) return false;
     // Token berlaku 24 jam
     const ts = parseInt(payload.split(":")[1], 10);
     return Date.now() - ts < 24 * 60 * 60 * 1000;

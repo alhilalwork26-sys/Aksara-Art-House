@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminToken, verifyAdminToken } from "@/lib/admin-auth";
+import { validatePromoPayload } from "@/lib/promo-validation";
 import { createPromoCode, listPromoCodes } from "@/lib/supabase-rest";
 import type { PromoCode } from "@/lib/types";
 
@@ -22,6 +23,10 @@ export async function POST(request: Request) {
     const body = await request.json() as Partial<PromoCode>;
     if (!body.code || !body.discount_type || !body.discount_value) {
       return NextResponse.json({ error: "code, discount_type, dan discount_value wajib diisi." }, { status: 400 });
+    }
+    const validationError = validatePromoPayload(body);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
     }
     body.code = body.code.trim().toUpperCase();
     const promo = await createPromoCode(body);
