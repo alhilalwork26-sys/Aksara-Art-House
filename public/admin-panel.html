@@ -834,6 +834,8 @@ function timeAgo(dateValue){
 
 // ── IN-MEMORY CACHE (diisi dari Supabase) ──
 let _paintings = null, _auctions = null, _orders = null, _settings = null, _promos = null, _reviews = null;
+let _activeSection = 'dashboard';
+let _isRefreshing = false;
 
 function adminHeaders(json = true) {
   return json ? { 'Content-Type': 'application/json' } : {};
@@ -848,36 +850,40 @@ function saveAuctions(data)  { _auctions  = data; }
 function saveOrders(data)    { _orders    = data; }
 
 async function fetchAllFromDB() {
-  try {
-    const [artRes, ordRes, aucRes] = await Promise.all([
-      fetch('/api/admin/artworks',  { headers: adminHeaders() }),
-      fetch('/api/admin/orders',    { headers: adminHeaders() }),
-      fetch('/api/admin/auctions',  { headers: adminHeaders() })
-    ]);
-    if(artRes.ok) {
-      _paintings = normalizeArtworks(await artRes.json());
+  const requests = [
+    ['artworks', fetch('/api/admin/artworks', { headers: adminHeaders(), cache:'no-store' })],
+    ['orders', fetch('/api/admin/orders', { headers: adminHeaders(), cache:'no-store' })],
+    ['auctions', fetch('/api/admin/auctions', { headers: adminHeaders(), cache:'no-store' })],
+    ['settings', fetch('/api/settings', { cache:'no-store' })],
+    ['promo', fetch('/api/admin/promo', { headers: adminHeaders(), cache:'no-store' })],
+    ['reviews', fetch('/api/admin/reviews', { headers: adminHeaders(), cache:'no-store' })]
+  ];
+  const settled = await Promise.allSettled(requests.map(([, request]) => request));
+  const errors = [];
+
+  await Promise.all(settled.map(async (result, index) => {
+    const key = requests[index][0];
+    if(result.status !== 'fulfilled') {
+      errors.push(`${key}: ${result.reason?.message || 'gagal koneksi'}`);
+      return;
     }
-    if(ordRes.ok) {
-      _orders = normalizeOrders(await ordRes.json());
-    } else {
-      const errData = await ordRes.json().catch(()=>({}));
-      console.error('Gagal memuat pesanan:', ordRes.status, errData);
-      const container = document.getElementById('orders-container');
-      if(container) container.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-msg" style="color:var(--danger)">Gagal memuat pesanan (${ordRes.status}).<br>${errData.error||'Periksa konfigurasi Supabase.'}</div></div>`;
+    const res = result.value;
+    const data = await res.json().catch(()=>null);
+    if(!res.ok) {
+      errors.push(`${key}: ${(data && data.error) || res.status}`);
+      return;
     }
-    if(aucRes.ok) {
-      const rows = await aucRes.json();
-      _auctions = normalizeAuctions(rows);
-    }
-    const [settingsRes, promoRes, reviewRes] = await Promise.all([
-      fetch('/api/settings'),
-      fetch('/api/admin/promo', { headers: adminHeaders() }),
-      fetch('/api/admin/reviews', { headers: adminHeaders() })
-    ]);
-    if(settingsRes.ok) _settings = { ...DEFAULT_SETTINGS, ...(await settingsRes.json()) };
-    if(promoRes.ok) _promos = await promoRes.json();
-    if(reviewRes.ok) _reviews = await reviewRes.json();
-  } catch(e) { console.error('Gagal fetch dari DB:', e); }
+    if(key === 'artworks') _paintings = normalizeArtworks(data);
+    if(key === 'orders') _orders = normalizeOrders(data);
+    if(key === 'auctions') _auctions = normalizeAuctions(data);
+    if(key === 'settings') _settings = { ...DEFAULT_SETTINGS, ...(data || {}) };
+    if(key === 'promo') _promos = Array.isArray(data) ? data : [];
+    if(key === 'reviews') _reviews = Array.isArray(data) ? data : [];
+  }));
+
+  if(errors.length) {
+    console.warn('Sebagian data admin gagal dimuat:', errors.join(' | '));
+  }
 }
 
 function normalizeArtworks(rows) {
@@ -1091,25 +1097,33 @@ async function initApp() {
   // Poll untuk data terbaru dari Supabase
   setInterval(async () => {
     await refreshAdminData(false);
-  }, 15000);
+  }, 30000);
 }
 
 async function refreshAdminData(showToastOnSuccess = false) {
+  if(_isRefreshing) return;
+  _isRefreshing = true;
   try {
     await fetchAllFromDB();
     renderDashboard();
-    await renderArtworksTable();
-    await renderOrders();
-    renderAuctionsAdmin();
-    renderPromos();
-    renderAdminReviews();
+    await renderActiveSection();
     updateOrderBadge();
     if(showToastOnSuccess) showToast('Dashboard tersinkron dengan database ✓', 'success');
   } catch(e) {
     console.error('Gagal refresh dashboard:', e);
     renderDashboardError(e);
     showToast(e.message || 'Gagal memuat dashboard.', 'error');
+  } finally {
+    _isRefreshing = false;
   }
+}
+
+async function renderActiveSection() {
+  if(_activeSection === 'artworks') await renderArtworksTable(false);
+  if(_activeSection === 'orders') await renderOrders(false);
+  if(_activeSection === 'auctions') renderAuctionsAdmin(false);
+  if(_activeSection === 'promo') renderPromos();
+  if(_activeSection === 'reviews') renderAdminReviews();
 }
 
 // ══════════════════════════════════════════
@@ -1137,15 +1151,19 @@ function syncIndicator() {
 const SECTION_TITLES = { dashboard:'Dashboard', artworks:'Kelola Karya', orders:'Pesanan', auctions:'Lelang', promo:'Kode Promo', reviews:'Ulasan' };
 
 function showSection(id, btn) {
+  _activeSection = id;
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('section-' + id).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   document.getElementById('topbar-title').textContent = SECTION_TITLES[id] || id;
   document.getElementById('sidebar').classList.remove('open');
-  if(id === 'artworks') renderArtworksTable(true);
-  if(id === 'orders') renderOrders(true);
-  if(id === 'auctions') renderAuctionsAdmin(true);
+  if(id === 'dashboard') renderDashboard();
+  if(id === 'artworks') renderArtworksTable(false);
+  if(id === 'orders') renderOrders(false);
+  if(id === 'auctions') renderAuctionsAdmin(false);
+  if(id === 'promo') renderPromos();
+  if(id === 'reviews') renderAdminReviews();
 }
 
 // ══════════════════════════════════════════
