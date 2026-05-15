@@ -241,6 +241,101 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
 }
 
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── SMOOTH SECTION TRANSITIONS ── */
+.tab-panel { display:none; animation:sectionIn .32s cubic-bezier(.4,0,.2,1) both; }
+.tab-panel.active { display:block; }
+@keyframes sectionIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── MODAL ANIMATION ── */
+.overlay:not(.hidden) .modal,
+.modal-overlay:not(.hidden) .modal {
+  animation:modalPop .28s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes modalPop { from{opacity:0;transform:scale(.93) translateY(14px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+/* ── SKELETON SHIMMER ── */
+@keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
+.sk {
+  background:linear-gradient(90deg,#f0ebe6 25%,#e8ddd6 50%,#f0ebe6 75%);
+  background-size:1200px 100%;
+  animation:shimmer 1.5s infinite linear;
+  border-radius:4px;
+}
+.sk-stat { height:64px; border-radius:8px; }
+.sk-row { height:44px; margin-bottom:8px; border-radius:3px; }
+.sk-row-sm { height:32px; margin-bottom:6px; border-radius:3px; }
+
+/* ── STAT CARD ENTRANCE ── */
+.stat-card { animation:fadeUp .35s ease both; }
+.stat-card:nth-child(2) { animation-delay:.06s }
+.stat-card:nth-child(3) { animation-delay:.12s }
+.stat-card:nth-child(4) { animation-delay:.18s }
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── STAT CARD HOVER ── */
+.stat-card { transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease; cursor:default; }
+.stat-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(44,35,32,.12); border-color:var(--terra); }
+.stat-card.is-warn { border-color:var(--ochre); }
+.stat-card.is-warn:hover { border-color:var(--danger); }
+
+/* ── TABLE ROW STAGGER ── */
+tbody tr { animation:fadeUp .28s ease both; }
+tbody tr:nth-child(1){animation-delay:.03s}
+tbody tr:nth-child(2){animation-delay:.06s}
+tbody tr:nth-child(3){animation-delay:.09s}
+tbody tr:nth-child(4){animation-delay:.12s}
+tbody tr:nth-child(5){animation-delay:.15s}
+tbody tr:nth-child(6){animation-delay:.18s}
+tbody tr:nth-child(7){animation-delay:.21s}
+tbody tr:nth-child(8){animation-delay:.24s}
+tbody tr:hover { background:rgba(193,113,75,.04); }
+
+/* ── PROGRESS BAR ANIMATION ── */
+.progress-fill { transition:width 1s cubic-bezier(.4,0,.2,1); }
+
+/* ── PRIORITY ACTION PULSE ── */
+.dash-action:not(.is-empty) .dash-action-count {
+  animation:countPulse 2s ease infinite;
+}
+@keyframes countPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+
+/* ── WARN CARD URGENT GLOW ── */
+.stat-card.is-warn .stat-val { color:var(--ochre); }
+
+/* ── REFRESH COUNTDOWN ── */
+#refresh-countdown {
+  font-size:11px; color:rgba(255,255,255,.45);
+  letter-spacing:.04em; margin-top:4px;
+  display:block;
+}
+
+/* ── NAV ACTIVE INDICATOR ── */
+.nav-item.active { color:#fff; background:rgba(255,255,255,.12); position:relative; }
+.nav-item.active::before {
+  content:''; position:absolute; left:0; top:20%; bottom:20%;
+  width:3px; background:var(--terra); border-radius:0 2px 2px 0;
+}
+
+/* ── INPUT FOCUS ── */
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus,.search-input:focus {
+  border-color:var(--terra); box-shadow:0 0 0 3px rgba(193,113,75,.15);
+}
+
+/* ── BTN LOADING ── */
+.btn.loading { opacity:.7; pointer-events:none; position:relative; }
+.btn.loading::after {
+  content:''; position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  width:12px; height:12px; border:2px solid rgba(255,255,255,.4);
+  border-top-color:#fff; border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin { to{transform:translateY(-50%) rotate(360deg)} }
+
+/* ── DASH ACTION ENTER ── */
+.dash-action { animation:fadeUp .3s ease both; transition:background .18s,transform .18s; }
+.dash-action:hover:not(.is-empty) { background:rgba(193,113,75,.08); transform:translateX(3px); }
+
 .hamburger-btn{display:none;align-items:center;justify-content:center;background:none;border:none;font-size:22px;color:var(--brown);cursor:pointer;padding:4px}
 </style>
 </head>
@@ -530,6 +625,7 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
       <div class="sync-indicator">
         <div class="sync-dot" id="sync-dot"></div>
         <span id="sync-label">Data tersinkron</span>
+        <span id="refresh-countdown"></span>
       </div>
       <button class="btn btn-ghost btn-sm" id="notif-btn" onclick="requestNotifPermission()" title="Aktifkan notifikasi pesanan baru">🔔 Notifikasi</button>
       <button class="btn btn-primary btn-sm" onclick="openArtworkModal()">+ Karya Baru</button>
@@ -637,7 +733,7 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
     <!-- ═══ ORDERS ═══ -->
     <div id="section-orders" class="tab-panel">
       <div class="search-bar">
-        <input class="search-input" type="text" id="order-search" placeholder="Cari nama pemesan atau karya..." oninput="renderOrders()">
+        <input class="search-input" type="text" id="order-search" placeholder="Cari nama pemesan atau karya..." oninput="_debouncedRenderOrders()">
         <select class="filter-select" id="order-filter" onchange="renderOrders()">
           <option value="">Semua Status</option>
           <option value="needs_payment_review">Perlu Cek Pembayaran</option>
@@ -854,7 +950,7 @@ async function fetchAllFromDB() {
     ['artworks', fetch('/api/admin/artworks', { headers: adminHeaders(), cache:'no-store' })],
     ['orders', fetch('/api/admin/orders', { headers: adminHeaders(), cache:'no-store' })],
     ['auctions', fetch('/api/admin/auctions', { headers: adminHeaders(), cache:'no-store' })],
-    ['settings', fetch('/api/settings', { cache:'no-store' })],
+    ['settings', fetch('/api/settings', { cache:'default' })],
     ['promo', fetch('/api/admin/promo', { headers: adminHeaders(), cache:'no-store' })],
     ['reviews', fetch('/api/admin/reviews', { headers: adminHeaders(), cache:'no-store' })]
   ];
@@ -1095,8 +1191,10 @@ async function initApp() {
   renderDashboard();
   await refreshAdminData(true);
   // Poll untuk data terbaru dari Supabase
+  startRefreshCountdown(30);
   setInterval(async () => {
     await refreshAdminData(false);
+    startRefreshCountdown(30);
   }, 30000);
 }
 
@@ -1135,6 +1233,61 @@ function showToast(msg, type='') {
   clearTimeout(t._t); t._t = setTimeout(() => t.className = '', 3200);
 }
 
+// ── COUNT-UP ANIMATION ──
+function countUp(el, target, duration=700){
+  if(!el) return;
+  const isNum = /^[\d,]+$/.test(String(target).replace(/[Rp\s.+]/g,''));
+  if(!isNum){ el.textContent=target; return; }
+  const start = parseInt(el.textContent.replace(/\D/g,'')) || 0;
+  const end = parseInt(String(target).replace(/\D/g,'')) || 0;
+  if(start===end){ el.textContent=target; return; }
+  const startTime = performance.now();
+  function step(now){
+    const pct = Math.min((now-startTime)/duration, 1);
+    const ease = 1-Math.pow(1-pct,3);
+    const val = Math.round(start+(end-start)*ease);
+    el.textContent = String(target).replace(/[\d,]+/, val.toLocaleString('id-ID'));
+    if(pct<1) requestAnimationFrame(step);
+    else el.textContent = target;
+  }
+  requestAnimationFrame(step);
+}
+
+// ── SKELETON HELPERS ──
+function skeletonStats(){
+  const g=document.getElementById('stats-grid');
+  if(g) g.innerHTML='<div class="stat-card sk sk-stat"></div>'.repeat(4);
+}
+function skeletonRows(tbodyId, cols=4, rows=5){
+  const el=document.getElementById(tbodyId);
+  if(!el) return;
+  el.innerHTML=Array.from({length:rows},()=>
+    `<tr>${Array.from({length:cols},()=>`<td><div class="sk sk-row-sm"></div></td>`).join('')}</tr>`
+  ).join('');
+}
+
+// ── REFRESH COUNTDOWN ──
+let _countdownTimer = null;
+function startRefreshCountdown(seconds=30){
+  clearInterval(_countdownTimer);
+  const el = document.getElementById('refresh-countdown');
+  if(!el) return;
+  let remaining = seconds;
+  const tick = () => {
+    el.textContent = `↻ auto-refresh dalam ${remaining}d`;
+    if(--remaining < 0) remaining = seconds;
+  };
+  tick();
+  _countdownTimer = setInterval(tick, 1000);
+}
+
+// ── DEBOUNCE ──
+function debounce(fn, ms=280){
+  let t; return (...args) => { clearTimeout(t); t = setTimeout(()=>fn(...args), ms); };
+}
+const _debouncedRenderOrders = debounce(() => renderOrders(false));
+const _debouncedRenderArtworks = debounce(() => renderArtworksTable(false));
+
 // ══════════════════════════════════════════
 // SYNC INDICATOR
 // ══════════════════════════════════════════
@@ -1171,6 +1324,14 @@ function showSection(id, btn) {
 // ══════════════════════════════════════════
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+// Escape key menutup modal aktif
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  document.querySelectorAll('.overlay:not(.hidden), .modal-overlay:not(.hidden)').forEach(m => {
+    m.classList.add('hidden');
+  });
+});
 
 // ══════════════════════════════════════════
 // CONFIRM DIALOG
@@ -1239,6 +1400,13 @@ function renderDashboard() {
     <div class="stat-card ${endingSoon.length ? 'is-warn' : ''}"><div class="stat-val">${activeAuctions.length}</div><div class="stat-lbl">Lelang Aktif</div><div class="stat-sub">${endingSoon.length} lelang selesai dalam 24 jam</div></div>
     <div class="stat-card"><div class="stat-val" style="font-size:20px">${revenue>0?fmt(revenue):'Rp 0'}</div><div class="stat-lbl">Omzet Order</div><div class="stat-sub">Nilai karya tersedia ${fmt(availableValue)}</div></div>
   `;
+
+  // Count-up untuk stat values
+  document.querySelectorAll('#stats-grid .stat-val').forEach(el => {
+    const val = el.textContent;
+    el.textContent = '0';
+    setTimeout(() => countUp(el, val), 80);
+  });
 
   const recentOrders = [...orders].sort((a,b)=>getTime(b.created_at || b.date)-getTime(a.created_at || a.date)).slice(0,5);
   document.getElementById('dash-orders-tbody').innerHTML = recentOrders.length ? recentOrders.map(o => `
@@ -1477,6 +1645,8 @@ function editArtwork(id) {
 }
 
 async function saveArtwork() {
+  const _saveBtn = document.querySelector('#modal-artwork .btn-primary');
+  if(_saveBtn) _saveBtn.classList.add('loading');
   const title = document.getElementById('art-title').value.trim();
   const artist = document.getElementById('art-artist').value.trim();
   const medium = document.getElementById('art-medium').value.trim();
@@ -1535,6 +1705,7 @@ async function saveArtwork() {
     renderAuctionsAdmin();
     closeModal('modal-artwork');
   } catch(e) { showToast(e.message, 'error'); }
+  finally { if(_saveBtn) _saveBtn.classList.remove('loading'); }
 }
 
 function confirmDeleteArtwork(id) {
