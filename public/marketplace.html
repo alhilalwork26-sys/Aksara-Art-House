@@ -874,7 +874,26 @@ button { cursor:pointer; }
 .detail-desc {
   font-size:14px; color:var(--muted);
   line-height:1.95; margin-bottom:1.5rem;
+  position:relative;
 }
+.desc-lock-wrap {
+  position:relative; margin-bottom:1.5rem;
+}
+.desc-blur {
+  font-size:14px; color:var(--muted); line-height:1.95;
+  filter:blur(5px); user-select:none; pointer-events:none;
+  overflow:hidden; max-height:72px;
+}
+.desc-lock-overlay {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:10px;
+  background:linear-gradient(to bottom, rgba(245,240,235,0.6) 0%, rgba(245,240,235,0.97) 40%);
+  border-radius:6px; padding:1rem; text-align:center;
+}
+.desc-lock-icon { font-size:22px; line-height:1; }
+.desc-lock-text { font-size:13px; color:var(--brown); font-weight:500; }
 .detail-tags { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:1.5rem; }
 .tag {
   padding:4px 12px;
@@ -2582,6 +2601,175 @@ body {
 .osb-shipped{color:#1a5c8a;border-color:rgba(26,92,138,.25);background:rgba(26,92,138,.08)}
 .osb-done{color:#3a6b3a;border-color:rgba(58,107,58,.25);background:rgba(58,107,58,.1)}
 .osb-cancelled{color:#8B2E2E;border-color:rgba(139,46,46,.2);background:rgba(139,46,46,.08)}
+
+/* ── SMOOTH TRANSITIONS GLOBAL ── */
+*, *::before, *::after {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Page transitions */
+.page {
+  animation: fadeSlideIn 0.35s ease both;
+}
+@keyframes fadeSlideIn {
+  from { opacity:0; transform:translateY(14px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* Card hover lift */
+.p-card {
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+.p-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.13);
+}
+
+/* Auction card hover */
+.auction-card {
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+.auction-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 32px rgba(0,0,0,0.12);
+}
+
+/* Button interactions */
+.btn {
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease,
+              transform 0.14s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:active:not(:disabled) { transform: translateY(0) scale(0.97); }
+
+/* Modal smooth appear */
+.modal-overlay, .overlay {
+  transition: opacity 0.25s ease;
+}
+.modal-overlay.hidden, .overlay.hidden {
+  opacity:0; pointer-events:none;
+}
+.modal-overlay:not(.hidden), .overlay:not(.hidden) {
+  opacity:1;
+}
+.modal {
+  animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes modalPop {
+  from { opacity:0; transform:scale(0.92) translateY(16px); }
+  to   { opacity:1; transform:scale(1) translateY(0); }
+}
+
+/* Nav items */
+.nav-link, .nav-item {
+  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+/* Room tabs */
+.room-tab {
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+/* Status chips */
+.status-chip {
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* Image reveal */
+.painting-display img, .room-preview img {
+  transition: opacity 0.4s ease;
+  animation: imgReveal 0.5s ease both;
+}
+@keyframes imgReveal {
+  from { opacity:0; }
+  to   { opacity:1; }
+}
+
+/* Wishlist heart pop */
+.wish-btn {
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), color 0.2s ease;
+}
+.wish-btn.active { transform: scale(1.2); }
+
+/* Toast entrance */
+.toast {
+  animation: toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes toastIn {
+  from { opacity:0; transform:translateX(60px) scale(0.9); }
+  to   { opacity:1; transform:translateX(0) scale(1); }
+}
+
+/* Skeleton shimmer for loading states */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0ebe6 25%, #e8e0d8 50%, #f0ebe6 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius:4px;
+}
+
+/* Gallery grid stagger */
+.p-card:nth-child(1) { animation-delay:.03s }
+.p-card:nth-child(2) { animation-delay:.06s }
+.p-card:nth-child(3) { animation-delay:.09s }
+.p-card:nth-child(4) { animation-delay:.12s }
+.p-card:nth-child(5) { animation-delay:.15s }
+.p-card:nth-child(6) { animation-delay:.18s }
+.p-card:nth-child(7) { animation-delay:.21s }
+.p-card:nth-child(8) { animation-delay:.24s }
+.p-card { animation: fadeSlideIn 0.4s ease both; }
+
+/* Input focus ring */
+input, textarea, select {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+input:focus, textarea:focus, select:focus {
+  outline:none;
+  border-color: var(--terra, #C1714B);
+  box-shadow: 0 0 0 3px rgba(193,113,75,0.15);
+}
+
+/* Price value pulse on update */
+@keyframes pricePop {
+  0%   { transform:scale(1); }
+  50%  { transform:scale(1.06); color:var(--terra); }
+  100% { transform:scale(1); }
+}
+.price-pop { animation: pricePop 0.4s ease; }
+
+/* Countdown timer pulse */
+@keyframes timerPulse {
+  0%, 100% { opacity:1; }
+  50%       { opacity:0.6; }
+}
+.timer-urgent { animation: timerPulse 1s ease infinite; color:#e53e3e !important; }
+
+/* Scroll reveal (intersection observer driven) */
+.reveal {
+  opacity:0; transform:translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.reveal.visible {
+  opacity:1; transform:translateY(0);
+}
+
+/* Detail panel slide-in from right */
+#page-detail {
+  animation: detailSlide 0.38s cubic-bezier(0.4,0,0.2,1) both;
+}
+@keyframes detailSlide {
+  from { opacity:0; transform:translateX(24px); }
+  to   { opacity:1; transform:translateX(0); }
+}
+
+/* Desc lock overlay fade */
+.desc-lock-overlay {
+  animation: fadeSlideIn 0.3s ease both;
+}
 </style>
 </head>
 <body>
@@ -2793,7 +2981,7 @@ body {
               <div class="dim-item"><div class="dim-name">Tebal</div><div class="dim-value" id="d-tbl"></div><div class="dim-unit">cm</div></div>
             </div>
           </div>
-          <p class="detail-desc" id="d-desc"></p>
+          <div class="desc-lock-wrap" id="d-desc-wrap"></div>
           <div class="detail-tags" id="d-tags"></div>
           <div class="price-section">
             <div>
@@ -3752,7 +3940,10 @@ function openDetail(id){
   document.getElementById('bc-title').textContent=p.title;
 
   // Painting
-  document.getElementById('detail-painting-display').innerHTML=paintingSVG(p,600,800);
+  const _imgUrl = artworkImageUrl(p);
+  document.getElementById('detail-painting-display').innerHTML = _imgUrl
+    ? `<img src="${_imgUrl}" alt="${escapeHtml(p.title)}" style="width:100%;display:block;aspect-ratio:3/4;max-height:480px;object-fit:cover;">`
+    : paintingSVG(p,600,800);
 
   // Info
   document.getElementById('d-eyebrow').textContent=p.cat.charAt(0).toUpperCase()+p.cat.slice(1)+' · '+p.medium;
@@ -3762,10 +3953,9 @@ function openDetail(id){
   document.getElementById('d-tgg').textContent=artworkHeight(p) || '-';
   document.getElementById('d-lbr').textContent=artworkDepth(p) || '-';
   document.getElementById('d-tbl').textContent=p.k || p.thickness || '-';
-  document.getElementById('d-desc').textContent=p.desc;
   document.getElementById('d-medium').textContent=p.medium;
   document.getElementById('d-year').textContent=p.year;
-  document.getElementById('d-tags').innerHTML=(p.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('');
+  renderDetailDesc(p);
   document.getElementById('d-specs').innerHTML = `
     <div class="spec-item"><div class="spec-label">Format Dimensi</div><div class="spec-value">${escapeHtml(artworkDimensionText(p))}</div></div>
     <div class="spec-item"><div class="spec-label">Orientasi</div><div class="spec-value">${escapeHtml(artworkOrientation(p))}</div></div>
@@ -3886,6 +4076,28 @@ async function submitReview(artworkId){
   } catch(e){ showToast(e.message||'Gagal mengirim ulasan','error'); }
 }
 
+function renderDetailDesc(p){
+  const wrap = document.getElementById('d-desc-wrap');
+  const tagsEl = document.getElementById('d-tags');
+  if(!wrap) return;
+  const painting = p || state.currentPainting;
+  if(!painting) return;
+  if(state.user){
+    wrap.innerHTML = `<p class="detail-desc">${escapeHtml(painting.desc||'')}</p>`;
+    if(tagsEl) tagsEl.innerHTML = (painting.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('');
+  } else {
+    const preview = (painting.desc||'').slice(0,120)+(painting.desc&&painting.desc.length>120?'...':'');
+    wrap.innerHTML = `
+      <div class="desc-blur">${escapeHtml(preview)}</div>
+      <div class="desc-lock-overlay">
+        <div class="desc-lock-icon">🔒</div>
+        <div class="desc-lock-text">Masuk untuk melihat deskripsi lengkap karya ini</div>
+        <button class="btn btn-sm btn-primary" onclick="state.postAuthAction='detail';openAuth('login')">Masuk / Daftar Gratis</button>
+      </div>`;
+    if(tagsEl) tagsEl.innerHTML = '';
+  }
+}
+
 // ── ROOM PREVIEW ──────────────────────────────────
 const ROOMS = {
   living: {
@@ -3975,10 +4187,14 @@ function drawRoom(room, painting){
   const cx=(r.paintX||120), cy=(r.paintY||18);
   const left=cx, top=cy;
 
+  const _roomImg = artworkImageUrl(painting);
+  const _artContent = _roomImg
+    ? `<img src="${_roomImg}" style="width:100%;height:100%;object-fit:cover;display:block">`
+    : paintingSVG(painting, fw*4, fh*4);
   preview.innerHTML=`
     ${r.svg}
     <div style="position:absolute;left:${left}px;top:${top}px;width:${fw}px;height:${fh}px;border:6px solid #7A5840;box-shadow:4px 5px 16px rgba(0,0,0,.3),inset 0 0 0 2px #B89060;border-radius:1px;overflow:hidden">
-      ${paintingSVG(painting, fw*4, fh*4)}
+      ${_artContent}
     </div>
   `;
 }
@@ -4612,6 +4828,7 @@ async function doLogin(){
     closeModal('modal-auth');
     showToast('Selamat datang kembali! ✓','success');
     if(state.postAuthAction==='checkout'){ state.postAuthAction=null; openCheckout(); }
+    else if(state.postAuthAction==='detail'){ state.postAuthAction=null; renderDetailDesc(); }
   } catch(e){
     showToast(e.message||'Login gagal.','error');
   } finally {
@@ -4644,6 +4861,7 @@ async function doRegister(){
     closeModal('modal-auth');
     showToast(`Selamat datang, ${fn}! Akun berhasil dibuat ✓`,'success');
     if(state.postAuthAction==='checkout'){ state.postAuthAction=null; openCheckout(); }
+    else if(state.postAuthAction==='detail'){ state.postAuthAction=null; renderDetailDesc(); }
   } catch(e){
     showToast(e.message||'Pendaftaran gagal.','error');
   } finally {
@@ -4666,6 +4884,7 @@ async function restoreSession(){
       state.user={...data.user, wa:data.user.wa||''};
       updateUserUI();
       saveState();
+      if(state.currentPainting) renderDetailDesc();
     } else {
       state.user=null;
       updateUserUI();
@@ -4975,6 +5194,15 @@ function contactAboutOrder(orderId, items){
   });
 }
 
+// ── SCROLL REVEAL ──
+(function initReveal(){
+  const els = document.querySelectorAll('.section-title,.hero-stat,.about-stat-val,.support-card,.dims-card');
+  if(!window.IntersectionObserver) return;
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); } });
+  },{ threshold:0.15 });
+  els.forEach(el=>{ el.classList.add('reveal'); io.observe(el); });
+})();
 
 </script>
 
