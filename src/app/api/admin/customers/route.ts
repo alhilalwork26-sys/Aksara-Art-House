@@ -42,7 +42,7 @@ export async function GET(request: Request) {
 
     // Ambil semua orders untuk hitung total per user
     const ordersRes = await fetch(
-      `${url}/rest/v1/orders?select=user_id,total,status&status=neq.cancelled`,
+      `${url}/rest/v1/orders?select=customer_id,total,status&status=neq.cancelled`,
       {
         headers: {
           apikey: serviceKey,
@@ -54,15 +54,15 @@ export async function GET(request: Request) {
     );
 
     const orders = ordersRes.ok
-      ? (await ordersRes.json() as Array<{ user_id: string; total: number; status: string }>)
+      ? (await ordersRes.json() as Array<{ customer_id: string; total: number; status: string }>)
       : [];
 
     // Hitung per user
     const orderMap = new Map<string, { count: number; total: number }>();
     for (const o of orders) {
-      if (!o.user_id) continue;
-      const existing = orderMap.get(o.user_id) || { count: 0, total: 0 };
-      orderMap.set(o.user_id, { count: existing.count + 1, total: existing.total + Number(o.total || 0) });
+      if (!o.customer_id) continue;
+      const existing = orderMap.get(o.customer_id) || { count: 0, total: 0 };
+      orderMap.set(o.customer_id, { count: existing.count + 1, total: existing.total + Number(o.total || 0) });
     }
 
     const customers = users
