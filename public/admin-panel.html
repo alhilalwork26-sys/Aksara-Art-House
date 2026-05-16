@@ -147,6 +147,9 @@ tbody tr:hover td{background:rgba(247,243,238,.5)}
 .chip-sold{color:var(--danger);border-color:rgba(139,46,46,.2);background:rgba(139,46,46,.08)}
 .chip-auction{color:var(--terra-dk);border-color:rgba(193,113,75,.25);background:rgba(193,113,75,.1)}
 .chip-pending{color:#7a5a00;border-color:rgba(212,168,83,.3);background:rgba(212,168,83,.1)}
+.chip-info{color:#2563a0;border-color:rgba(37,99,160,.25);background:rgba(37,99,160,.08)}
+.chip-success{color:#1a7a45;border-color:rgba(26,122,69,.25);background:rgba(26,122,69,.08)}
+.chip-neutral{color:var(--muted);border-color:rgba(92,61,46,.15);background:rgba(92,61,46,.04)}
 
 /* ── MODAL ── */
 .overlay{position:fixed;inset:0;background:rgba(44,35,32,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px)}
@@ -727,6 +730,9 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
     <button class="nav-item" data-section="customers" onclick="showSection('customers',this)">
       <span class="nav-icon">👥</span> Kolektor
     </button>
+    <button class="nav-item" data-section="exhibitions" onclick="showSection('exhibitions',this)">
+      <span class="nav-icon">🎨</span> Pameran
+    </button>
     <button class="nav-item" data-section="reports" onclick="showSection('reports',this)">
       <span class="nav-icon">📈</span> Laporan
     </button>
@@ -1038,6 +1044,33 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
             </table>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAMERAN ═══ -->
+    <div id="section-exhibitions" class="tab-panel">
+      <div class="search-bar" style="flex-wrap:wrap;gap:.5rem">
+        <input type="text" class="filter-input" placeholder="Cari pameran..." oninput="filterExhibitions(this.value)" style="flex:1;min-width:180px">
+        <select id="exh-status-filter" class="filter-select" onchange="filterExhibitions(document.querySelector('#section-exhibitions .filter-input').value)">
+          <option value="">Semua Status</option>
+          <option value="upcoming">Segera</option>
+          <option value="ongoing">Berlangsung</option>
+          <option value="past">Selesai</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="loadExhibitions()">⟳ Refresh</button>
+        <button class="btn btn-primary btn-sm" onclick="openExhForm()">+ Tambah Pameran</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr>
+            <th>Judul</th>
+            <th>Tanggal</th>
+            <th>Lokasi</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr></thead>
+          <tbody id="exh-tbody"></tbody>
+        </table>
       </div>
     </div>
 
@@ -1746,7 +1779,7 @@ function syncIndicator() {
 // ══════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════
-const SECTION_TITLES = { dashboard:'Dashboard', artworks:'Kelola Karya', orders:'Pesanan', auctions:'Lelang', promo:'Kode Promo', reviews:'Ulasan', customers:'Manajemen Kolektor', reports:'Laporan Penjualan' };
+const SECTION_TITLES = { dashboard:'Dashboard', artworks:'Kelola Karya', orders:'Pesanan', auctions:'Lelang', promo:'Kode Promo', reviews:'Ulasan', customers:'Manajemen Kolektor', exhibitions:'Pameran', reports:'Laporan Penjualan' };
 
 function showSection(id, btn) {
   _activeSection = id;
@@ -1763,6 +1796,7 @@ function showSection(id, btn) {
   if(id === 'promo') renderPromos();
   if(id === 'reviews') renderAdminReviews();
   if(id === 'customers') loadCustomers();
+  if(id === 'exhibitions') loadExhibitions();
   if(id === 'reports') loadReport();
 }
 
@@ -3380,6 +3414,167 @@ function exportReportCSV() {
   a.href = URL.createObjectURL(blob);
   a.download = `laporan-aksara-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
+}
+
+// ── EXHIBITIONS ─────────────────────────────────────────────
+let _adminExhibitions = [];
+let _exhEditId = null;
+
+async function loadExhibitions(){
+  const tbody = document.getElementById('exh-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Memuat...</td></tr>`;
+  try {
+    const res = await fetch('/api/admin/exhibitions', { headers: adminHeaders(false), cache:'no-store' });
+    if(!res.ok) throw new Error(await res.text());
+    _adminExhibitions = await res.json();
+    renderExhibitionsTable(_adminExhibitions);
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:#c0392b">Gagal memuat: ${escapeHtml(String(e))}</td></tr>`;
+  }
+}
+
+function renderExhibitionsTable(list){
+  const tbody = document.getElementById('exh-tbody');
+  if(!tbody) return;
+  if(!list.length){
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Belum ada pameran.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(ex => {
+    const statusChip = ex.status === 'upcoming'
+      ? `<span class="chip chip-info">Segera</span>`
+      : ex.status === 'ongoing'
+        ? `<span class="chip chip-success">Berlangsung</span>`
+        : `<span class="chip chip-neutral">Selesai</span>`;
+    const dateStr = ex.date_end ? `${ex.date_start} – ${ex.date_end}` : ex.date_start;
+    return `<tr>
+      <td style="font-weight:500">${escapeHtml(ex.title)}</td>
+      <td style="white-space:nowrap">${escapeHtml(dateStr)}</td>
+      <td>${escapeHtml(ex.location || '—')}</td>
+      <td>${statusChip}</td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="openExhForm(${ex.id})">Edit</button>
+        <button class="btn btn-sm" style="background:#c0392b;color:#fff;border:none;margin-left:4px" onclick="deleteExhibition(${ex.id})">Hapus</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterExhibitions(q){
+  const statusFilter = document.getElementById('exh-status-filter')?.value || '';
+  const kw = (q || '').toLowerCase();
+  const filtered = _adminExhibitions.filter(ex => {
+    if(statusFilter && ex.status !== statusFilter) return false;
+    if(kw && !ex.title.toLowerCase().includes(kw) && !(ex.location||'').toLowerCase().includes(kw)) return false;
+    return true;
+  });
+  renderExhibitionsTable(filtered);
+}
+
+function openExhForm(id){
+  _exhEditId = id || null;
+  const ex = id ? _adminExhibitions.find(e => e.id === id) : null;
+  const isEdit = !!ex;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'modal-exh-form';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:540px">
+      <div class="modal-header">
+        <div class="modal-title">${isEdit ? 'Edit Pameran' : 'Tambah Pameran'}</div>
+        <button class="modal-close" onclick="closeExhForm()">✕</button>
+      </div>
+      <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem">
+        <div>
+          <label class="form-label">Judul Pameran *</label>
+          <input id="exh-f-title" class="form-control" value="${escapeHtml(ex?.title||'')}" placeholder="Nama pameran" required>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+          <div>
+            <label class="form-label">Tanggal Mulai *</label>
+            <input id="exh-f-start" type="date" class="form-control" value="${ex?.date_start||''}">
+          </div>
+          <div>
+            <label class="form-label">Tanggal Selesai</label>
+            <input id="exh-f-end" type="date" class="form-control" value="${ex?.date_end||''}">
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Lokasi</label>
+          <input id="exh-f-loc" class="form-control" value="${escapeHtml(ex?.location||'')}" placeholder="Nama venue, kota">
+        </div>
+        <div>
+          <label class="form-label">URL Gambar Cover</label>
+          <input id="exh-f-img" class="form-control" value="${escapeHtml(ex?.image_url||'')}" placeholder="https://...">
+        </div>
+        <div>
+          <label class="form-label">Deskripsi</label>
+          <textarea id="exh-f-desc" class="form-control" rows="3" placeholder="Ceritakan tentang pameran ini...">${escapeHtml(ex?.description||'')}</textarea>
+        </div>
+        <div>
+          <label class="form-label">Status</label>
+          <select id="exh-f-status" class="filter-select" style="width:100%">
+            <option value="upcoming" ${(!ex||ex.status==='upcoming')?'selected':''}>Segera</option>
+            <option value="ongoing" ${ex?.status==='ongoing'?'selected':''}>Berlangsung</option>
+            <option value="past" ${ex?.status==='past'?'selected':''}>Selesai</option>
+          </select>
+        </div>
+        <div id="exh-f-err" style="color:#c0392b;font-size:13px;display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeExhForm()">Batal</button>
+        <button class="btn btn-primary" onclick="saveExhibition()">Simpan</button>
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e => { if(e.target === overlay) closeExhForm(); });
+  document.body.appendChild(overlay);
+}
+
+function closeExhForm(){
+  document.getElementById('modal-exh-form')?.remove();
+}
+
+async function saveExhibition(){
+  const title    = document.getElementById('exh-f-title')?.value.trim();
+  const start    = document.getElementById('exh-f-start')?.value;
+  const end      = document.getElementById('exh-f-end')?.value;
+  const location = document.getElementById('exh-f-loc')?.value.trim();
+  const image_url= document.getElementById('exh-f-img')?.value.trim();
+  const desc     = document.getElementById('exh-f-desc')?.value.trim();
+  const status   = document.getElementById('exh-f-status')?.value;
+  const errEl    = document.getElementById('exh-f-err');
+
+  if(!title || !start){
+    if(errEl){ errEl.textContent = 'Judul dan tanggal mulai wajib diisi.'; errEl.style.display=''; }
+    return;
+  }
+
+  const payload = { title, date_start:start, date_end:end||null, location:location||null, image_url:image_url||null, description:desc||null, status };
+  try {
+    const method = _exhEditId ? 'PATCH' : 'POST';
+    const body   = _exhEditId ? JSON.stringify({ id:_exhEditId, ...payload }) : JSON.stringify(payload);
+    const res = await fetch('/api/admin/exhibitions', { method, headers: adminHeaders(), body, cache:'no-store' });
+    if(!res.ok) throw new Error(await res.text());
+    closeExhForm();
+    await loadExhibitions();
+    showToast(_exhEditId ? 'Pameran diperbarui ✓' : 'Pameran ditambahkan ✓', 'success');
+  } catch(e){
+    if(errEl){ errEl.textContent = 'Gagal menyimpan: ' + String(e); errEl.style.display=''; }
+  }
+}
+
+async function deleteExhibition(id){
+  if(!confirm('Hapus pameran ini?')) return;
+  try {
+    const res = await fetch('/api/admin/exhibitions', { method:'DELETE', headers: adminHeaders(), body: JSON.stringify({ id }), cache:'no-store' });
+    if(!res.ok) throw new Error(await res.text());
+    await loadExhibitions();
+    showToast('Pameran dihapus.', 'success');
+  } catch(e){
+    showToast('Gagal menghapus: ' + String(e), 'error');
+  }
 }
 
 </script>

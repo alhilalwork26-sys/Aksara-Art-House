@@ -1931,6 +1931,288 @@ body {
 /* ═══════════════════════════════════════
    EXHIBITION ACTIVITIES
 ═══════════════════════════════════════ */
+/* ── UPCOMING EXHIBITIONS SECTION ── */
+.upcoming-exh-section {
+  padding:5rem 0 4rem;
+  position:relative;
+  overflow:hidden;
+}
+.upcoming-exh-section::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(160deg, #2d1a12 0%, #3d2215 55%, #1e0e08 100%);
+  z-index:0;
+}
+.upcoming-exh-section::after {
+  content:'';
+  position:absolute;
+  top:-40%;
+  right:-10%;
+  width:600px;
+  height:600px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(206,108,66,.12) 0%, transparent 70%);
+  pointer-events:none;
+  z-index:0;
+}
+.upcoming-exh-inner {
+  position:relative;
+  z-index:1;
+}
+.upcoming-exh-header {
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:1.5rem;
+  margin-bottom:2.8rem;
+  flex-wrap:wrap;
+}
+.upcoming-exh-eyebrow {
+  font-size:10px;
+  letter-spacing:.25em;
+  text-transform:uppercase;
+  color:var(--terra-light);
+  margin-bottom:.6rem;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.upcoming-exh-eyebrow::before {
+  content:'';
+  display:inline-block;
+  width:28px;
+  height:1px;
+  background:var(--terra-light);
+  opacity:.6;
+}
+.upcoming-exh-title {
+  font-family:var(--fd);
+  font-size:clamp(28px,4vw,42px);
+  font-weight:300;
+  color:#fdf8f4;
+  line-height:1.15;
+  letter-spacing:-.01em;
+}
+.upcoming-exh-title em { font-style:italic; color:var(--terra-light); }
+.upcoming-exh-subtitle {
+  font-size:13px;
+  color:rgba(253,248,244,.45);
+  line-height:1.7;
+  max-width:380px;
+  margin-top:.6rem;
+}
+.upcoming-exh-scroll {
+  display:flex;
+  gap:20px;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:8px;
+  margin:0 -1rem;
+  padding:0 1rem 12px;
+  scrollbar-width:none;
+}
+.upcoming-exh-scroll::-webkit-scrollbar { display:none; }
+/* Cards */
+.exh-card {
+  flex:0 0 320px;
+  scroll-snap-align:start;
+  background:rgba(253,248,244,.04);
+  border:1px solid rgba(253,248,244,.08);
+  border-radius:24px;
+  padding:0;
+  overflow:hidden;
+  transition:transform .35s cubic-bezier(.25,.46,.45,.94), box-shadow .35s ease, border-color .35s ease;
+  cursor:default;
+  position:relative;
+}
+.exh-card:hover {
+  transform:translateY(-4px);
+  border-color:rgba(206,108,66,.35);
+  box-shadow:0 20px 50px rgba(0,0,0,.35), 0 0 0 1px rgba(206,108,66,.15);
+}
+.exh-card-img {
+  width:100%;
+  height:180px;
+  object-fit:cover;
+  display:block;
+}
+.exh-card-img-placeholder {
+  width:100%;
+  height:180px;
+  background:linear-gradient(135deg, rgba(206,108,66,.18) 0%, rgba(212,168,83,.12) 100%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:48px;
+  position:relative;
+  overflow:hidden;
+}
+.exh-card-img-placeholder::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(180deg,transparent 40%,rgba(29,13,7,.6) 100%);
+}
+.exh-card-body {
+  padding:1.4rem 1.5rem 1.5rem;
+}
+.exh-card-badge {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  font-size:9px;
+  font-weight:600;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  padding:3px 10px;
+  border-radius:20px;
+  margin-bottom:1rem;
+}
+.exh-card-badge.badge-upcoming {
+  background:rgba(206,108,66,.18);
+  color:var(--terra-light);
+  border:1px solid rgba(206,108,66,.3);
+}
+.exh-card-badge.badge-ongoing {
+  background:rgba(86,194,125,.15);
+  color:#72e29b;
+  border:1px solid rgba(86,194,125,.25);
+}
+.exh-card-badge .badge-dot {
+  width:5px; height:5px;
+  border-radius:50%;
+  background:currentColor;
+  animation:pulse-dot 1.4s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:.4; transform:scale(.7); }
+}
+.exh-card-title {
+  font-family:var(--fd);
+  font-size:22px;
+  font-weight:400;
+  color:#fdf8f4;
+  line-height:1.2;
+  margin-bottom:.65rem;
+  letter-spacing:-.01em;
+}
+.exh-card-meta {
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  margin-bottom:1rem;
+}
+.exh-card-meta-row {
+  display:flex;
+  align-items:flex-start;
+  gap:7px;
+  font-size:12px;
+  color:rgba(253,248,244,.5);
+  line-height:1.4;
+}
+.exh-card-meta-row svg {
+  flex-shrink:0;
+  margin-top:1px;
+  opacity:.7;
+}
+.exh-card-desc {
+  font-size:13px;
+  color:rgba(253,248,244,.38);
+  line-height:1.75;
+  margin-bottom:1.2rem;
+  display:-webkit-box;
+  -webkit-line-clamp:3;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+/* Countdown */
+.exh-countdown {
+  border-top:1px solid rgba(253,248,244,.07);
+  padding-top:1rem;
+  display:flex;
+  gap:0;
+  align-items:flex-end;
+}
+.exh-countdown-unit {
+  flex:1;
+  text-align:center;
+  position:relative;
+}
+.exh-countdown-unit + .exh-countdown-unit::before {
+  content:':';
+  position:absolute;
+  left:0;
+  top:0;
+  font-family:var(--fd);
+  font-size:22px;
+  color:rgba(253,248,244,.18);
+  transform:translateX(-50%);
+  line-height:1;
+}
+.exh-countdown-val {
+  font-family:var(--fd);
+  font-size:28px;
+  font-weight:300;
+  color:var(--terra-light);
+  line-height:1;
+  letter-spacing:-.02em;
+  transition:transform .12s ease;
+}
+.exh-countdown-val.tick { transform:scale(1.08); }
+.exh-countdown-lbl {
+  font-size:9px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:rgba(253,248,244,.3);
+  margin-top:4px;
+}
+/* Empty state */
+.exh-empty {
+  text-align:center;
+  padding:3rem 1rem;
+  color:rgba(253,248,244,.35);
+  font-size:14px;
+}
+/* Scroll dots indicator */
+.exh-scroll-dots {
+  display:flex;
+  justify-content:center;
+  gap:6px;
+  margin-top:1.5rem;
+}
+.exh-scroll-dot {
+  width:5px; height:5px;
+  border-radius:50%;
+  background:rgba(253,248,244,.2);
+  transition:background .3s, width .3s;
+  cursor:pointer;
+}
+.exh-scroll-dot.active {
+  background:var(--terra-light);
+  width:18px;
+  border-radius:3px;
+}
+@media (max-width:600px) {
+  .exh-card { flex:0 0 280px; }
+  .upcoming-exh-title { font-size:28px; }
+}
+@media (min-width:1000px) {
+  .upcoming-exh-scroll { flex-wrap:nowrap; }
+}
+/* Scroll reveal for exh cards */
+[data-scroll="exh-scale"] {
+  opacity:0;
+  transform:translateY(28px) scale(.97);
+  transition:opacity .55s ease, transform .55s cubic-bezier(.22,.78,.27,1);
+}
+[data-scroll="exh-scale"].in-view {
+  opacity:1;
+  transform:translateY(0) scale(1);
+}
+
 .exhibition-section {
   padding:4rem 0;
   border-top:1px solid var(--border);
@@ -3229,6 +3511,21 @@ input:focus, textarea:focus, select:focus {
       </div>
     </div>
   </div>
+  <!-- Upcoming Exhibitions -->
+  <div class="upcoming-exh-section" id="upcoming-exh-section" style="display:none">
+    <div class="container upcoming-exh-inner">
+      <div class="upcoming-exh-header">
+        <div>
+          <div class="upcoming-exh-eyebrow">Agenda Pameran</div>
+          <div class="upcoming-exh-title">Pameran<br><em>Mendatang</em></div>
+          <div class="upcoming-exh-subtitle">Jadilah bagian dari momen seni terkurasi. Temukan karya, seniman, dan cerita di balik setiap kanvas.</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="color:rgba(253,248,244,.6);border-color:rgba(253,248,244,.18);white-space:nowrap;flex-shrink:0" onclick="goPage('about')">Lihat Semua &rarr;</button>
+      </div>
+      <div class="upcoming-exh-scroll" id="exh-scroll"></div>
+      <div class="exh-scroll-dots" id="exh-dots"></div>
+    </div>
+  </div>
   <!-- CTA Banner -->
   <div style="background:var(--brown);padding:4rem 2rem;text-align:center;margin:0 1.65rem 1.65rem;border-radius:24px;">
     <div style="max-width:560px;margin:0 auto;">
@@ -4213,6 +4510,7 @@ function refreshScrollAnimations(){
       '.detail-art-wrap',
       '.support-card',
       '.exhibition-card',
+      '.exh-card',
       '.bio-text > *',
       '.bio-portrait',
       '.award-item'
@@ -4222,6 +4520,7 @@ function refreshScrollAnimations(){
       const variant = el.classList.contains('detail-art-wrap') || el.classList.contains('bio-portrait') ? 'fade-left'
         : el.classList.contains('auction-hero-panel') ? 'fade-right'
         : el.classList.contains('p-card') || el.classList.contains('marketplace-card') || el.classList.contains('auction-card') || el.classList.contains('exhibition-card') ? 'scale'
+        : el.classList.contains('exh-card') ? 'exh-scale'
         : 'fade';
       el.dataset.scroll = variant;
       el.dataset.scrollReady = '1';
@@ -4230,6 +4529,181 @@ function refreshScrollAnimations(){
       else scrollObserver.observe(el);
     });
   });
+}
+
+// ── UPCOMING EXHIBITIONS ──────────────────────────────────
+let _exhibitions = [];
+let _exhCountdownTimers = [];
+
+async function fetchExhibitions(){
+  try {
+    const res = await fetch('/api/exhibitions');
+    if(!res.ok) return;
+    _exhibitions = await res.json();
+    renderUpcomingExhibitions();
+  } catch(e){ /* silent */ }
+}
+
+function renderUpcomingExhibitions(){
+  const section = document.getElementById('upcoming-exh-section');
+  const scroll  = document.getElementById('exh-scroll');
+  const dots    = document.getElementById('exh-dots');
+  if(!section || !scroll) return;
+
+  // Clear old countdown timers
+  _exhCountdownTimers.forEach(t => clearInterval(t));
+  _exhCountdownTimers = [];
+
+  const list = _exhibitions;
+  if(!list || !list.length){
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
+
+  scroll.innerHTML = list.map((ex, i) => exhCardHTML(ex, i)).join('');
+  renderExhDots(list.length, dots, scroll);
+
+  // Start countdowns
+  list.forEach((ex, i) => {
+    const target = new Date(ex.date_start + 'T00:00:00');
+    const isOngoing = ex.status === 'ongoing';
+    if(isOngoing) return; // no countdown for ongoing
+    startCountdown(ex.id, target);
+  });
+
+  // Scroll reveal
+  requestAnimationFrame(() => {
+    scroll.querySelectorAll('.exh-card').forEach((el, i) => {
+      el.dataset.scroll = 'exh-scale';
+      el.style.setProperty('--scroll-delay', `${i * 80}ms`);
+      if(el.getBoundingClientRect().top < window.innerHeight * .95){
+        el.classList.add('in-view');
+      } else {
+        scrollObserver && scrollObserver.observe(el);
+      }
+    });
+  });
+}
+
+function exhCardHTML(ex, idx){
+  const isOngoing = ex.status === 'ongoing';
+  const badge = isOngoing
+    ? `<span class="exh-card-badge badge-ongoing"><span class="badge-dot"></span> Berlangsung</span>`
+    : `<span class="exh-card-badge badge-upcoming"><span class="badge-dot"></span> Segera</span>`;
+
+  const dateStr = formatExhDate(ex.date_start, ex.date_end);
+
+  const imgHTML = ex.image_url
+    ? `<img class="exh-card-img" src="${escapeHtml(ex.image_url)}" alt="${escapeHtml(ex.title)}" loading="lazy">`
+    : `<div class="exh-card-img-placeholder">🎨</div>`;
+
+  const countdownHTML = isOngoing ? '' : `
+    <div class="exh-countdown" id="exh-cd-${ex.id}">
+      <div class="exh-countdown-unit">
+        <div class="exh-countdown-val" id="exh-cd-${ex.id}-d">--</div>
+        <div class="exh-countdown-lbl">Hari</div>
+      </div>
+      <div class="exh-countdown-unit">
+        <div class="exh-countdown-val" id="exh-cd-${ex.id}-h">--</div>
+        <div class="exh-countdown-lbl">Jam</div>
+      </div>
+      <div class="exh-countdown-unit">
+        <div class="exh-countdown-val" id="exh-cd-${ex.id}-m">--</div>
+        <div class="exh-countdown-lbl">Menit</div>
+      </div>
+      <div class="exh-countdown-unit">
+        <div class="exh-countdown-val" id="exh-cd-${ex.id}-s">--</div>
+        <div class="exh-countdown-lbl">Detik</div>
+      </div>
+    </div>`;
+
+  return `<div class="exh-card">
+    ${imgHTML}
+    <div class="exh-card-body">
+      ${badge}
+      <div class="exh-card-title">${escapeHtml(ex.title)}</div>
+      <div class="exh-card-meta">
+        <div class="exh-card-meta-row">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>${escapeHtml(dateStr)}</span>
+        </div>
+        ${ex.location ? `<div class="exh-card-meta-row">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span>${escapeHtml(ex.location)}</span>
+        </div>` : ''}
+      </div>
+      ${ex.description ? `<div class="exh-card-desc">${escapeHtml(ex.description)}</div>` : ''}
+      ${countdownHTML}
+    </div>
+  </div>`;
+}
+
+function formatExhDate(start, end){
+  const opts = { day:'numeric', month:'long', year:'numeric' };
+  const s = new Date(start + 'T00:00:00').toLocaleDateString('id-ID', opts);
+  if(!end) return s;
+  const e = new Date(end + 'T00:00:00').toLocaleDateString('id-ID', opts);
+  // If same month+year, abbreviate
+  const ss = start.slice(0,7), se = end.slice(0,7);
+  if(ss === se){
+    const d1 = new Date(start + 'T00:00:00').getDate();
+    return `${d1}–${e}`;
+  }
+  return `${s} – ${e}`;
+}
+
+function startCountdown(exhId, targetDate){
+  const update = () => {
+    const now  = new Date();
+    const diff = targetDate - now;
+    if(diff <= 0){
+      // Already started — show "Berlangsung"
+      ['d','h','m','s'].forEach(k => {
+        const el = document.getElementById(`exh-cd-${exhId}-${k}`);
+        if(el) el.textContent = '00';
+      });
+      return;
+    }
+    const days  = Math.floor(diff / 864e5);
+    const hours = Math.floor((diff % 864e5) / 36e5);
+    const mins  = Math.floor((diff % 36e5) / 6e4);
+    const secs  = Math.floor((diff % 6e4) / 1e3);
+    const parts = { d: days, h: hours, m: mins, s: secs };
+    Object.entries(parts).forEach(([k, v]) => {
+      const el = document.getElementById(`exh-cd-${exhId}-${k}`);
+      if(!el) return;
+      const str = k === 'd' ? String(v) : String(v).padStart(2,'0');
+      if(el.textContent !== str){
+        el.textContent = str;
+        el.classList.add('tick');
+        setTimeout(() => el.classList.remove('tick'), 120);
+      }
+    });
+  };
+  update();
+  const t = setInterval(update, 1000);
+  _exhCountdownTimers.push(t);
+}
+
+function renderExhDots(count, dotsEl, scrollEl){
+  if(!dotsEl || count <= 1){ if(dotsEl) dotsEl.innerHTML=''; return; }
+  dotsEl.innerHTML = Array.from({length: count}, (_,i) =>
+    `<div class="exh-scroll-dot${i===0?' active':''}" onclick="scrollExhTo(${i})"></div>`
+  ).join('');
+
+  scrollEl.addEventListener('scroll', () => {
+    const cardW = scrollEl.querySelector('.exh-card')?.offsetWidth || 340;
+    const idx   = Math.round(scrollEl.scrollLeft / (cardW + 20));
+    dotsEl.querySelectorAll('.exh-scroll-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+  }, { passive:true });
+}
+
+function scrollExhTo(idx){
+  const scroll  = document.getElementById('exh-scroll');
+  if(!scroll) return;
+  const cardW   = scroll.querySelector('.exh-card')?.offsetWidth || 340;
+  scroll.scrollTo({ left: idx * (cardW + 20), behavior:'smooth' });
 }
 
 // ── HOME ──────────────────────────────────
@@ -5652,7 +6126,7 @@ async function init(){
     o.addEventListener('click',e=>{ if(e.target===o) o.classList.add('hidden'); });
   });
   // Muat data dari Supabase
-  await Promise.all([fetchPaintingsFromDB(), fetchAuctionsFromDB(), applyPublicSettings()]);
+  await Promise.all([fetchPaintingsFromDB(), fetchAuctionsFromDB(), applyPublicSettings(), fetchExhibitions()]);
   syncArtworkCollections();
   renderHome();
   renderGallery();
