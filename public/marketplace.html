@@ -963,11 +963,13 @@ button { cursor:pointer; }
   color:var(--brown);
 }
 .availability-note {
-  font-size:11px;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  color:var(--terra);
-  margin-top:8px;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  font-size:10px;
+  letter-spacing:.06em;
+  color:var(--muted);
+  margin-top:6px;
 }
 
 /* ═══════════════════════════════════════
@@ -2192,27 +2194,43 @@ body {
 }
 .nav-right {
   justify-self:end;
+  display:flex;
+  align-items:center;
+  gap:4px;
   min-width:0;
+  flex-shrink:0;
 }
 .nav-icon-btn {
-  width:42px;
-  height:42px;
+  width:40px;
+  height:40px;
   border-radius:999px;
   display:inline-flex;
   align-items:center;
   justify-content:center;
   color:var(--cream);
+  flex-shrink:0;
 }
 .nav-icon-btn:hover {
   background:rgba(253,248,244,.10);
 }
 #nav-auth-area {
   min-width:0;
+  flex-shrink:0;
+}
+#nav-auth-area .btn-outline {
+  color:rgba(253,248,244,.88);
+  border-color:rgba(253,248,244,.34);
+  background:rgba(253,248,244,.08);
+}
+#nav-auth-area .btn-outline:hover {
+  background:var(--terra);
+  border-color:var(--terra);
+  color:#fff;
 }
 .nav-session {
+  position:relative;
   display:flex;
   align-items:center;
-  gap:10px;
   min-width:0;
 }
 .nav-session-name {
@@ -2223,6 +2241,52 @@ body {
   color:rgba(253,248,244,.82);
   font-size:12px;
 }
+.user-avatar-btn {
+  background:none; border:none; padding:0; cursor:pointer;
+  border-radius:50%; transition:opacity .2s;
+}
+.user-avatar-btn:hover { opacity:.82; }
+.user-dropdown {
+  position:absolute;
+  top:calc(100% + 10px);
+  right:0;
+  min-width:190px;
+  background:rgba(255,253,249,.98);
+  border:1px solid var(--border);
+  border-radius:12px;
+  box-shadow:0 16px 44px rgba(44,26,18,.18);
+  padding:.5rem 0;
+  z-index:500;
+  backdrop-filter:blur(12px);
+  animation:fadeSlideIn .18s ease both;
+}
+.user-dropdown-name {
+  padding:.55rem 1rem .4rem;
+  font-size:12px;
+  font-weight:500;
+  color:var(--brown);
+  letter-spacing:.03em;
+  border-bottom:1px solid var(--border);
+  margin-bottom:.25rem;
+}
+.user-dropdown-item {
+  display:block;
+  width:100%;
+  text-align:left;
+  padding:.55rem 1rem;
+  font-size:13px;
+  color:var(--charcoal);
+  background:none;
+  border:none;
+  cursor:pointer;
+  transition:background .15s;
+  font-family:var(--fb);
+  font-weight:300;
+}
+.user-dropdown-item:hover { background:rgba(206,108,66,.08); color:var(--terra); }
+.user-dropdown-divider { height:1px; background:var(--border); margin:.25rem 0; }
+.user-dropdown-logout { color:var(--muted); }
+.user-dropdown-logout:hover { color:var(--danger); background:rgba(139,46,46,.06); }
 .nav-session .btn {
   min-height:38px;
   border-radius:999px;
@@ -2303,12 +2367,7 @@ body {
   box-shadow:0 18px 44px rgba(97,59,43,.34);
 }
 @media (max-width:1180px) {
-  .nav-session-name {
-    display:none;
-  }
-  .nav-session .btn {
-    padding-inline:14px;
-  }
+  .nav-session-name { display:none; }
 }
 @media (max-width:980px) {
   .nav-inner {
@@ -2356,23 +2415,10 @@ body {
     font-size:12px;
   }
   .nav-session {
-    gap:6px;
+    gap:4px;
   }
-  .nav-session .btn {
-    display:none;
-  }
-  .nav-session .btn:first-of-type {
-    display:inline-flex;
-    width:36px;
-    height:36px;
-    padding:0;
-    overflow:hidden;
-    font-size:0;
-  }
-  .nav-session .btn:first-of-type::before {
-    content:'\1F4E6';
-    font-size:15px;
-    line-height:1;
+  .user-dropdown {
+    right:-4px;
   }
   #nav-auth-area .btn {
     min-height:36px;
@@ -2572,14 +2618,12 @@ body {
     width:min(260px, 100%);
   }
 }
-@media (min-width:1120px) {
-  .nav-icon-btn {
-    width:auto;
-    padding-inline:12px;
-  }
-  .nav-icon-label {
-    display:inline;
-  }
+/* nav-icon-label permanently hidden — icon-only nav */
+.nav-icon-label { display:none !important; }
+.nav-svg-icon {
+  width:20px; height:20px;
+  display:block;
+  flex-shrink:0;
 }
 @media (max-width:600px) {
   .spec-list {
@@ -3077,10 +3121,12 @@ input:focus, textarea:focus, select:focus {
       <button class="nav-link" id="nl-about" onclick="goPage('about')">Tentang</button>
     </div>
     <div class="nav-right">
-      <button class="nav-icon-btn" onclick="toggleWishlistPage()" title="Wishlist" aria-label="Buka wishlist">&#9825;<span class="nav-icon-label">Wishlist</span>
+      <button class="nav-icon-btn" onclick="toggleWishlistPage()" title="Wishlist" aria-label="Buka wishlist">
+        <svg class="nav-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         <span class="cart-count" id="wish-count" style="display:none">0</span>
       </button>
-      <button class="nav-icon-btn nav-cart-btn" onclick="openCart()" title="Keranjang" aria-label="Buka keranjang"><span class="cart-icon-shape" aria-hidden="true"></span><span class="nav-icon-label">Keranjang</span>
+      <button class="nav-icon-btn nav-cart-btn" onclick="openCart()" title="Keranjang" aria-label="Buka keranjang">
+        <span class="cart-icon-shape" aria-hidden="true"></span>
         <span class="cart-count" id="cart-count" style="display:none">0</span>
       </button>
       
@@ -4239,7 +4285,7 @@ function cardHTML(p){
   const auc=auctionForPainting(p.id);
   const priceHTML=p.status==='terjual' ? '' :
     p.status==='lelang' ? `<div class="p-card-price">Bid: ${fmt(auc?.currentBid||p.price)}</div>` :
-    `<div class="p-card-price">${fmt(p.price)}</div><div class="availability-note">Beli langsung</div>`;
+    `<div class="p-card-price">${fmt(p.price)}</div><div class="availability-note">&#10003; Tersedia</div>`;
   return `<div class="p-card" onclick='openDetail(${jsArg(p.id)})'>
     <div class="p-card-img-wrap">
       <button class="p-card-wishlist ${inWish?'active':''}" id="wish-btn-${p.id}" onclick='event.stopPropagation();toggleWishlist(${jsArg(p.id)})' title="${inWish?'Hapus dari wishlist':'Simpan ke wishlist'}">${inWish?'&#9829;':'&#9825;'}</button>
@@ -5386,15 +5432,35 @@ function updateUserUI(){
   if(state.user){
     const initials=state.user.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
     area.innerHTML=`<div class="nav-session">
-      <div class="user-avatar">${initials}</div>
-      <span class="nav-session-name">${escapeHtml(state.user.name)}</span>
-      <button class="btn btn-ghost btn-sm" onclick="openMyOrders()">&#128230; Pesanan</button>
-      <button class="btn btn-ghost btn-sm" onclick="openEditProfile()">&#9998; Profil</button>
-      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Keluar</button>
+      <button class="user-avatar-btn" onclick="toggleUserMenu()" title="Menu akun" aria-label="Menu akun">
+        <div class="user-avatar">${initials}</div>
+      </button>
+      <div class="user-dropdown hidden" id="user-dropdown">
+        <div class="user-dropdown-name">${escapeHtml(state.user.name)}</div>
+        <button class="user-dropdown-item" onclick="openMyOrders();closeUserMenu()">&#128230; Pesanan Saya</button>
+        <button class="user-dropdown-item" onclick="openEditProfile();closeUserMenu()">&#9998; Edit Profil</button>
+        <div class="user-dropdown-divider"></div>
+        <button class="user-dropdown-item user-dropdown-logout" onclick="doLogout()">Keluar</button>
+      </div>
     </div>`;
+    // Close on outside click
+    setTimeout(()=>document.addEventListener('click', _closeUserMenuOutside, {once:false}), 50);
   } else {
     area.innerHTML=`<button class="btn btn-sm btn-outline" onclick="openAuth('login')">Masuk</button>`;
+    document.removeEventListener('click', _closeUserMenuOutside);
   }
+}
+function toggleUserMenu(){
+  const dd=document.getElementById('user-dropdown');
+  if(dd) dd.classList.toggle('hidden');
+}
+function closeUserMenu(){
+  const dd=document.getElementById('user-dropdown');
+  if(dd) dd.classList.add('hidden');
+}
+function _closeUserMenuOutside(e){
+  const session=document.querySelector('.nav-session');
+  if(session && !session.contains(e.target)) closeUserMenu();
 }
 
 // ── WHATSAPP / CONTACT ──────────────────────────────────
