@@ -16,7 +16,7 @@ export interface Exhibition {
 export async function GET() {
   try {
     const rows = await supabaseFetch<Exhibition[]>(
-      `/rest/v1/exhibitions?status=in.(upcoming,ongoing)&order=date_start.asc&select=*`
+      `exhibitions?status=in.(upcoming,ongoing)&order=date_start.asc&select=*`
     );
     return NextResponse.json(rows);
   } catch (error) {

@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   }
   try {
     const rows = await supabaseFetch<Exhibition[]>(
-      `/rest/v1/exhibitions?order=date_start.asc&select=*`,
+      `exhibitions?order=date_start.asc&select=*`,
       undefined,
       { serviceRole: true }
     );
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as Partial<Exhibition>;
     const row = await supabaseFetch<Exhibition[]>(
-      `/rest/v1/exhibitions?select=*`,
+      `exhibitions?select=*`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json", Prefer: "return=representation" },
@@ -66,7 +66,7 @@ export async function PATCH(request: Request) {
     const body = (await request.json()) as Partial<Exhibition> & { id: number };
     const { id, created_at, ...rest } = body;
     const row = await supabaseFetch<Exhibition[]>(
-      `/rest/v1/exhibitions?id=eq.${id}&select=*`,
+      `exhibitions?id=eq.${id}&select=*`,
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Prefer: "return=representation" },
@@ -91,7 +91,7 @@ export async function DELETE(request: Request) {
   try {
     const { id } = (await request.json()) as { id: number };
     await supabaseFetch(
-      `/rest/v1/exhibitions?id=eq.${id}`,
+      `exhibitions?id=eq.${id}`,
       { method: "DELETE" },
       { serviceRole: true }
     );
