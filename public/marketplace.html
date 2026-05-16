@@ -642,10 +642,8 @@ button { cursor:pointer; }
 }
 .p-card {
   cursor:pointer;
-  transition:opacity .2s ease;
   border-radius:22px;
 }
-.p-card:hover { opacity:.92; }
 .p-card-img-wrap {
   position:relative; overflow:hidden;
   background:#f0ede8;
@@ -656,6 +654,17 @@ button { cursor:pointer; }
   width:100%;
   display:block;
   aspect-ratio:3/4;
+  transition:transform .45s cubic-bezier(.25,.46,.45,.94);
+}
+.p-card:hover .p-card-canvas {
+  transform:scale(1.04);
+}
+/* Jika ada img tag di dalam card (karya dengan foto) */
+.p-card-img-wrap img {
+  transition:transform .45s cubic-bezier(.25,.46,.45,.94);
+}
+.p-card:hover .p-card-img-wrap img {
+  transform:scale(1.04);
 }
 .p-card-badge {
   position:absolute; top:10px; right:10px;
@@ -2341,9 +2350,6 @@ body {
   border:1px solid rgba(97,59,43,.08);
   box-shadow:0 14px 34px rgba(97,59,43,.08);
 }
-#page-home .p-card:hover {
-  opacity:.92;
-}
 .wa-float {
   left:auto;
   right:clamp(18px, 3vw, 34px);
@@ -3055,6 +3061,16 @@ input:focus, textarea:focus, select:focus {
 .legal-content { font-size:13px; color:var(--charcoal); line-height:1.85; }
 .legal-content h4 { font-family:var(--fd); font-size:16px; font-weight:400; color:var(--brown); margin:1.25rem 0 .4rem; }
 .legal-content p { margin-bottom:.7rem; }
+
+/* ─── STAR RATING ───────────────────── */
+.rv-star-btn {
+  font-size:28px;
+  background:none; border:none; cursor:pointer;
+  color:rgba(97,59,43,.22);
+  transition:color .15s ease, transform .15s ease;
+  line-height:1; padding:0 2px;
+}
+.rv-star-btn:hover { color:var(--ochre) !important; transform:scale(1.18) !important; }
 
 /* ─── FORGOT PASSWORD PANEL ─────────── */
 #panel-forgot { }
@@ -4537,18 +4553,18 @@ async function loadArtworkReviews(artworkId){
           </div>`).join('') : '<p style="font-size:13px;color:var(--muted)">Belum ada ulasan untuk karya ini.</p>'}
         <div style="margin-top:1.25rem">
           <button class="btn btn-secondary btn-sm" onclick="toggleReviewForm('${artworkId}')">✍ Tulis Ulasan</button>
-          <div id="review-form-${CSS.escape(artworkId)}" style="display:none;margin-top:1rem">
+          <div id="review-form-${artworkId}" style="display:none;margin-top:1rem">
             <div style="display:flex;flex-direction:column;gap:.75rem">
-              <div class="form-group"><label>Nama</label><input id="rv-name-${CSS.escape(artworkId)}" placeholder="Nama Anda"></div>
-              <div class="form-group"><label>Email</label><input type="email" id="rv-email-${CSS.escape(artworkId)}" placeholder="email@contoh.com"></div>
+              <div class="form-group"><label>Nama</label><input id="rv-name-${artworkId}" placeholder="Nama Anda"></div>
+              <div class="form-group"><label>Email</label><input type="email" id="rv-email-${artworkId}" placeholder="email@contoh.com"></div>
               <div class="form-group">
                 <label>Rating</label>
-                <div style="display:flex;gap:6px" id="rv-stars-${CSS.escape(artworkId)}">
-                  ${[1,2,3,4,5].map(n=>`<button type="button" onclick="setReviewRating('${artworkId}',${n})" data-star="${n}" style="font-size:24px;background:none;border:none;cursor:pointer;color:var(--border)">★</button>`).join('')}
+                <div class="rv-stars-wrap" id="rv-stars-${artworkId}" style="display:flex;gap:4px;margin-top:.25rem">
+                  ${[1,2,3,4,5].map(n=>`<button type="button" class="rv-star-btn" onclick="setReviewRating('${artworkId}',${n})" data-star="${n}">★</button>`).join('')}
                 </div>
-                <input type="hidden" id="rv-rating-${CSS.escape(artworkId)}" value="0">
+                <input type="hidden" id="rv-rating-${artworkId}" value="0">
               </div>
-              <div class="form-group"><label>Komentar (opsional)</label><textarea id="rv-comment-${CSS.escape(artworkId)}" rows="3" placeholder="Ceritakan pengalaman Anda..."></textarea></div>
+              <div class="form-group"><label>Komentar (opsional)</label><textarea id="rv-comment-${artworkId}" rows="3" placeholder="Ceritakan pengalaman Anda..."></textarea></div>
               <button class="btn btn-primary btn-sm" onclick="submitReview('${artworkId}')">Kirim Ulasan</button>
               <p style="font-size:11px;color:var(--muted)">Ulasan akan ditampilkan setelah diverifikasi admin.</p>
             </div>
@@ -4559,22 +4575,27 @@ async function loadArtworkReviews(artworkId){
 }
 
 function toggleReviewForm(id){
-  const form = document.getElementById('review-form-'+CSS.escape(id));
-  if(form) form.style.display = form.style.display==='none'?'block':'none';
+  const form = document.getElementById('review-form-' + id);
+  if(form) form.style.display = form.style.display==='none' ? 'block' : 'none';
 }
 
 function setReviewRating(artworkId, n){
-  document.getElementById('rv-rating-'+CSS.escape(artworkId)).value = n;
-  document.querySelectorAll(`#rv-stars-${CSS.escape(artworkId)} button`).forEach(btn=>{
-    btn.style.color = Number(btn.dataset.star)<=n ? 'var(--terra)' : 'var(--border)';
+  const ratingInput = document.getElementById('rv-rating-' + artworkId);
+  if(ratingInput) ratingInput.value = n;
+  // Gunakan getElementById lalu querySelectorAll anak — hindari CSS.escape pada id HTML
+  const wrap = document.getElementById('rv-stars-' + artworkId);
+  if(wrap) wrap.querySelectorAll('.rv-star-btn').forEach(btn=>{
+    const active = Number(btn.dataset.star) <= n;
+    btn.style.color = active ? 'var(--terra)' : 'rgba(97,59,43,.22)';
+    btn.style.transform = active ? 'scale(1.12)' : 'scale(1)';
   });
 }
 
 async function submitReview(artworkId){
-  const name = document.getElementById('rv-name-'+CSS.escape(artworkId))?.value.trim();
-  const email = document.getElementById('rv-email-'+CSS.escape(artworkId))?.value.trim();
-  const rating = Number(document.getElementById('rv-rating-'+CSS.escape(artworkId))?.value||0);
-  const comment = document.getElementById('rv-comment-'+CSS.escape(artworkId))?.value.trim();
+  const name  = document.getElementById('rv-name-'   + artworkId)?.value.trim();
+  const email = document.getElementById('rv-email-'  + artworkId)?.value.trim();
+  const rating= Number(document.getElementById('rv-rating-' + artworkId)?.value||0);
+  const comment=document.getElementById('rv-comment-'+ artworkId)?.value.trim();
   if(!name||!email){ showToast('Nama dan email wajib diisi','error'); return; }
   if(!rating){ showToast('Pilih rating terlebih dahulu','error'); return; }
   try {
