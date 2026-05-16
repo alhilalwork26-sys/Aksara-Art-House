@@ -4494,7 +4494,10 @@ function syncArtworkCollections(){
 
 function updateAuctionBadge(){
   const badge = document.getElementById('auction-badge');
-  if(badge) badge.textContent = String(AUCTIONS.length);
+  if(!badge) return;
+  const count = AUCTIONS.length;
+  badge.textContent = String(count);
+  badge.style.display = count > 0 ? '' : 'none';
 }
 
 function syncCartWithPaintings(){
@@ -5504,6 +5507,18 @@ function setRoom(room, btn){
 // ── AUCTION ──────────────────────────────────
 function renderAuction(){
   const grid=document.getElementById('auction-grid');
+  if(!AUCTIONS.length){
+    grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1;text-align:center;padding:4rem 1.5rem;border:1px solid var(--border);background:var(--warm);border-radius:24px">
+      <div style="font-size:48px;margin-bottom:1rem">🎨</div>
+      <div style="font-family:var(--fd);font-size:24px;color:var(--brown);margin-bottom:.75rem">Belum Ada Lelang Aktif</div>
+      <div style="color:var(--muted);line-height:1.8;font-size:14px;max-width:380px;margin:0 auto">Saat ini belum ada karya yang sedang dilelang. Pantau terus atau hubungi studio untuk mendapatkan informasi lelang berikutnya.</div>
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:1.5rem;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="goPage('gallery')">Jelajahi Galeri</button>
+        <button class="btn btn-outline" onclick="openWA()">✆ Tanya Admin</button>
+      </div>
+    </div>`;
+    return;
+  }
   grid.innerHTML=AUCTIONS.map(a=>{
     const p=PAINTINGS.find(x=>x.id===(a.paintingId||a.id));
     if(!p) return '';
