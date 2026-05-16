@@ -3054,6 +3054,27 @@ body {
   display:block;
   flex-shrink:0;
 }
+/* ── LANG TOGGLE ── */
+.lang-toggle {
+  display:flex; align-items:center; gap:2px;
+  background:rgba(253,248,244,.07);
+  border:1px solid rgba(253,248,244,.16);
+  border-radius:999px; padding:3px;
+  flex-shrink:0;
+}
+.lang-btn {
+  background:none; border:none; cursor:pointer;
+  color:rgba(253,248,244,.45); padding:2px 8px;
+  border-radius:999px; font-size:10px; font-weight:700;
+  letter-spacing:.08em; transition:all .2s; font-family:inherit;
+  line-height:1.4;
+}
+.lang-btn.active {
+  background:rgba(253,248,244,.16);
+  color:#fdf8f4;
+}
+#page-home .lang-btn { color:rgba(253,248,244,.4); }
+#page-home .lang-btn.active { color:#fdf8f4; }
 @media (max-width:600px) {
   .spec-list {
     grid-template-columns:1fr;
@@ -3541,12 +3562,16 @@ input:focus, textarea:focus, select:focus {
   <div class="nav-inner">
     <div class="nav-brand" onclick="goPage('home')">Aksara <em>Art House</em></div>
     <div class="nav-center">
-      <button class="nav-link active" id="nl-home" onclick="goPage('home')">Beranda</button>
-      <button class="nav-link" id="nl-gallery" onclick="goPage('gallery')">Galeri</button>
-      <button class="nav-link" id="nl-auction" onclick="goPage('auction')">Lelang <span class="nav-badge" id="auction-badge">0</span></button>
-      <button class="nav-link" id="nl-about" onclick="goPage('about')">Tentang</button>
+      <button class="nav-link active" id="nl-home" data-i18n="nav_home" onclick="goPage('home')">Beranda</button>
+      <button class="nav-link" id="nl-gallery" data-i18n="nav_gallery" onclick="goPage('gallery')">Galeri</button>
+      <button class="nav-link" id="nl-auction" onclick="goPage('auction')"><span id="nl-auction-text">Lelang</span> <span class="nav-badge" id="auction-badge">0</span></button>
+      <button class="nav-link" id="nl-about" data-i18n="nav_about" onclick="goPage('about')">Tentang</button>
     </div>
     <div class="nav-right">
+      <div class="lang-toggle">
+        <button class="lang-btn active" id="lang-btn-id" onclick="setLang('id')">ID</button>
+        <button class="lang-btn" id="lang-btn-en" onclick="setLang('en')">EN</button>
+      </div>
       <button class="nav-icon-btn" onclick="toggleWishlistPage()" title="Wishlist" aria-label="Buka wishlist">
         <svg class="nav-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         <span class="cart-count" id="wish-count" style="display:none">0</span>
@@ -3555,9 +3580,8 @@ input:focus, textarea:focus, select:focus {
         <span class="cart-icon-shape" aria-hidden="true"></span>
         <span class="cart-count" id="cart-count" style="display:none">0</span>
       </button>
-      
       <div id="nav-auth-area">
-        <button class="btn btn-sm btn-outline" onclick="openAuth('login')">Masuk</button>
+        <button class="btn btn-sm btn-outline" onclick="openAuth('login')" data-i18n="nav_login">Masuk</button>
       </div>
     </div>
     <button class="hamburger" onclick="toggleMobileMenu()">&#9776;</button>
@@ -3566,11 +3590,11 @@ input:focus, textarea:focus, select:focus {
 
 <!-- MOBILE MENU -->
 <div class="mobile-menu" id="mobile-menu">
-  <button class="mobile-nav-link active" id="mnl-home" onclick="goPage('home');toggleMobileMenu()">Beranda</button>
-  <button class="mobile-nav-link" id="mnl-gallery" onclick="goPage('gallery');toggleMobileMenu()">Galeri</button>
-  <button class="mobile-nav-link" id="mnl-auction" onclick="goPage('auction');toggleMobileMenu()">Lelang</button>
-  <button class="mobile-nav-link" id="mnl-about" onclick="goPage('about');toggleMobileMenu()">Tentang</button>
-  <button class="mobile-nav-link" onclick="openAuth('login');toggleMobileMenu()">Masuk / Daftar</button>
+  <button class="mobile-nav-link active" id="mnl-home" data-i18n="nav_home" onclick="goPage('home');toggleMobileMenu()">Beranda</button>
+  <button class="mobile-nav-link" id="mnl-gallery" data-i18n="nav_gallery" onclick="goPage('gallery');toggleMobileMenu()">Galeri</button>
+  <button class="mobile-nav-link" id="mnl-auction" data-i18n="nav_auction" onclick="goPage('auction');toggleMobileMenu()">Lelang</button>
+  <button class="mobile-nav-link" id="mnl-about" data-i18n="nav_about" onclick="goPage('about');toggleMobileMenu()">Tentang</button>
+  <button class="mobile-nav-link" data-i18n="nav_login_register" onclick="openAuth('login');toggleMobileMenu()">Masuk / Daftar</button>
   </div>
 
 <!-- ═══ PAGES ═══ -->
@@ -3591,20 +3615,20 @@ input:focus, textarea:focus, select:focus {
         <div class="hero-art-fill" id="hero-feature-art"></div>
         <div class="hero-copy">
           <div>
-            <div class="hero-eyebrow">Original Art Marketplace</div>
-            <h1>Seni Original<br>Untuk <em>Ruang Hidup</em></h1>
+            <div class="hero-eyebrow" data-i18n="hero_eyebrow">Original Art Marketplace</div>
+            <h1 id="hero-h1" data-i18n="hero_h1">Seni Original<br>Untuk <em>Ruang Hidup</em></h1>
             <p class="hero-sub" id="dyn-hero-sub">Koleksi lukisan original Aksara Art House yang siap dipajang, dikoleksi, dan dikirim aman ke seluruh Indonesia.</p>
             <div class="hero-cta">
-              <button class="btn btn-primary" onclick="goPage('gallery')">Jelajahi Koleksi</button>
-              <button class="btn btn-secondary" onclick="goPage('auction')">Ikut Lelang</button>
-              <button class="btn btn-ghost" onclick="openWA()">&#9742; Konsultasi</button>
+              <button class="btn btn-primary" data-i18n="hero_cta_gallery" onclick="goPage('gallery')">Jelajahi Koleksi</button>
+              <button class="btn btn-secondary" data-i18n="hero_cta_auction" onclick="goPage('auction')">Ikut Lelang</button>
+              <button class="btn btn-ghost" data-i18n="hero_cta_consult" onclick="openWA()">&#9742; Konsultasi</button>
             </div>
           </div>
           <div class="hero-stats">
-            <div><div class="hero-stat-val" id="dyn-stat-karya">48</div><div class="hero-stat-lbl">Karya</div></div>
-            <div><div class="hero-stat-val" id="dyn-stat-pameran">12</div><div class="hero-stat-lbl">Pameran</div></div>
-            <div><div class="hero-stat-val" id="dyn-stat-kolektor">200+</div><div class="hero-stat-lbl">Kolektor</div></div>
-            <div><div class="hero-stat-val" id="dyn-stat-tahun">7</div><div class="hero-stat-lbl">Tahun</div></div>
+            <div><div class="hero-stat-val" id="dyn-stat-karya">48</div><div class="hero-stat-lbl" data-i18n="stat_karya">Karya</div></div>
+            <div><div class="hero-stat-val" id="dyn-stat-pameran">12</div><div class="hero-stat-lbl" data-i18n="stat_pameran">Pameran</div></div>
+            <div><div class="hero-stat-val" id="dyn-stat-kolektor">200+</div><div class="hero-stat-lbl" data-i18n="stat_kolektor">Kolektor</div></div>
+            <div><div class="hero-stat-val" id="dyn-stat-tahun">7</div><div class="hero-stat-lbl" data-i18n="stat_tahun">Tahun</div></div>
           </div>
         </div>
       </div>
@@ -3626,10 +3650,10 @@ input:focus, textarea:focus, select:focus {
     <div class="container">
       <div class="featured-header">
         <div>
-          <div class="latest-badge">&#9733; Koleksi Terbaru</div>
-          <div class="section-title">Karya Pilihan</div>
+          <div class="latest-badge" data-i18n="badge_latest">&#9733; Koleksi Terbaru</div>
+          <div class="section-title" data-i18n="section_featured">Karya Pilihan</div>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="goPage('gallery')">Lihat Semua &rarr;</button>
+        <button class="btn btn-ghost btn-sm" data-i18n="btn_view_all" onclick="goPage('gallery')">Lihat Semua &rarr;</button>
       </div>
       <div class="paintings-grid" id="home-grid"></div>
     </div>
@@ -3638,23 +3662,23 @@ input:focus, textarea:focus, select:focus {
     <div class="marketplace-strip">
       <div class="marketplace-card">
         <div class="marketplace-card-icon">&#10003;</div>
-        <h4>Sertifikat Keaslian</h4>
-        <p>Setiap karya original dilengkapi surat keaslian dari studio untuk menjaga nilai dan kredibilitas koleksi.</p>
+        <h4 data-i18n="strip_cert_title">Sertifikat Keaslian</h4>
+        <p data-i18n="strip_cert_desc">Setiap karya original dilengkapi surat keaslian dari studio untuk menjaga nilai dan kredibilitas koleksi.</p>
       </div>
       <div class="marketplace-card">
         <div class="marketplace-card-icon">&#128230;</div>
-        <h4>Pengiriman Aman</h4>
-        <p>Karya dikemas dengan pelindung khusus agar tetap aman selama proses pengiriman ke kota tujuan Anda.</p>
+        <h4 data-i18n="strip_ship_title">Pengiriman Aman</h4>
+        <p data-i18n="strip_ship_desc">Karya dikemas dengan pelindung khusus agar tetap aman selama proses pengiriman ke kota tujuan Anda.</p>
       </div>
       <div class="marketplace-card">
         <div class="marketplace-card-icon">&#9742;</div>
-        <h4>Konsultasi Mudah</h4>
-        <p>Pembeli dapat langsung bertanya via WhatsApp untuk konsultasi karya, ukuran, maupun penempatan ruang.</p>
+        <h4 data-i18n="strip_consult_title">Konsultasi Mudah</h4>
+        <p data-i18n="strip_consult_desc">Pembeli dapat langsung bertanya via WhatsApp untuk konsultasi karya, ukuran, maupun penempatan ruang.</p>
       </div>
       <div class="marketplace-card">
         <div class="marketplace-card-icon">&#128065;</div>
-        <h4>Status Karya Jelas</h4>
-        <p>Setiap karya ditandai secara tegas sebagai tersedia, sedang lelang, atau telah terjual agar pembelian lebih praktis.</p>
+        <h4 data-i18n="strip_status_title">Status Karya Jelas</h4>
+        <p data-i18n="strip_status_desc">Setiap karya ditandai secara tegas sebagai tersedia, sedang lelang, atau telah terjual agar pembelian lebih praktis.</p>
       </div>
     </div>
   </div>
@@ -3663,11 +3687,11 @@ input:focus, textarea:focus, select:focus {
     <div class="container upcoming-exh-inner">
       <div class="upcoming-exh-header">
         <div>
-          <div class="upcoming-exh-eyebrow">Agenda Pameran</div>
-          <div class="upcoming-exh-title">Pameran<br><em>Mendatang</em></div>
-          <div class="upcoming-exh-subtitle">Jadilah bagian dari momen seni terkurasi. Temukan karya, seniman, dan cerita di balik setiap kanvas.</div>
+          <div class="upcoming-exh-eyebrow" data-i18n="exh_eyebrow">Agenda Pameran</div>
+          <div class="upcoming-exh-title" data-i18n="exh_title">Pameran<br><em>Mendatang</em></div>
+          <div class="upcoming-exh-subtitle" data-i18n="exh_subtitle">Jadilah bagian dari momen seni terkurasi. Temukan karya, seniman, dan cerita di balik setiap kanvas.</div>
         </div>
-        <button class="btn btn-ghost btn-sm" style="color:rgba(253,248,244,.6);border-color:rgba(253,248,244,.18);white-space:nowrap;flex-shrink:0" onclick="goPage('about')">Lihat Semua &rarr;</button>
+        <button class="btn btn-ghost btn-sm" data-i18n="btn_view_all" style="color:rgba(253,248,244,.6);border-color:rgba(253,248,244,.18);white-space:nowrap;flex-shrink:0" onclick="goPage('about')">Lihat Semua &rarr;</button>
       </div>
       <div class="upcoming-exh-scroll" id="exh-scroll"></div>
       <div class="exh-scroll-dots" id="exh-dots"></div>
@@ -3690,25 +3714,25 @@ input:focus, textarea:focus, select:focus {
       <div class="acb-text">
         <div class="acb-eyebrow">
           <span class="acb-live-dot"></span>
-          Lelang Aktif Sekarang
+          <span data-i18n="cta_eyebrow">Lelang Aktif Sekarang</span>
         </div>
-        <h3 class="acb-title">Bid &amp; Miliki<br><em>Karya Original</em></h3>
-        <p class="acb-sub">Proses transparan, penawaran kompetitif, dan aman. Jadilah pemilik karya yang lahir dari jiwa seniman.</p>
+        <h3 class="acb-title" data-i18n="cta_title">Bid &amp; Miliki<br><em>Karya Original</em></h3>
+        <p class="acb-sub" data-i18n="cta_sub">Proses transparan, penawaran kompetitif, dan aman. Jadilah pemilik karya yang lahir dari jiwa seniman.</p>
         <div class="acb-actions">
-          <button class="btn btn-primary" onclick="goPage('auction')">Lihat Lelang Aktif</button>
-          <button class="btn acb-btn-ghost" onclick="openWA()">&#9742; Tanya Admin</button>
+          <button class="btn btn-primary" data-i18n="cta_btn_auction" onclick="goPage('auction')">Lihat Lelang Aktif</button>
+          <button class="btn acb-btn-ghost" data-i18n="cta_btn_wa" onclick="openWA()">&#9742; Tanya Admin</button>
         </div>
       </div>
       <!-- Right: Live stat -->
       <div class="acb-stat-wrap">
         <div class="acb-stat-ring">
           <div class="acb-stat-number" id="cta-auction-count">—</div>
-          <div class="acb-stat-label">Karya<br>Dilelang</div>
+          <div class="acb-stat-label" data-i18n="cta_stat_label">Karya<br>Dilelang</div>
         </div>
         <div class="acb-badges">
-          <div class="acb-badge">&#10003; Sertifikat Keaslian</div>
-          <div class="acb-badge">&#10003; Pengiriman Aman</div>
-          <div class="acb-badge">&#10003; Harga Transparan</div>
+          <div class="acb-badge" data-i18n="badge_cert">&#10003; Sertifikat Keaslian</div>
+          <div class="acb-badge" data-i18n="badge_ship">&#10003; Pengiriman Aman</div>
+          <div class="acb-badge" data-i18n="badge_price">&#10003; Harga Transparan</div>
         </div>
       </div>
     </div>
@@ -4709,6 +4733,90 @@ function refreshScrollAnimations(){
   });
 }
 
+// ── LANGUAGE / I18N ──────────────────────────────────
+const TRANSLATIONS = {
+  id: {
+    nav_home:'Beranda', nav_gallery:'Galeri', nav_auction:'Lelang', nav_about:'Tentang',
+    nav_login:'Masuk', nav_login_register:'Masuk / Daftar',
+    hero_eyebrow:'Original Art Marketplace',
+    hero_h1:'Seni Original<br>Untuk <em>Ruang Hidup</em>',
+    hero_cta_gallery:'Jelajahi Koleksi', hero_cta_auction:'Ikut Lelang', hero_cta_consult:'&#9742; Konsultasi',
+    stat_karya:'Karya', stat_pameran:'Pameran', stat_kolektor:'Kolektor', stat_tahun:'Tahun',
+    badge_latest:'&#9733; Koleksi Terbaru', section_featured:'Karya Pilihan', btn_view_all:'Lihat Semua →',
+    strip_cert_title:'Sertifikat Keaslian', strip_cert_desc:'Setiap karya original dilengkapi surat keaslian dari studio untuk menjaga nilai dan kredibilitas koleksi.',
+    strip_ship_title:'Pengiriman Aman', strip_ship_desc:'Karya dikemas dengan pelindung khusus agar tetap aman selama proses pengiriman ke kota tujuan Anda.',
+    strip_consult_title:'Konsultasi Mudah', strip_consult_desc:'Pembeli dapat langsung bertanya via WhatsApp untuk konsultasi karya, ukuran, maupun penempatan ruang.',
+    strip_status_title:'Status Karya Jelas', strip_status_desc:'Setiap karya ditandai secara tegas sebagai tersedia, sedang lelang, atau telah terjual agar pembelian lebih praktis.',
+    exh_eyebrow:'Agenda Pameran', exh_title:'Pameran<br><em>Mendatang</em>',
+    exh_subtitle:'Jadilah bagian dari momen seni terkurasi. Temukan karya, seniman, dan cerita di balik setiap kanvas.',
+    cta_eyebrow:'Lelang Aktif Sekarang', cta_title:'Bid &amp; Miliki<br><em>Karya Original</em>',
+    cta_sub:'Proses transparan, penawaran kompetitif, dan aman. Jadilah pemilik karya yang lahir dari jiwa seniman.',
+    cta_btn_auction:'Lihat Lelang Aktif', cta_btn_wa:'&#9742; Tanya Admin', cta_stat_label:'Karya<br>Dilelang',
+    badge_cert:'&#10003; Sertifikat Keaslian', badge_ship:'&#10003; Pengiriman Aman', badge_price:'&#10003; Harga Transparan',
+    badge_avail:'Tersedia', badge_sold:'Terjual', badge_auction_lbl:'Lelang', avail_note:'&#10003; Tersedia',
+    exh_badge_upcoming:'Segera', exh_badge_ongoing:'Berlangsung',
+    exh_cd_days:'Hari', exh_cd_hours:'Jam', exh_cd_mins:'Menit', exh_cd_secs:'Detik',
+    marquee:['Oil on Canvas','Acrylic','Mixed Media','Karya Original','Bersertifikat','Dikirim Seluruh Indonesia','Konsultasi Gratis'],
+  },
+  en: {
+    nav_home:'Home', nav_gallery:'Gallery', nav_auction:'Auction', nav_about:'About',
+    nav_login:'Sign In', nav_login_register:'Sign In / Register',
+    hero_eyebrow:'Original Art Marketplace',
+    hero_h1:'Original Art<br>For Your <em>Living Space</em>',
+    hero_cta_gallery:'Browse Collection', hero_cta_auction:'Join Auction', hero_cta_consult:'&#9742; Consult',
+    stat_karya:'Artworks', stat_pameran:'Exhibitions', stat_kolektor:'Collectors', stat_tahun:'Years',
+    badge_latest:'&#9733; Latest Collection', section_featured:'Featured Works', btn_view_all:'View All →',
+    strip_cert_title:'Certificate of Authenticity', strip_cert_desc:'Every original artwork comes with an authenticity certificate from the studio to preserve its value and credibility.',
+    strip_ship_title:'Safe Shipping', strip_ship_desc:'Each artwork is packed with special protective materials to ensure safe delivery to your destination.',
+    strip_consult_title:'Easy Consultation', strip_consult_desc:'Buyers can directly ask via WhatsApp for consultation on artworks, sizes, and room placement.',
+    strip_status_title:'Clear Artwork Status', strip_status_desc:'Every artwork is clearly marked as available, in auction, or sold for a more practical buying experience.',
+    exh_eyebrow:'Exhibition Schedule', exh_title:'Upcoming<br><em>Exhibitions</em>',
+    exh_subtitle:'Be part of curated art moments. Discover works, artists, and the story behind every canvas.',
+    cta_eyebrow:'Live Auction Now', cta_title:'Bid &amp; Own<br><em>Original Artwork</em>',
+    cta_sub:'Transparent process, competitive bidding, and secure. Own a piece of art born from the artist\'s soul.',
+    cta_btn_auction:'View Live Auctions', cta_btn_wa:'&#9742; Ask Admin', cta_stat_label:'Artworks<br>Auctioned',
+    badge_cert:'&#10003; Certificate of Authenticity', badge_ship:'&#10003; Safe Shipping', badge_price:'&#10003; Transparent Pricing',
+    badge_avail:'Available', badge_sold:'Sold', badge_auction_lbl:'Auction', avail_note:'&#10003; Available',
+    exh_badge_upcoming:'Coming Soon', exh_badge_ongoing:'Ongoing',
+    exh_cd_days:'Days', exh_cd_hours:'Hrs', exh_cd_mins:'Min', exh_cd_secs:'Sec',
+    marquee:['Oil on Canvas','Acrylic','Mixed Media','Original Artwork','Certified','Shipped Nationwide','Free Consultation'],
+  }
+};
+
+let currentLang = localStorage.getItem('aksara-lang') || 'id';
+
+function t(key) {
+  return TRANSLATIONS[currentLang]?.[key] ?? TRANSLATIONS.id[key] ?? key;
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const val = t(el.dataset.i18n);
+    if(val !== undefined) el.innerHTML = val;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const val = t(el.dataset.i18nPlaceholder);
+    if(val !== undefined) el.placeholder = val;
+  });
+  // Auction nav link has a badge inside, handle text separately
+  const nlAuctionText = document.getElementById('nl-auction-text');
+  if(nlAuctionText) nlAuctionText.textContent = t('nav_auction');
+  // Lang button active states
+  document.getElementById('lang-btn-id')?.classList.toggle('active', currentLang === 'id');
+  document.getElementById('lang-btn-en')?.classList.toggle('active', currentLang === 'en');
+}
+
+function setLang(lang) {
+  if(lang === currentLang) return;
+  currentLang = lang;
+  localStorage.setItem('aksara-lang', lang);
+  applyI18n();
+  renderHome();
+  renderGallery();
+  renderUpcomingExhibitions();
+  updateUserUI();
+}
+
 // ── UPCOMING EXHIBITIONS ──────────────────────────────────
 let _exhibitions = [];
 let _exhCountdownTimers = [];
@@ -4767,8 +4875,8 @@ function renderUpcomingExhibitions(){
 function exhCardHTML(ex, idx){
   const isOngoing = ex.status === 'ongoing';
   const badge = isOngoing
-    ? `<span class="exh-card-badge badge-ongoing"><span class="badge-dot"></span> Berlangsung</span>`
-    : `<span class="exh-card-badge badge-upcoming"><span class="badge-dot"></span> Segera</span>`;
+    ? `<span class="exh-card-badge badge-ongoing"><span class="badge-dot"></span> ${t('exh_badge_ongoing')}</span>`
+    : `<span class="exh-card-badge badge-upcoming"><span class="badge-dot"></span> ${t('exh_badge_upcoming')}</span>`;
 
   const dateStr = formatExhDate(ex.date_start, ex.date_end);
 
@@ -4780,19 +4888,19 @@ function exhCardHTML(ex, idx){
     <div class="exh-countdown" id="exh-cd-${ex.id}">
       <div class="exh-countdown-unit">
         <div class="exh-countdown-val" id="exh-cd-${ex.id}-d">--</div>
-        <div class="exh-countdown-lbl">Hari</div>
+        <div class="exh-countdown-lbl">${t('exh_cd_days')}</div>
       </div>
       <div class="exh-countdown-unit">
         <div class="exh-countdown-val" id="exh-cd-${ex.id}-h">--</div>
-        <div class="exh-countdown-lbl">Jam</div>
+        <div class="exh-countdown-lbl">${t('exh_cd_hours')}</div>
       </div>
       <div class="exh-countdown-unit">
         <div class="exh-countdown-val" id="exh-cd-${ex.id}-m">--</div>
-        <div class="exh-countdown-lbl">Menit</div>
+        <div class="exh-countdown-lbl">${t('exh_cd_mins')}</div>
       </div>
       <div class="exh-countdown-unit">
         <div class="exh-countdown-val" id="exh-cd-${ex.id}-s">--</div>
-        <div class="exh-countdown-lbl">Detik</div>
+        <div class="exh-countdown-lbl">${t('exh_cd_secs')}</div>
       </div>
     </div>`;
 
@@ -4887,7 +4995,7 @@ function scrollExhTo(idx){
 // ── HOME ──────────────────────────────────
 function renderHome(){
   // Marquee
-  const items=['Oil on Canvas','Acrylic','Mixed Media','Karya Original','Bersertifikat','Dikirim Seluruh Indonesia','Konsultasi Gratis'];
+  const items = t('marquee');
   const track=document.getElementById('marquee-track');
   const html=items.map(i=>`<span class="marquee-item">${i}</span><span class="marquee-dot">&#11044;</span>`).join('');
   track.innerHTML=html+html; // doubled for seamless loop
@@ -4932,14 +5040,14 @@ function renderHome(){
 function cardHTML(p){
   const statusInfo = getStatusInfo(p);
   const badge=p.status==='lelang'
-    ? `<span class="p-card-badge badge-auction">Lelang</span>`
-    : p.status==='terjual' ? `<span class="p-card-badge badge-sold">Terjual</span>`
-    : `<span class="p-card-badge badge-avail">Tersedia</span>`;
+    ? `<span class="p-card-badge badge-auction">${t('badge_auction_lbl')}</span>`
+    : p.status==='terjual' ? `<span class="p-card-badge badge-sold">${t('badge_sold')}</span>`
+    : `<span class="p-card-badge badge-avail">${t('badge_avail')}</span>`;
   const inWish=state.wishlist.includes(p.id);
   const auc=auctionForPainting(p.id);
   const priceHTML=p.status==='terjual' ? '' :
     p.status==='lelang' ? `<div class="p-card-price">Bid: ${fmt(auc?.currentBid||p.price)}</div>` :
-    `<div class="p-card-price">${fmt(p.price)}</div><div class="availability-note">&#10003; Tersedia</div>`;
+    `<div class="p-card-price">${fmt(p.price)}</div><div class="availability-note">${t('avail_note')}</div>`;
   return `<div class="p-card" onclick='openDetail(${jsArg(p.id)})'>
     <div class="p-card-img-wrap">
       <button class="p-card-wishlist ${inWish?'active':''}" id="wish-btn-${p.id}" onclick='event.stopPropagation();toggleWishlist(${jsArg(p.id)})' title="${inWish?'Hapus dari wishlist':'Simpan ke wishlist'}">${inWish?'&#9829;':'&#9825;'}</button>
@@ -6295,6 +6403,7 @@ async function saveEditProfile(){
 // ── INIT ──────────────────────────────────
 async function init(){
   loadState();
+  applyI18n();
   syncArtworkCollections();
   syncCartWithPaintings();
   saveState();
