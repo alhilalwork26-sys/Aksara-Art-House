@@ -3478,44 +3478,44 @@ function openExhForm(id){
   const isEdit = !!ex;
 
   const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
+  overlay.className = 'overlay';
   overlay.id = 'modal-exh-form';
   overlay.innerHTML = `
     <div class="modal" style="max-width:540px">
-      <div class="modal-header">
-        <div class="modal-title">${isEdit ? 'Edit Pameran' : 'Tambah Pameran'}</div>
+      <div class="modal-head">
+        <h3>${isEdit ? 'Edit Pameran' : 'Tambah Pameran'}</h3>
         <button class="modal-close" onclick="closeExhForm()">✕</button>
       </div>
-      <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem">
-        <div>
-          <label class="form-label">Judul Pameran *</label>
-          <input id="exh-f-title" class="form-control" value="${escapeHtml(ex?.title||'')}" placeholder="Nama pameran" required>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Judul Pameran *</label>
+          <input id="exh-f-title" value="${escapeHtml(ex?.title||'')}" placeholder="Nama pameran">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
-          <div>
-            <label class="form-label">Tanggal Mulai *</label>
-            <input id="exh-f-start" type="date" class="form-control" value="${ex?.date_start||''}">
+          <div class="form-group" style="margin:0">
+            <label>Tanggal Mulai *</label>
+            <input id="exh-f-start" type="date" value="${ex?.date_start||''}">
           </div>
-          <div>
-            <label class="form-label">Tanggal Selesai</label>
-            <input id="exh-f-end" type="date" class="form-control" value="${ex?.date_end||''}">
+          <div class="form-group" style="margin:0">
+            <label>Tanggal Selesai</label>
+            <input id="exh-f-end" type="date" value="${ex?.date_end||''}">
           </div>
         </div>
-        <div>
-          <label class="form-label">Lokasi</label>
-          <input id="exh-f-loc" class="form-control" value="${escapeHtml(ex?.location||'')}" placeholder="Nama venue, kota">
+        <div class="form-group">
+          <label>Lokasi</label>
+          <input id="exh-f-loc" value="${escapeHtml(ex?.location||'')}" placeholder="Nama venue, kota">
         </div>
-        <div>
-          <label class="form-label">URL Gambar Cover</label>
-          <input id="exh-f-img" class="form-control" value="${escapeHtml(ex?.image_url||'')}" placeholder="https://...">
+        <div class="form-group">
+          <label>URL Gambar Cover</label>
+          <input id="exh-f-img" value="${escapeHtml(ex?.image_url||'')}" placeholder="https://...">
         </div>
-        <div>
-          <label class="form-label">Deskripsi</label>
-          <textarea id="exh-f-desc" class="form-control" rows="3" placeholder="Ceritakan tentang pameran ini...">${escapeHtml(ex?.description||'')}</textarea>
+        <div class="form-group">
+          <label>Deskripsi</label>
+          <textarea id="exh-f-desc" rows="3" placeholder="Ceritakan tentang pameran ini...">${escapeHtml(ex?.description||'')}</textarea>
         </div>
-        <div>
-          <label class="form-label">Status</label>
-          <select id="exh-f-status" class="filter-select" style="width:100%">
+        <div class="form-group">
+          <label>Status</label>
+          <select id="exh-f-status" style="width:100%;padding:9px 13px;border:1px solid var(--border);background:var(--cream);border-radius:3px;font-size:14px;color:var(--charcoal)">
             <option value="upcoming" ${(!ex||ex.status==='upcoming')?'selected':''}>Segera</option>
             <option value="ongoing" ${ex?.status==='ongoing'?'selected':''}>Berlangsung</option>
             <option value="past" ${ex?.status==='past'?'selected':''}>Selesai</option>
@@ -3523,7 +3523,7 @@ function openExhForm(id){
         </div>
         <div id="exh-f-err" style="color:#c0392b;font-size:13px;display:none"></div>
       </div>
-      <div class="modal-footer">
+      <div class="modal-foot">
         <button class="btn btn-ghost" onclick="closeExhForm()">Batal</button>
         <button class="btn btn-primary" onclick="saveExhibition()">Simpan</button>
       </div>
