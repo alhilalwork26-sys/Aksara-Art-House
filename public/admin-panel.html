@@ -645,6 +645,17 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
         </div>
       </div>
       <div style="background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:1rem;margin-top:.5rem">
+        <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Konten Halaman Tentang</div>
+        <div class="form-group">
+          <label>Paragraf 1 — Deskripsi Studio</label>
+          <textarea id="set-about-p1" rows="3" placeholder="AKSARA ART HOUSE menghadirkan..."></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Paragraf 2 — Jangkauan &amp; Misi</label>
+          <textarea id="set-about-p2" rows="3" placeholder="Karya-karya Aksara Art House dirancang..."></textarea>
+        </div>
+      </div>
+      <div style="background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:1rem;margin-top:.5rem">
         <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Instruksi Pembayaran Marketplace</div>
         <div class="form-group">
           <label>Transfer Bank</label>
@@ -712,6 +723,12 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
     </button>
     <button class="nav-item" data-section="reviews" onclick="showSection('reviews',this)">
       <span class="nav-icon">⭐</span> Ulasan
+    </button>
+    <button class="nav-item" data-section="customers" onclick="showSection('customers',this)">
+      <span class="nav-icon">👥</span> Kolektor
+    </button>
+    <button class="nav-item" data-section="reports" onclick="showSection('reports',this)">
+      <span class="nav-icon">📈</span> Laporan
     </button>
     <div class="nav-section">Lainnya</div>
     <button class="nav-item" onclick="openSettings()">
@@ -1003,6 +1020,60 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
       <div id="reviews-admin-container"></div>
     </div>
 
+    <!-- ═══ KOLEKTOR ═══ -->
+    <div id="section-customers" class="tab-panel">
+      <div class="search-bar">
+        <input class="search-input" type="text" id="customer-search" placeholder="Cari nama atau email kolektor..." oninput="filterCustomers()">
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Daftar Kolektor <span id="customers-count-lbl" style="font-size:13px;color:var(--muted);font-weight:300"></span></h3>
+          <button class="btn btn-secondary btn-sm" onclick="loadCustomers()">⟳ Refresh</button>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nama</th><th>Email</th><th>WhatsApp</th><th>Bergabung</th><th>Total Pesanan</th><th>Total Belanja</th></tr></thead>
+              <tbody id="customers-tbody"><tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Memuat data kolektor...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ LAPORAN ═══ -->
+    <div id="section-reports" class="tab-panel">
+      <div class="search-bar" style="flex-wrap:wrap;gap:.5rem">
+        <select id="report-period" class="filter-select" onchange="loadReport()">
+          <option value="30">30 Hari Terakhir</option>
+          <option value="90">90 Hari Terakhir</option>
+          <option value="365">1 Tahun Terakhir</option>
+          <option value="0">Semua Waktu</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="exportReportCSV()">⬇ Export CSV</button>
+      </div>
+      <!-- KPI Row -->
+      <div class="stats-grid" id="report-kpi" style="margin-bottom:1.25rem">
+        <div class="stat-card"><div class="stat-val" id="rpt-omzet">-</div><div class="stat-lbl">Total Omzet</div><div class="stat-sub" id="rpt-omzet-sub"></div></div>
+        <div class="stat-card"><div class="stat-val" id="rpt-orders">-</div><div class="stat-lbl">Total Pesanan</div><div class="stat-sub" id="rpt-orders-sub"></div></div>
+        <div class="stat-card"><div class="stat-val" id="rpt-avg">-</div><div class="stat-lbl">Rata-rata Order</div></div>
+        <div class="stat-card"><div class="stat-val" id="rpt-done">-</div><div class="stat-lbl">Selesai</div><div class="stat-sub" id="rpt-done-sub"></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Detail Pesanan</h3>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>No. Pesanan</th><th>Tanggal</th><th>Pembeli</th><th>Karya</th><th>Total</th><th>Status</th></tr></thead>
+              <tbody id="report-tbody"><tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Memuat laporan...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -1026,6 +1097,8 @@ const DEFAULT_SETTINGS = {
   codInfo: 'Pembayaran dilakukan saat serah terima. Metode ini hanya berlaku untuk area Surabaya dan tetap menunggu konfirmasi admin.',
   dpInfo: 'Bayar DP 50% terlebih dahulu. Admin akan mengirim instruksi DP dan jadwal pelunasan melalui WhatsApp.',
   auctionInfo: 'Admin akan mengirim invoice pemenang lelang dan instruksi pembayaran melalui WhatsApp.',
+  aboutP1: '',
+  aboutP2: '',
   adminUser: 'admin',
   adminPass: ''
 };
@@ -1673,7 +1746,7 @@ function syncIndicator() {
 // ══════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════
-const SECTION_TITLES = { dashboard:'Dashboard', artworks:'Kelola Karya', orders:'Pesanan', auctions:'Lelang', promo:'Kode Promo', reviews:'Ulasan' };
+const SECTION_TITLES = { dashboard:'Dashboard', artworks:'Kelola Karya', orders:'Pesanan', auctions:'Lelang', promo:'Kode Promo', reviews:'Ulasan', customers:'Manajemen Kolektor', reports:'Laporan Penjualan' };
 
 function showSection(id, btn) {
   _activeSection = id;
@@ -1689,6 +1762,8 @@ function showSection(id, btn) {
   if(id === 'auctions') renderAuctionsAdmin(false);
   if(id === 'promo') renderPromos();
   if(id === 'reviews') renderAdminReviews();
+  if(id === 'customers') loadCustomers();
+  if(id === 'reports') loadReport();
 }
 
 // ══════════════════════════════════════════
@@ -2649,6 +2724,8 @@ function openSettings() {
   document.getElementById('set-stat-pameran').value = s.statPameran || '';
   document.getElementById('set-stat-kolektor').value = s.statKolektor || '';
   document.getElementById('set-stat-tahun').value = s.statTahun || '';
+  document.getElementById('set-about-p1').value = s.aboutP1 || '';
+  document.getElementById('set-about-p2').value = s.aboutP2 || '';
   document.getElementById('set-transfer-info').value = s.transferInfo || '';
   document.getElementById('set-qris-info').value = s.qrisInfo || '';
   document.getElementById('set-cod-info').value = s.codInfo || '';
@@ -2690,6 +2767,10 @@ async function saveSettings() {
   s.statPameran = document.getElementById('set-stat-pameran').value.trim() || s.statPameran;
   s.statKolektor = document.getElementById('set-stat-kolektor').value.trim() || s.statKolektor;
   s.statTahun = document.getElementById('set-stat-tahun').value.trim() || s.statTahun;
+  const aboutP1val = document.getElementById('set-about-p1').value.trim();
+  const aboutP2val = document.getElementById('set-about-p2').value.trim();
+  if(aboutP1val) s.aboutP1 = aboutP1val;
+  if(aboutP2val) s.aboutP2 = aboutP2val;
   s.transferInfo = document.getElementById('set-transfer-info').value.trim() || s.transferInfo;
   s.qrisInfo = document.getElementById('set-qris-info').value.trim() || s.qrisInfo;
   s.codInfo = document.getElementById('set-cod-info').value.trim() || s.codInfo;
@@ -3172,6 +3253,134 @@ async function deleteAdminReview(id) {
 
 // initApp sudah digabung di atas — patch dihapus
 
+// ══════════════════════════════════════════
+// MANAJEMEN KOLEKTOR
+// ══════════════════════════════════════════
+let _customers = [];
+
+async function loadCustomers() {
+  const tbody = document.getElementById('customers-tbody');
+  if(tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Memuat data kolektor...</td></tr>';
+  try {
+    const res = await fetch('/api/admin/customers', { headers: adminHeaders() });
+    if(!res.ok) throw new Error((await res.json()).error || 'Gagal memuat kolektor');
+    _customers = await res.json();
+    renderCustomersTable(_customers);
+  } catch(e) {
+    if(tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--danger)">${escapeHtml(e.message)}</td></tr>`;
+    showToast(e.message, 'error');
+  }
+}
+
+function renderCustomersTable(list) {
+  const tbody = document.getElementById('customers-tbody');
+  const lbl = document.getElementById('customers-count-lbl');
+  if(!tbody) return;
+  if(lbl) lbl.textContent = list.length + ' kolektor';
+  const fmt = n => 'Rp ' + Number(n||0).toLocaleString('id-ID');
+  if(!list.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Belum ada kolektor terdaftar.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(c => `<tr>
+    <td><strong>${escapeHtml(c.name||'-')}</strong></td>
+    <td style="font-size:12px">${escapeHtml(c.email||'-')}</td>
+    <td style="font-size:12px">${escapeHtml(c.wa||'-')}</td>
+    <td style="font-size:12px;color:var(--muted)">${c.joined ? c.joined.slice(0,10) : '-'}</td>
+    <td style="text-align:center"><strong>${c.order_count||0}</strong></td>
+    <td style="color:var(--terra)">${c.total_spent ? fmt(c.total_spent) : '-'}</td>
+  </tr>`).join('');
+}
+
+function filterCustomers() {
+  const q = (document.getElementById('customer-search')?.value||'').trim().toLowerCase();
+  if(!q) { renderCustomersTable(_customers); return; }
+  const filtered = _customers.filter(c =>
+    (c.name||'').toLowerCase().includes(q) ||
+    (c.email||'').toLowerCase().includes(q) ||
+    (c.wa||'').toLowerCase().includes(q)
+  );
+  renderCustomersTable(filtered);
+}
+
+// ══════════════════════════════════════════
+// LAPORAN PENJUALAN
+// ══════════════════════════════════════════
+let _reportOrders = [];
+
+async function loadReport() {
+  const days = Number(document.getElementById('report-period')?.value || 30);
+  const tbody = document.getElementById('report-tbody');
+  if(tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Memuat laporan...</td></tr>';
+  try {
+    const url = '/api/admin/orders' + (days > 0 ? `?days=${days}` : '');
+    const res = await fetch(url, { headers: adminHeaders() });
+    if(!res.ok) throw new Error((await res.json()).error || 'Gagal memuat laporan');
+    _reportOrders = await res.json();
+    renderReport();
+  } catch(e) {
+    if(tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--danger)">${escapeHtml(e.message)}</td></tr>`;
+    showToast(e.message, 'error');
+  }
+}
+
+function renderReport() {
+  const orders = _reportOrders;
+  const fmt = n => 'Rp ' + Number(n||0).toLocaleString('id-ID');
+  const statusLabel = {pending:'Menunggu',confirmed:'Dikonfirmasi',paid:'Dibayar',packed:'Dikemas',shipped:'Dikirim',done:'Selesai',cancelled:'Dibatalkan'};
+  const statusCls = {pending:'chip-pending',confirmed:'chip-auction',paid:'chip-auction',packed:'chip-auction',shipped:'chip-auction',done:'chip-avail',cancelled:'chip-sold'};
+
+  // KPI
+  const done = orders.filter(o=>o.status==='done');
+  const totalOmzet = orders.filter(o=>!['cancelled'].includes(o.status)).reduce((s,o)=>s+Number(o.total||0),0);
+  const avgOrder = orders.length ? Math.round(totalOmzet / orders.length) : 0;
+  const el = id => document.getElementById(id);
+  if(el('rpt-omzet')) el('rpt-omzet').textContent = fmt(totalOmzet);
+  if(el('rpt-omzet-sub')) el('rpt-omzet-sub').textContent = 'dari ' + orders.length + ' pesanan';
+  if(el('rpt-orders')) el('rpt-orders').textContent = orders.length;
+  if(el('rpt-orders-sub')) el('rpt-orders-sub').textContent = done.length + ' selesai';
+  if(el('rpt-avg')) el('rpt-avg').textContent = fmt(avgOrder);
+  if(el('rpt-done')) el('rpt-done').textContent = done.length;
+  if(el('rpt-done-sub')) el('rpt-done-sub').textContent = orders.length ? Math.round(done.length/orders.length*100)+'% dari total' : '';
+
+  // Table
+  const tbody = document.getElementById('report-tbody');
+  if(!tbody) return;
+  if(!orders.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Tidak ada data untuk periode ini.</td></tr>'; return; }
+  tbody.innerHTML = orders.map(o => {
+    const items = (o.order_items||[]).map(i=>escapeHtml(i.title||'')).join(', ');
+    return `<tr>
+      <td style="font-size:12px;letter-spacing:.05em">${escapeHtml(o.order_number||'-')}</td>
+      <td style="font-size:12px;color:var(--muted)">${o.created_at?o.created_at.slice(0,10):'-'}</td>
+      <td><div style="font-size:13px">${escapeHtml(o.customer_name||o.shipping_name||'-')}</div><div style="font-size:11px;color:var(--muted)">${escapeHtml(o.customer_email||'-')}</div></td>
+      <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${items}">${items||'-'}</td>
+      <td style="color:var(--terra);font-weight:500">${fmt(o.total)}</td>
+      <td><span class="chip ${statusCls[o.status]||'chip-pending'}">${statusLabel[o.status]||o.status}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function exportReportCSV() {
+  if(!_reportOrders.length) { showToast('Tidak ada data untuk diekspor', 'error'); return; }
+  const fmt = n => Number(n||0).toLocaleString('id-ID');
+  const statusLabel = {pending:'Menunggu',confirmed:'Dikonfirmasi',paid:'Dibayar',packed:'Dikemas',shipped:'Dikirim',done:'Selesai',cancelled:'Dibatalkan'};
+  const header = ['No. Pesanan','Tanggal','Pembeli','Email','Karya','Total','Status'];
+  const rows = _reportOrders.map(o => [
+    o.order_number||'',
+    o.created_at?o.created_at.slice(0,10):'',
+    o.customer_name||o.shipping_name||'',
+    o.customer_email||'',
+    (o.order_items||[]).map(i=>i.title||'').join('; '),
+    fmt(o.total),
+    statusLabel[o.status]||o.status
+  ]);
+  const csv = [header,...rows].map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `laporan-aksara-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
 
 </script>
 </body>

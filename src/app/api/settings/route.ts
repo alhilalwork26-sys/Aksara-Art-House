@@ -14,7 +14,9 @@ const DEFAULT_CONTACT = {
   qrisInfo: "Scan QRIS Aksara Art House, pastikan nama merchant dan nominal sudah sesuai, lalu upload bukti pembayaran.",
   codInfo: "Pembayaran dilakukan saat serah terima. Metode ini hanya berlaku untuk area Surabaya dan tetap menunggu konfirmasi admin.",
   dpInfo: "Bayar DP 50% terlebih dahulu. Admin akan mengirim instruksi DP dan jadwal pelunasan melalui WhatsApp.",
-  auctionInfo: "Admin akan mengirim invoice pemenang lelang dan instruksi pembayaran melalui WhatsApp."
+  auctionInfo: "Admin akan mengirim invoice pemenang lelang dan instruksi pembayaran melalui WhatsApp.",
+  aboutP1: "",
+  aboutP2: ""
 };
 
 function normalizeContact(value: Record<string, unknown> | null) {
@@ -30,7 +32,9 @@ function normalizeContact(value: Record<string, unknown> | null) {
     qrisInfo: String(value?.qrisInfo || DEFAULT_CONTACT.qrisInfo),
     codInfo: String(value?.codInfo || DEFAULT_CONTACT.codInfo),
     dpInfo: String(value?.dpInfo || DEFAULT_CONTACT.dpInfo),
-    auctionInfo: String(value?.auctionInfo || DEFAULT_CONTACT.auctionInfo)
+    auctionInfo: String(value?.auctionInfo || DEFAULT_CONTACT.auctionInfo),
+    aboutP1: String(value?.aboutP1 || DEFAULT_CONTACT.aboutP1),
+    aboutP2: String(value?.aboutP2 || DEFAULT_CONTACT.aboutP2)
   };
 }
 

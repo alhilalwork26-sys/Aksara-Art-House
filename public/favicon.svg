@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background canvas -->
+  <rect width="64" height="64" rx="12" fill="#5C3D2E"/>
+  <!-- Canvas frame -->
+  <rect x="10" y="10" width="44" height="36" rx="2" fill="#FDF8F4" opacity="0.95"/>
+  <!-- Abstract brushstroke / aksara motif -->
+  <path d="M16 38 Q22 20 32 26 Q42 32 48 16" stroke="#CE6C42" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M18 34 Q26 28 34 32 Q40 35 46 22" stroke="#D4A853" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <!-- Easel legs -->
+  <line x1="22" y1="46" x2="18" y2="58" stroke="#8E6553" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="42" y1="46" x2="46" y2="58" stroke="#8E6553" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="32" y1="46" x2="32" y2="58" stroke="#8E6553" stroke-width="2" stroke-linecap="round"/>
+  <!-- Crossbar -->
+  <line x1="20" y1="52" x2="44" y2="52" stroke="#8E6553" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

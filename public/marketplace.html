@@ -4,6 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Aksara Art House — Galeri Seni Original</title>
+<meta name="description" content="Aksara Art House — Galeri lukisan original oil on canvas, acrylic, dan mixed media. Beli karya seni, ikut lelang, dan konsultasi dekorasi langsung via WhatsApp.">
+<meta name="keywords" content="lukisan original, beli lukisan, galeri seni, aksara art house, oil on canvas, acrylic, mixed media, seni surabaya, karya seni">
+<meta name="author" content="Aksara Art House">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="Aksara Art House — Galeri Seni Original">
+<meta property="og:description" content="Koleksi lukisan original oil on canvas, acrylic, dan mixed media dari studio Aksara Art House. Karya yang lahir dari jiwa, untuk menghiasi ruang Anda.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="id_ID">
+<meta property="og:site_name" content="Aksara Art House">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Aksara Art House — Galeri Seni Original">
+<meta name="twitter:description" content="Koleksi lukisan original dari studio Aksara Art House, Surabaya.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://aksara-steel.vercel.app/marketplace.html">
 <script src="/legacy-db-shim.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
@@ -2981,6 +2995,45 @@ input:focus, textarea:focus, select:focus {
 }
 .auction-card:hover .auction-card-img img { transform:scale(1.05); }
 
+/* ─── MEDIUM FILTER ──────────────────── */
+.medium-filter-row {
+  display:flex; align-items:center; gap:.5rem; flex-wrap:wrap;
+  padding:.5rem 0 .3rem;
+}
+.medium-filter-lbl { font-size:11px; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; }
+.medium-chip {
+  padding:.28rem .72rem; font-size:12px; font-family:var(--fb); font-weight:300;
+  border:1px solid var(--border); border-radius:20px; background:transparent;
+  color:var(--brown-light); cursor:pointer; transition:var(--transition);
+  letter-spacing:.01em;
+}
+.medium-chip:hover { border-color:var(--terra); color:var(--terra); }
+.medium-chip.active { background:var(--terra); border-color:var(--terra); color:#fff; }
+
+/* ─── SHARE ROW ──────────────────────── */
+.share-row {
+  display:flex; align-items:center; gap:.55rem; margin-top:1rem;
+  padding-top:.9rem; border-top:1px solid var(--border);
+}
+.share-row-lbl { font-size:12px; color:var(--muted); letter-spacing:.03em; }
+.share-btn {
+  padding:.32rem .72rem; font-size:12px; font-family:var(--fb); font-weight:300;
+  border:1px solid var(--border); border-radius:2px; background:transparent;
+  color:var(--charcoal); cursor:pointer; transition:var(--transition);
+}
+.share-btn:hover { background:var(--terra); border-color:var(--terra); color:#fff; }
+
+/* ─── EDIT PROFILE MODAL ─────────────── */
+.edit-profile-modal .form-group { margin-bottom:.85rem; }
+
+/* ─── TERMS / POLICY MODAL ──────────── */
+.legal-content { font-size:13px; color:var(--charcoal); line-height:1.85; }
+.legal-content h4 { font-family:var(--fd); font-size:16px; font-weight:400; color:var(--brown); margin:1.25rem 0 .4rem; }
+.legal-content p { margin-bottom:.7rem; }
+
+/* ─── FORGOT PASSWORD PANEL ─────────── */
+#panel-forgot { }
+
 /* ─── DETAIL IMG ZOOM HINT ───────────── */
 .painting-display[data-has-photo="1"]::after {
   content:'🔍 Klik untuk perbesar';
@@ -3181,6 +3234,14 @@ input:focus, textarea:focus, select:focus {
         <input class="gallery-price-input" id="price-max" type="text" inputmode="numeric" placeholder="Max (Rp)" oninput="onPriceFilter()" onblur="formatPriceInput(this)">
         <button class="gallery-price-reset hidden" id="price-reset" onclick="clearPriceFilter()">Reset</button>
       </div>
+      <!-- Medium Filter Row -->
+      <div class="medium-filter-row" id="medium-filter-row">
+        <span class="medium-filter-lbl">Medium:</span>
+        <button class="medium-chip active" id="mchip-" onclick="setMediumFilter('')">Semua</button>
+        <button class="medium-chip" id="mchip-oil" onclick="setMediumFilter('Oil on Canvas')">Oil on Canvas</button>
+        <button class="medium-chip" id="mchip-acrylic" onclick="setMediumFilter('Acrylic on Canvas')">Acrylic</button>
+        <button class="medium-chip" id="mchip-mixed" onclick="setMediumFilter('Mixed Media')">Mixed Media</button>
+      </div>
       <div class="filters-wrap" id="filters"></div>
     </div>
     <div class="paintings-grid" id="gallery-grid"></div>
@@ -3261,6 +3322,11 @@ input:focus, textarea:focus, select:focus {
           </div>
           <div class="purchase-note" id="d-purchase-note">Setelah checkout, tim studio akan menghubungi Anda untuk konfirmasi pembayaran, pengiriman, dan detail penempatan karya bila diperlukan.</div>
           <div class="detail-actions" id="d-actions"></div>
+          <div class="share-row" id="d-share-row">
+            <span class="share-row-lbl">Bagikan:</span>
+            <button class="share-btn" onclick="shareKaryaWA()">&#9742; WhatsApp</button>
+            <button class="share-btn" onclick="shareKaryaCopy()">&#128279; Salin Link</button>
+          </div>
           <div class="spec-list" id="d-specs"></div>
           <div id="reviews-section"></div>
         </div>
@@ -3296,8 +3362,8 @@ input:focus, textarea:focus, select:focus {
       <div class="about-text">
         <div class="section-label">Tentang Aksara Art House</div>
         <h2>Aksara Art<br><em>House</em></h2>
-        <p>AKSARA ART HOUSE menghadirkan karya seni lukis eksklusif dengan medium lidi sebagai signature artistik yang membedakan setiap karya. Setiap lukisan diciptakan melalui proses yang detail, presisi, dan penuh ketekunan, sehingga menghasilkan karya yang tidak hanya memikat secara visual, tetapi juga mengandung nilai filosofis yang mendalam.</p>
-        <p>Karya-karya Aksara Art House dirancang untuk memperkuat karakter berbagai ruang, mulai dari area publik, perkantoran, hotel, galeri, hingga koleksi personal yang mengedepankan keunikan, estetika, dan identitas.</p>
+        <p id="dyn-about-p1">AKSARA ART HOUSE menghadirkan karya seni lukis eksklusif dengan medium lidi sebagai signature artistik yang membedakan setiap karya. Setiap lukisan diciptakan melalui proses yang detail, presisi, dan penuh ketekunan, sehingga menghasilkan karya yang tidak hanya memikat secara visual, tetapi juga mengandung nilai filosofis yang mendalam.</p>
+        <p id="dyn-about-p2">Karya-karya Aksara Art House dirancang untuk memperkuat karakter berbagai ruang, mulai dari area publik, perkantoran, hotel, galeri, hingga koleksi personal yang mengedepankan keunikan, estetika, dan identitas.</p>
         <p>Sebagai wujud komitmen dalam memperluas jangkauan seni, Aksara Art House secara aktif berpartisipasi dalam berbagai pameran, show, dan event. Keikutsertaan ini menjadi ruang untuk menampilkan karya-karya terkurasi yang merepresentasikan kekuatan identitas, nilai artistik, dan narasi visual yang khas.</p>
         <p>Melalui berbagai partisipasi tersebut, Aksara Art House tidak hanya memperkenalkan karya kepada publik yang lebih luas, tetapi juga membangun ruang interaksi antara seniman dan audiens, memperluas jejaring seni, serta mendorong dialog kreatif yang memperkaya pengalaman apresiasi seni secara berkelanjutan.</p>
         <div class="about-stats">
@@ -3393,9 +3459,26 @@ input:focus, textarea:focus, select:focus {
           <input type="password" id="login-pass" placeholder="••••••••">
         </div>
         <button class="btn btn-primary btn-full" onclick="doLogin()" style="margin-top:.5rem">Masuk</button>
+        <div style="text-align:right;margin-top:.4rem;font-size:12px">
+          <button class="form-link" onclick="showForgotPassword()">Lupa password?</button>
+        </div>
         <div class="form-divider"><span>atau</span></div>
         <div style="text-align:center;font-size:13px;color:var(--muted)">
           Belum punya akun? <button class="form-link" onclick="switchAuth('register')">Daftar sekarang</button>
+        </div>
+      </div>
+      <!-- Forgot Password Panel -->
+      <div id="panel-forgot" class="checkout-panel">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.7">Masukkan email Anda. Kami akan mengirim tautan untuk mereset password.</p>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="forgot-email" placeholder="email@anda.com">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="sendForgotPassword()" style="margin-top:.5rem">Kirim Link Reset</button>
+        <div id="forgot-status" style="margin-top:.75rem;font-size:13px;text-align:center"></div>
+        <div class="form-divider"><span>atau</span></div>
+        <div style="text-align:center;font-size:13px;color:var(--muted)">
+          Ingat password? <button class="form-link" onclick="switchAuth('login')">Kembali Masuk</button>
         </div>
       </div>
       <!-- Register Panel -->
@@ -3582,10 +3665,10 @@ input:focus, textarea:focus, select:focus {
       </div>
       <div>
         <h4>Informasi</h4>
-        <button class="footer-link">Kebijakan Pengiriman</button>
-        <button class="footer-link">Pengembalian Barang</button>
-        <button class="footer-link">Keaslian Karya</button>
-        <button class="footer-link">FAQ</button>
+        <button class="footer-link" onclick="openModal('modal-terms')">Syarat &amp; Ketentuan</button>
+        <button class="footer-link" onclick="openModal('modal-privacy')">Kebijakan Privasi</button>
+        <button class="footer-link" onclick="openContact('Informasi Pengiriman')">Kebijakan Pengiriman</button>
+        <button class="footer-link" onclick="openContact('Keaslian Karya &amp; Sertifikat')">Keaslian Karya</button>
       </div>
     </div>
     <div class="footer-bottom">
@@ -3636,7 +3719,7 @@ let state = {
   currentPage:'home', prevPage:'gallery',
   currentPainting:null, currentRoom:'living',
   filter:'semua', sort:'newest',
-  gallerySearch:'', priceMin:0, priceMax:Infinity,
+  gallerySearch:'', priceMin:0, priceMax:Infinity, mediumFilter:'',
   ckStep:1,
   postAuthAction:null,
   myOrders: [],
@@ -4184,6 +4267,12 @@ function renderGallery(stagger=false){
   const fw=document.getElementById('filters');
   fw.innerHTML=FILTERS.map(f=>`<button class="filter-btn${state.filter===f.key?' active':''}" onclick="setFilter('${f.key}',this)">${f.lbl}</button>`).join('');
 
+  // Update medium chips active state
+  document.querySelectorAll('.medium-chip').forEach(btn=>{
+    const id=btn.id.replace('mchip-','');
+    btn.classList.toggle('active', id===state.mediumFilter || (id==='' && !state.mediumFilter));
+  });
+
   const searchQ=(state.gallerySearch||'').trim().toLowerCase();
   const priceMin=state.priceMin||0;
   const priceMax=state.priceMax||Infinity;
@@ -4196,6 +4285,10 @@ function renderGallery(stagger=false){
     else if(state.filter==='terjual') pass=p.status==='terjual';
     else if(state.filter!=='semua') pass=p.cat===state.filter;
     if(!pass) return false;
+    // Medium filter
+    if(state.mediumFilter){
+      if(!(p.medium||'').toLowerCase().includes(state.mediumFilter.toLowerCase())) return false;
+    }
     // Search
     if(searchQ){
       const haystack=((p.title||'')+' '+(p.artist||'')+' '+(p.medium||'')).toLowerCase();
@@ -4244,6 +4337,10 @@ function setFilter(f,btn){
   renderGallery(true);
 }
 function sortGallery(v){ state.sort=v; renderGallery(true); }
+function setMediumFilter(medium){
+  state.mediumFilter=medium;
+  renderGallery(true);
+}
 
 // ── WISHLIST ──────────────────────────────────
 async function toggleWishlist(id){
@@ -5184,6 +5281,8 @@ function switchAuth(mode){
   document.getElementById('auth-title').textContent=mode==='login'?'Masuk ke Akun':'Buat Akun Baru';
   document.getElementById('panel-login').className='checkout-panel'+(mode==='login'?' active':'');
   document.getElementById('panel-register').className='checkout-panel'+(mode==='register'?' active':'');
+  const fp=document.getElementById('panel-forgot');
+  if(fp) fp.className='checkout-panel';
 }
 async function doLogin(){
   const email=document.getElementById('login-email').value.trim();
@@ -5290,6 +5389,7 @@ function updateUserUI(){
       <div class="user-avatar">${initials}</div>
       <span class="nav-session-name">${escapeHtml(state.user.name)}</span>
       <button class="btn btn-ghost btn-sm" onclick="openMyOrders()">&#128230; Pesanan</button>
+      <button class="btn btn-ghost btn-sm" onclick="openEditProfile()">&#9998; Profil</button>
       <button class="btn btn-ghost btn-sm" onclick="doLogout()">Keluar</button>
     </div>`;
   } else {
@@ -5327,6 +5427,9 @@ async function applyPublicSettings(){
     setEl('dyn-about-pameran', s.statPameran);
     setEl('dyn-about-kolektor',s.statKolektor);
     setEl('dyn-about-tahun',   s.statTahun);
+    // About page content
+    if(s.aboutP1) setEl('dyn-about-p1', s.aboutP1);
+    if(s.aboutP2) setEl('dyn-about-p2', s.aboutP2);
   } catch(e){ console.warn('applyPublicSettings:', e); }
 }
 
@@ -5377,6 +5480,91 @@ function renderAbout(){
 function saveOrderToStorage(orderData){
   // Order disimpan ke Supabase via /api/orders (sudah ditangani di submitCheckout)
   // Fungsi ini dipertahankan agar tidak ada error jika masih dipanggil di tempat lain
+}
+
+// ── LUPA PASSWORD ──────────────────────────────────
+function showForgotPassword(){
+  document.getElementById('auth-title').textContent='Reset Password';
+  ['panel-login','panel-register'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById('panel-forgot').classList.add('active');
+  document.getElementById('forgot-status').innerHTML='';
+}
+
+async function sendForgotPassword(){
+  const email=(document.getElementById('forgot-email').value||'').trim();
+  if(!email){ showToast('Masukkan email Anda terlebih dahulu','error'); return; }
+  const st=document.getElementById('forgot-status');
+  st.innerHTML='<span style="color:var(--muted)">Mengirim...</span>';
+  try {
+    const res=await fetch('/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    if(!res.ok) throw new Error((await res.json()).error||'Gagal mengirim');
+    st.innerHTML='<span style="color:var(--success)">✓ Link reset dikirim ke '+escapeHtml(email)+'. Cek inbox (dan folder spam) Anda.</span>';
+    document.getElementById('forgot-email').value='';
+  } catch(e){
+    st.innerHTML='<span style="color:var(--danger)">'+escapeHtml(e.message||'Gagal mengirim email reset')+'</span>';
+  }
+}
+
+// ── SHARE KARYA ──────────────────────────────────
+async function shareKaryaWA(){
+  const p=state.currentPainting;
+  if(!p) return;
+  const settings=await getPublicSettings();
+  const wa=settings.wa||WA_NUMBER;
+  const url=window.location.origin+window.location.pathname+'?karya='+encodeURIComponent(p.id);
+  const text=`Hai, saya menemukan karya yang menarik di Aksara Art House!\n"${p.title}" oleh ${p.artist} (${p.medium}, ${p.year})\nHarga: ${fmt(p.price)}\nLihat di: ${url}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank');
+}
+
+function shareKaryaCopy(){
+  const p=state.currentPainting;
+  if(!p) return;
+  const url=window.location.origin+window.location.pathname+'?karya='+encodeURIComponent(p.id);
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(url).then(()=>showToast('Link karya berhasil disalin!','success')).catch(()=>fallbackCopy(url));
+  } else {
+    fallbackCopy(url);
+  }
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); showToast('Link berhasil disalin!','success'); }
+  catch(e){ showToast('Gagal menyalin link','error'); }
+  document.body.removeChild(ta);
+}
+
+// ── EDIT PROFIL USER ──────────────────────────────────
+function openEditProfile(){
+  if(!state.user){ openAuth('login'); return; }
+  document.getElementById('ep-name').value=state.user.name||'';
+  document.getElementById('ep-wa').value=state.user.wa||'';
+  document.getElementById('ep-pass').value='';
+  document.getElementById('ep-status').innerHTML='';
+  openModal('modal-editprofile');
+}
+
+async function saveEditProfile(){
+  const name=(document.getElementById('ep-name').value||'').trim();
+  const wa=(document.getElementById('ep-wa').value||'').trim();
+  const pass=(document.getElementById('ep-pass').value||'').trim();
+  const st=document.getElementById('ep-status');
+  if(!name){ showToast('Nama tidak boleh kosong','error'); return; }
+  st.innerHTML='<span style="color:var(--muted)">Menyimpan...</span>';
+  try {
+    const body={name,wa};
+    if(pass){ if(pass.length<8){ showToast('Password minimal 8 karakter','error'); st.innerHTML=''; return; } body.password=pass; }
+    const res=await fetch('/api/auth/profile',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!res.ok) throw new Error((await res.json()).error||'Gagal menyimpan');
+    state.user={...state.user,name,wa};
+    saveState();
+    updateUserUI();
+    st.innerHTML='<span style="color:var(--success)">✓ Profil berhasil diperbarui.</span>';
+    setTimeout(()=>closeModal('modal-editprofile'),1000);
+  } catch(e){
+    st.innerHTML='<span style="color:var(--danger)">'+escapeHtml(e.message)+'</span>';
+  }
 }
 
 // ── INIT ──────────────────────────────────
@@ -5634,6 +5822,75 @@ function contactAboutOrder(orderId, items){
       <button class="modal-close" onclick="closeModal('modal-invoice')">&#10005;</button>
     </div>
     <div class="modal-body" id="invoice-body" style="padding:0"></div>
+  </div>
+</div>
+
+<!-- EDIT PROFIL MODAL -->
+<div class="modal-overlay hidden" id="modal-editprofile">
+  <div class="modal-box edit-profile-modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3>Edit Profil</h3>
+      <button class="modal-close" onclick="closeModal('modal-editprofile')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nama Lengkap</label><input type="text" id="ep-name" placeholder="Nama Anda"></div>
+      <div class="form-group"><label>Nomor WhatsApp</label><input type="tel" id="ep-wa" placeholder="08xxxxxxxxxx"></div>
+      <div class="form-group"><label>Password Baru <span style="color:var(--muted);font-size:11px">(kosongkan jika tidak diubah)</span></label><input type="password" id="ep-pass" placeholder="Min. 8 karakter"></div>
+      <div id="ep-status" style="margin-bottom:.5rem;font-size:13px;text-align:center"></div>
+      <button class="btn btn-primary btn-full" onclick="saveEditProfile()">Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
+
+<!-- SYARAT & KETENTUAN MODAL -->
+<div class="modal-overlay hidden" id="modal-terms">
+  <div class="modal-box" style="max-width:640px">
+    <div class="modal-header">
+      <h3>Syarat &amp; Ketentuan</h3>
+      <button class="modal-close" onclick="closeModal('modal-terms')">&#10005;</button>
+    </div>
+    <div class="modal-body legal-content">
+      <h4>1. Penggunaan Platform</h4>
+      <p>Aksara Art House adalah platform marketplace seni original yang menghubungkan kolektor dengan karya dari studio Aksara Art House. Dengan menggunakan platform ini, Anda menyetujui syarat dan ketentuan yang berlaku.</p>
+      <h4>2. Keaslian Karya</h4>
+      <p>Setiap karya yang dijual melalui Aksara Art House adalah karya original dan disertai surat keaslian (Certificate of Authenticity) dari studio. Pembeli berhak meminta verifikasi keaslian sebelum maupun setelah transaksi.</p>
+      <h4>3. Pembelian &amp; Pembayaran</h4>
+      <p>Harga yang tertera sudah termasuk pengemasan standar. Pembayaran dapat dilakukan melalui transfer bank, QRIS, atau metode lain yang disepakati. Transaksi dianggap sah setelah konfirmasi pembayaran diterima oleh studio.</p>
+      <h4>4. Pengiriman</h4>
+      <p>Karya dikemas dengan material pelindung khusus untuk meminimalkan risiko kerusakan selama pengiriman. Estimasi pengiriman 3–7 hari kerja untuk wilayah Indonesia. Untuk luar kota, kami berkoordinasi via WhatsApp.</p>
+      <h4>5. Lelang</h4>
+      <p>Partisipasi lelang bersifat mengikat. Pemenang lelang wajib melunasi pembayaran dalam 2×24 jam setelah pengumuman pemenang. Kegagalan pembayaran dapat mengakibatkan pembatalan hak atas karya lelang.</p>
+      <h4>6. Pengembalian &amp; Garansi</h4>
+      <p>Karya tidak dapat dikembalikan kecuali terbukti tidak sesuai deskripsi atau rusak akibat kesalahan pengemasan. Klaim kerusakan harus diajukan dalam 48 jam setelah karya diterima dengan bukti foto/video.</p>
+      <h4>7. Kontak</h4>
+      <p>Untuk pertanyaan terkait syarat dan ketentuan, silakan hubungi kami via WhatsApp atau email hello@aksaraarthouse.com.</p>
+    </div>
+  </div>
+</div>
+
+<!-- KEBIJAKAN PRIVASI MODAL -->
+<div class="modal-overlay hidden" id="modal-privacy">
+  <div class="modal-box" style="max-width:640px">
+    <div class="modal-header">
+      <h3>Kebijakan Privasi</h3>
+      <button class="modal-close" onclick="closeModal('modal-privacy')">&#10005;</button>
+    </div>
+    <div class="modal-body legal-content">
+      <h4>1. Data yang Kami Kumpulkan</h4>
+      <p>Aksara Art House mengumpulkan data yang diperlukan untuk memberikan layanan terbaik, meliputi: nama, alamat email, nomor WhatsApp, dan data transaksi pembelian.</p>
+      <h4>2. Penggunaan Data</h4>
+      <p>Data Anda digunakan untuk: memproses pesanan, mengirim notifikasi status pembelian, dan berkomunikasi terkait karya yang Anda minati. Kami tidak menjual atau membagikan data Anda ke pihak ketiga tanpa persetujuan.</p>
+      <h4>3. Keamanan Data</h4>
+      <p>Seluruh data disimpan dengan enkripsi pada server yang aman (Supabase). Akses data dibatasi hanya untuk tim studio yang berwenang.</p>
+      <h4>4. Cookie</h4>
+      <p>Platform ini menggunakan cookie minimal untuk menjaga sesi login Anda. Tidak ada cookie pelacak pihak ketiga yang digunakan.</p>
+      <h4>5. Hak Anda</h4>
+      <p>Anda berhak meminta penghapusan akun dan data pribadi kapan saja dengan menghubungi kami via WhatsApp atau email. Permintaan akan diproses dalam 7 hari kerja.</p>
+      <h4>6. Perubahan Kebijakan</h4>
+      <p>Aksara Art House berhak memperbarui kebijakan privasi ini sewaktu-waktu. Perubahan signifikan akan diberitahukan melalui email atau notifikasi di platform.</p>
+      <h4>7. Kontak</h4>
+      <p>Pertanyaan terkait privasi dapat dikirimkan ke hello@aksaraarthouse.com atau via WhatsApp studio.</p>
+    </div>
   </div>
 </div>
 
