@@ -642,24 +642,21 @@ button { cursor:pointer; }
 }
 .p-card {
   cursor:pointer;
-  transition:transform .25s ease;
+  transition:opacity .2s ease;
   border-radius:22px;
 }
-.p-card:hover { transform:translateY(-5px); }
-.p-card:hover .p-card-img-wrap { box-shadow:0 18px 44px rgba(92,61,46,.16); }
+.p-card:hover { opacity:.92; }
 .p-card-img-wrap {
   position:relative; overflow:hidden;
   background:#f0ede8;
   border:1px solid rgba(92,61,46,.08);
   border-radius:20px;
-  transition:box-shadow .25s;
 }
 .p-card-canvas {
   width:100%;
   display:block;
   aspect-ratio:3/4;
 }
-.p-card:hover .p-card-canvas { transform:scale(1.04); transition:transform .45s ease; }
 .p-card-badge {
   position:absolute; top:10px; right:10px;
   font-size:9px; letter-spacing:.1em;
@@ -681,7 +678,7 @@ button { cursor:pointer; }
   z-index:1;
   box-shadow:0 8px 24px rgba(44,35,32,.08);
 }
-.p-card:hover .p-card-wishlist { opacity:1; transform:scale(1.04); }
+.p-card:hover .p-card-wishlist { opacity:1; }
 .p-card-wishlist.active { opacity:1; color:var(--terra); }
 .p-card-info { padding:14px 2px 0; }
 .p-card-title {
@@ -1749,9 +1746,6 @@ body {
   border:0;
   border-radius:18px;
 }
-#page-home .p-card:hover .p-card-img-wrap {
-  box-shadow:0 22px 55px rgba(0,0,0,.12);
-}
 #page-home .p-card-title,
 #page-home .p-card-price {
   color:#080808;
@@ -2348,7 +2342,7 @@ body {
   box-shadow:0 14px 34px rgba(97,59,43,.08);
 }
 #page-home .p-card:hover {
-  filter:saturate(1.03);
+  opacity:.92;
 }
 .wa-float {
   left:auto;
@@ -2677,22 +2671,9 @@ body {
   to   { opacity:1; transform:translateY(0); }
 }
 
-/* Card hover lift */
-.p-card {
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
-}
-.p-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.13);
-}
-
 /* Auction card hover */
-.auction-card {
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
-}
 .auction-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 32px rgba(0,0,0,0.12);
+  box-shadow: 0 10px 32px rgba(0,0,0,0.10);
 }
 
 /* Button interactions */
