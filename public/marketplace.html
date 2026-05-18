@@ -2492,6 +2492,38 @@ body {
   width: 100%; height: 100%;
   display: block;
 }
+.corp-card-room img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  display: block;
+  transition: transform .6s ease;
+}
+.corp-card:hover .corp-card-room img { transform: scale(1.04); }
+.corp-testimoni-badge {
+  position: absolute;
+  top: 14px; right: 14px;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(8px);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--terra);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 10px rgba(0,0,0,.12);
+}
+.corp-quote {
+  font-family: var(--fd);
+  font-size: 15px;
+  font-style: italic;
+  color: var(--brown-light);
+  line-height: 1.75;
+  margin: .6rem 0 .75rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--terra-light);
+}
 .corp-card-overlay {
   position: absolute;
   inset: 0;
@@ -4083,104 +4115,16 @@ input:focus, textarea:focus, select:focus {
       <!-- Featured Cards -->
       <div class="corp-cards" id="corp-cards">
 
-        <!-- Card 0: PELINDO TPS Surabaya (Featured - wide) -->
+        <!-- Card 0: PELINDO TPS Surabaya (Featured - wide, real photo) -->
         <div class="corp-card corp-card-featured" data-corp-card>
           <div class="corp-card-room">
-            <svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg">
-              <!-- Marble lobby background -->
-              <rect width="800" height="240" fill="#F5F3F0"/>
-              <!-- Marble texture walls -->
-              <rect x="0" y="0" width="800" height="170" fill="#FAFAF8"/>
-              <!-- Marble veining -->
-              <path d="M0 40 Q120 25 250 55 Q380 85 500 45 Q620 15 800 50" stroke="#E8E4DE" stroke-width="1.5" fill="none" opacity=".7"/>
-              <path d="M0 80 Q150 60 300 90 Q450 120 600 80 Q700 60 800 85" stroke="#EAE6DF" stroke-width="1" fill="none" opacity=".5"/>
-              <path d="M50 120 Q200 100 380 130 Q520 155 700 115 Q750 108 800 120" stroke="#E5E1D9" stroke-width="1.2" fill="none" opacity=".6"/>
-              <path d="M100 30 Q180 50 200 100 Q220 140 160 160" stroke="#DDD9D2" stroke-width=".8" fill="none" opacity=".5"/>
-              <path d="M450 10 Q520 40 540 90 Q555 130 490 155" stroke="#E0DDD6" stroke-width=".8" fill="none" opacity=".4"/>
-              <!-- Gold vertical accent strips -->
-              <rect x="0" y="0" width="4" height="170" fill="#C9A96E" opacity=".6"/>
-              <rect x="160" y="0" width="2" height="170" fill="#C9A96E" opacity=".4"/>
-              <rect x="320" y="0" width="2" height="170" fill="#C9A96E" opacity=".3"/>
-              <rect x="480" y="0" width="2" height="170" fill="#C9A96E" opacity=".4"/>
-              <rect x="640" y="0" width="2" height="170" fill="#C9A96E" opacity=".3"/>
-              <rect x="796" y="0" width="4" height="170" fill="#C9A96E" opacity=".6"/>
-              <!-- Ceiling accent line -->
-              <rect x="0" y="0" width="800" height="3" fill="#C9A96E" opacity=".5"/>
-              <!-- Pelindo illuminated logo on wall (center) -->
-              <g transform="translate(240, 28)">
-                <!-- Glow effect -->
-                <ellipse cx="160" cy="55" rx="155" ry="38" fill="rgba(0,114,188,.05)"/>
-                <!-- Logo icon: Pelindo P shape -->
-                <g transform="translate(0,5)">
-                  <!-- Blue square bg for icon -->
-                  <rect x="0" y="0" width="44" height="44" rx="6" fill="#0072BC"/>
-                  <!-- Stylized P/anchor shape inside -->
-                  <circle cx="22" cy="16" r="8" fill="none" stroke="#fff" stroke-width="3"/>
-                  <rect x="19" y="16" width="6" height="18" rx="2" fill="#fff"/>
-                  <line x1="14" y1="30" x2="30" y2="30" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-                  <line x1="14" y1="30" x2="11" y2="26" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
-                  <line x1="30" y1="30" x2="33" y2="26" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
-                </g>
-                <!-- PELINDO text -->
-                <text x="55" y="32" font-family="Arial, sans-serif" font-weight="700" font-size="28" fill="#0072BC" letter-spacing="3">PELINDO</text>
-                <!-- TERMINAL PETIKEMAS text -->
-                <text x="55" y="52" font-family="Arial, sans-serif" font-weight="500" font-size="13" fill="#F7941D" letter-spacing="1.5">TERMINAL PETIKEMAS</text>
-                <!-- TPS SURABAYA text -->
-                <text x="55" y="70" font-family="Arial, sans-serif" font-weight="700" font-size="13" fill="#ED1C24" letter-spacing="1.5">TPS SURABAYA</text>
-              </g>
-              <!-- Eid Mubarak decoration (crescent moon) above logo - matches photo -->
-              <g transform="translate(387, 12)">
-                <path d="M13 0 A13 13 0 1 0 13 26 A9 9 0 1 1 13 0Z" fill="#D4A820" opacity=".7"/>
-                <line x1="13" y1="26" x2="13" y2="38" stroke="#C9A030" stroke-width="1.5" opacity=".6"/>
-              </g>
-              <!-- Floor marble -->
-              <rect x="0" y="170" width="800" height="70" fill="#E8E4DE"/>
-              <!-- Floor marble lines -->
-              <line x1="0" y1="185" x2="800" y2="185" stroke="#D8D4CE" stroke-width=".5"/>
-              <line x1="0" y1="200" x2="800" y2="200" stroke="#D8D4CE" stroke-width=".5"/>
-              <line x1="0" y1="215" x2="800" y2="215" stroke="#D8D4CE" stroke-width=".3"/>
-              <!-- Reception counter: curved marble desk matching photo -->
-              <path d="M200 200 Q400 175 600 200 L610 240 L190 240 Z" fill="#EEEBE6"/>
-              <path d="M200 200 Q400 175 600 200" stroke="#D8D4CE" stroke-width="1.5" fill="none"/>
-              <!-- Ribbed counter front panels -->
-              <rect x="210" y="205" width="6" height="32" rx="2" fill="#DDD9D2" opacity=".7"/>
-              <rect x="225" y="203" width="6" height="34" rx="2" fill="#DDD9D2" opacity=".6"/>
-              <rect x="240" y="201" width="6" height="36" rx="2" fill="#DDD9D2" opacity=".7"/>
-              <rect x="255" y="200" width="6" height="37" rx="2" fill="#DDD9D2" opacity=".6"/>
-              <rect x="270" y="200" width="6" height="37" rx="2" fill="#DDD9D2" opacity=".7"/>
-              <rect x="520" y="200" width="6" height="37" rx="2" fill="#DDD9D2" opacity=".7"/>
-              <rect x="535" y="201" width="6" height="36" rx="2" fill="#DDD9D2" opacity=".6"/>
-              <rect x="550" y="203" width="6" height="34" rx="2" fill="#DDD9D2" opacity=".7"/>
-              <rect x="565" y="205" width="6" height="32" rx="2" fill="#DDD9D2" opacity=".6"/>
-              <!-- Counter top marble edge -->
-              <path d="M200 200 Q400 175 600 200 Q400 180 200 200" fill="#F0EDE8" opacity=".8"/>
-              <!-- Gold counter trim -->
-              <path d="M200 200 Q400 175 600 200" stroke="#C9A96E" stroke-width="2" fill="none" opacity=".7"/>
-              <!-- Ceiling lights (recessed) -->
-              <circle cx="200" cy="15" r="8" fill="rgba(255,245,220,.5)"/>
-              <circle cx="400" cy="15" r="8" fill="rgba(255,245,220,.5)"/>
-              <circle cx="600" cy="15" r="8" fill="rgba(255,245,220,.5)"/>
-              <circle cx="200" cy="15" r="3" fill="rgba(255,240,180,.8)"/>
-              <circle cx="400" cy="15" r="3" fill="rgba(255,240,180,.8)"/>
-              <circle cx="600" cy="15" r="3" fill="rgba(255,240,180,.8)"/>
-              <!-- Light glow on floor from ceiling lights -->
-              <ellipse cx="200" cy="175" rx="60" ry="12" fill="rgba(255,245,200,.2)"/>
-              <ellipse cx="400" cy="175" rx="60" ry="12" fill="rgba(255,245,200,.2)"/>
-              <ellipse cx="600" cy="175" rx="60" ry="12" fill="rgba(255,245,200,.2)"/>
-              <!-- Window panels left side -->
-              <rect x="20" y="20" width="100" height="145" fill="rgba(180,210,240,.18)" rx="3"/>
-              <line x1="70" y1="20" x2="70" y2="165" stroke="rgba(200,220,240,.4)" stroke-width="1"/>
-              <!-- City/port view through window -->
-              <rect x="25" y="80" width="12" height="65" fill="rgba(100,140,180,.25)"/>
-              <rect x="42" y="65" width="15" height="80" fill="rgba(100,140,180,.2)"/>
-              <rect x="62" y="90" width="10" height="55" fill="rgba(100,140,180,.15)"/>
-              <!-- Small potted plant near reception -->
-              <rect x="640" y="145" width="6" height="30" fill="#8B7060"/>
-              <ellipse cx="643" cy="143" rx="20" ry="14" fill="#3D6835" opacity=".8"/>
-              <ellipse cx="635" cy="148" rx="14" ry="10" fill="#4A7F40" opacity=".7"/>
-              <ellipse cx="652" cy="146" rx="12" ry="9" fill="#3D6835" opacity=".6"/>
-            </svg>
-            <div class="corp-card-overlay"></div>
+            <img
+              src="media/tps-testimoni.jpeg"
+              alt="Dokumentasi kunjungan Aksara Art House ke kantor PT Terminal Petikemas Surabaya"
+              loading="lazy"
+            >
+            <div class="corp-card-overlay" style="background:linear-gradient(to bottom, rgba(0,0,0,.08) 0%, rgba(44,35,32,.55) 100%)"></div>
+            <div class="corp-testimoni-badge">&#128247; Dokumentasi Kunjungan</div>
             <div class="corp-card-logo" style="gap:6px;padding:5px 12px">
               <!-- Pelindo logo inline SVG -->
               <svg width="88" height="32" viewBox="0 0 88 32" xmlns="http://www.w3.org/2000/svg">
@@ -4197,10 +4141,11 @@ input:focus, textarea:focus, select:focus {
             </div>
           </div>
           <div class="corp-card-body">
-            <div class="corp-card-industry">Port & Logistics · BUMN</div>
+            <div class="corp-card-industry">Port &amp; Logistics · BUMN · Surabaya</div>
             <div class="corp-card-name">PT Terminal Petikemas Surabaya</div>
-            <div class="corp-card-desc">Karya seni original Aksara Art House mempercantik lobi utama, ruang rapat eksekutif, dan koridor kantor pusat TPS Surabaya — salah satu terminal peti kemas terbesar di Indonesia.</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div class="corp-quote">"Karya Aksara Art House memberikan sentuhan artistik yang anggun dan bermakna di ruang-ruang representatif kami."</div>
+            <div class="corp-card-desc" style="margin-top:.2rem">Karya seni original Aksara Art House mempercantik lobi utama, ruang rapat eksekutif, dan koridor kantor pusat TPS — salah satu terminal peti kemas terbesar di Indonesia.</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:.75rem">
               <div class="corp-card-tag">&#10003; Lobi Utama</div>
               <div class="corp-card-tag">&#10003; Ruang Eksekutif</div>
               <div class="corp-card-tag">&#10003; Klien Aktif</div>
