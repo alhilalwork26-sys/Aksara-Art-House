@@ -4944,13 +4944,16 @@ const DEFAULT_PAINTINGS = [
 
 ];
 
+// DEFAULT_AUCTIONS uses ts() helper to generate live-relative timestamps for bid history
+const _now = () => Date.now();
+const _tsAgo = (ms) => new Date(_now() - ms).toISOString();
 const DEFAULT_AUCTIONS = [
   { id:2, currentBid:3200000, startBid:2800000, minStep:200000, bids:7, endsIn:2*3600+14*60+33,
-    history:[{name:"A***",amt:3200000,ago:"2 mnt lalu"},{name:"B***",amt:3000000,ago:"15 mnt lalu"},{name:"C***",amt:2800000,ago:"1 jam lalu"}] },
+    history:[{name:"A***",amt:3200000,ts:_tsAgo(2*60e3)},{name:"B***",amt:3000000,ts:_tsAgo(15*60e3)},{name:"C***",amt:2800000,ts:_tsAgo(1*3600e3)}] },
   { id:5, currentBid:5100000, startBid:4500000, minStep:250000, bids:4, endsIn:1*3600+8*60+17,
-    history:[{name:"D***",amt:5100000,ago:"8 mnt lalu"},{name:"E***",amt:4850000,ago:"34 mnt lalu"},{name:"F***",amt:4600000,ago:"2 jam lalu"}] },
+    history:[{name:"D***",amt:5100000,ts:_tsAgo(8*60e3)},{name:"E***",amt:4850000,ts:_tsAgo(34*60e3)},{name:"F***",amt:4600000,ts:_tsAgo(2*3600e3)}] },
   { id:7, currentBid:8500000, startBid:7500000, minStep:500000, bids:11, endsIn:5*3600+44*60+52,
-    history:[{name:"G***",amt:8500000,ago:"5 mnt lalu"},{name:"H***",amt:8000000,ago:"22 mnt lalu"},{name:"I***",amt:7500000,ago:"3 jam lalu"}] },
+    history:[{name:"G***",amt:8500000,ts:_tsAgo(5*60e3)},{name:"H***",amt:8000000,ts:_tsAgo(22*60e3)},{name:"I***",amt:7500000,ts:_tsAgo(3*3600e3)}] },
 
 ];
 
@@ -5016,11 +5019,12 @@ const fmtTime = s => {
 function timeAgo(dateValue){
   const diff = Math.max(0, Date.now() - new Date(dateValue).getTime());
   const mins = Math.floor(diff / 60000);
-  if(mins < 1) return 'Baru saja';
-  if(mins < 60) return `${mins} mnt lalu`;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  if(mins < 1) return isEn ? 'Just now' : 'Baru saja';
+  if(mins < 60) return isEn ? `${mins}m ago` : `${mins} mnt lalu`;
   const hours = Math.floor(mins / 60);
-  if(hours < 24) return `${hours} jam lalu`;
-  return `${Math.floor(hours / 24)} hari lalu`;
+  if(hours < 24) return isEn ? `${hours}h ago` : `${hours} jam lalu`;
+  return isEn ? `${Math.floor(hours/24)}d ago` : `${Math.floor(hours/24)} hari lalu`;
 }
 
 function saveState(){
@@ -5097,7 +5101,7 @@ async function fetchAuctionsFromDB(){
       history: (a.auction_bids||[]).map(b => ({
         name: b.bidder_name,
         amt: b.amount,
-        ago: timeAgo(b.created_at)
+        ts: b.created_at  // store raw timestamp for dynamic timeAgo
       }))
     }));
   } catch(e){ console.error('Gagal memuat lelang dari database:', e); }
@@ -6464,7 +6468,7 @@ function renderAuction(){
         ${t('btn_bid_history')} <span>&#9660;</span>
       </button>
       <div class="bid-history-list hidden" id="bh-${a.id}">
-        ${(a.history||[]).length ? (a.history||[]).map(h=>`<div class="bid-history-item"><span class="bid-bidder">${escapeHtml(h.name)}</span><span class="bid-time-ago">${escapeHtml(h.ago)}</span><span class="bid-hist-amt">${fmt(h.amt)}</span></div>`).join('') : `<div class="bid-history-item"><span class="bid-time-ago">${t('bid_no_history')}</span></div>`}
+        ${(a.history||[]).length ? (a.history||[]).map(h=>`<div class="bid-history-item"><span class="bid-bidder">${escapeHtml(h.name||'—')}</span><span class="bid-time-ago">${escapeHtml(h.ts ? timeAgo(h.ts) : (h.ago||''))}</span><span class="bid-hist-amt">${fmt(h.amt)}</span></div>`).join('') : `<div class="bid-history-item"><span class="bid-time-ago">${t('bid_no_history')}</span></div>`}
       </div>
     </div>`;
   }).join('');
