@@ -4497,7 +4497,7 @@ input:focus, textarea:focus, select:focus {
   <div class="container">
     <div class="detail-header">
       <div class="detail-breadcrumb">
-        <button class="breadcrumb-link" onclick="goBack()">Galeri</button>
+        <button class="breadcrumb-link" onclick="goBack()" data-i18n="nav_gallery">Galeri</button>
         <span>&rsaquo;</span>
         <span id="bc-title" style="color:var(--charcoal)">Judul Karya</span>
       </div>
@@ -4509,13 +4509,13 @@ input:focus, textarea:focus, select:focus {
           <div class="painting-display" id="detail-painting-display" onclick="openLightbox()"></div>
           <!-- Room preview -->
           <div class="room-section">
-            <div class="room-section-label">&#127968; Visualisasi di Ruangan</div>
+            <div class="room-section-label" data-i18n="room_preview_label">&#127968; Visualisasi di Ruangan</div>
             <div class="room-preview" id="room-preview"></div>
             <div class="room-tabs">
-              <button class="room-tab active" onclick="setRoom('living',this)">Ruang Tamu</button>
-              <button class="room-tab" onclick="setRoom('bedroom',this)">Kamar Tidur</button>
-              <button class="room-tab" onclick="setRoom('office',this)">Ruang Kerja</button>
-              <button class="room-tab" onclick="setRoom('dining',this)">Ruang Makan</button>
+              <button class="room-tab active" onclick="setRoom('living',this)" data-i18n="room_living">Ruang Tamu</button>
+              <button class="room-tab" onclick="setRoom('bedroom',this)" data-i18n="room_bedroom">Kamar Tidur</button>
+              <button class="room-tab" onclick="setRoom('office',this)" data-i18n="room_office">Ruang Kerja</button>
+              <button class="room-tab" onclick="setRoom('dining',this)" data-i18n="room_dining">Ruang Makan</button>
             </div>
           </div>
         </div>
@@ -4530,12 +4530,12 @@ input:focus, textarea:focus, select:focus {
           </div>
           <!-- Dimensions -->
           <div class="dims-card">
-            <div class="dims-label">&#8614; Dimensi Karya</div>
+            <div class="dims-label" data-i18n="dims_label">&#8614; Dimensi Karya</div>
             <div class="dims-grid">
-              <div class="dim-item"><div class="dim-name">Width</div><div class="dim-value" id="d-pjg"></div><div class="dim-unit">cm</div></div>
-              <div class="dim-item"><div class="dim-name">Tinggi</div><div class="dim-value" id="d-tgg"></div><div class="dim-unit">cm</div></div>
-              <div class="dim-item"><div class="dim-name">Depth</div><div class="dim-value" id="d-lbr"></div><div class="dim-unit">cm</div></div>
-              <div class="dim-item"><div class="dim-name">Tebal</div><div class="dim-value" id="d-tbl"></div><div class="dim-unit">cm</div></div>
+              <div class="dim-item"><div class="dim-name" data-i18n="dim_width">Lebar</div><div class="dim-value" id="d-pjg"></div><div class="dim-unit">cm</div></div>
+              <div class="dim-item"><div class="dim-name" data-i18n="dim_height">Tinggi</div><div class="dim-value" id="d-tgg"></div><div class="dim-unit">cm</div></div>
+              <div class="dim-item"><div class="dim-name" data-i18n="dim_depth">Kedalaman</div><div class="dim-value" id="d-lbr"></div><div class="dim-unit">cm</div></div>
+              <div class="dim-item"><div class="dim-name" data-i18n="dim_thick">Tebal</div><div class="dim-value" id="d-tbl"></div><div class="dim-unit">cm</div></div>
             </div>
           </div>
           <div class="desc-lock-wrap" id="d-desc-wrap"></div>
@@ -4552,24 +4552,24 @@ input:focus, textarea:focus, select:focus {
           </div>
           <div class="detail-support-grid">
             <div class="support-card">
-              <div class="support-card-title">Original Artwork</div>
-              <p>Karya dikirim sebagai lukisan original dan disertai surat keaslian dari studio.</p>
+              <div class="support-card-title" data-i18n="supp_orig_title">Original Artwork</div>
+              <p data-i18n="supp_orig_desc">Karya dikirim sebagai lukisan original dan disertai surat keaslian dari studio.</p>
             </div>
             <div class="support-card">
-              <div class="support-card-title">Secure Delivery</div>
-              <p>Pengemasan memakai lapisan pelindung untuk meminimalkan risiko selama pengiriman.</p>
+              <div class="support-card-title" data-i18n="supp_ship_title">Secure Delivery</div>
+              <p data-i18n="supp_ship_desc">Pengemasan memakai lapisan pelindung untuk meminimalkan risiko selama pengiriman.</p>
             </div>
             <div class="support-card">
-              <div class="support-card-title">Art Consultation</div>
-              <p>Bisa konsultasi ukuran, karakter ruang, dan penempatan karya sebelum membeli.</p>
+              <div class="support-card-title" data-i18n="supp_consult_title">Art Consultation</div>
+              <p data-i18n="supp_consult_desc">Bisa konsultasi ukuran, karakter ruang, dan penempatan karya sebelum membeli.</p>
             </div>
           </div>
           <div class="purchase-note" id="d-purchase-note">Setelah checkout, tim studio akan menghubungi Anda untuk konfirmasi pembayaran, pengiriman, dan detail penempatan karya bila diperlukan.</div>
           <div class="detail-actions" id="d-actions"></div>
           <div class="share-row" id="d-share-row">
-            <span class="share-row-lbl">Bagikan:</span>
+            <span class="share-row-lbl" data-i18n="share_label">Bagikan:</span>
             <button class="share-btn" onclick="shareKaryaWA()">&#9742; WhatsApp</button>
-            <button class="share-btn" onclick="shareKaryaCopy()">&#128279; Salin Link</button>
+            <button class="share-btn" onclick="shareKaryaCopy()" data-i18n="share_copy">&#128279; Salin Link</button>
           </div>
           <div class="spec-list" id="d-specs"></div>
           <div id="reviews-section"></div>
@@ -4584,10 +4584,10 @@ input:focus, textarea:focus, select:focus {
   <div class="auction-hero">
     <div class="auction-hero-inner">
       <div class="auction-hero-text">
-        <h2>Lelang Karya Seni<br><em style="font-style:italic;color:var(--terra-light)">Aksara Art House</em></h2>
-        <p>Penawaran real-time &middot; Transparan &middot; Terpercaya &middot; Gratis registrasi</p>
+        <h2 data-i18n="auction_hero_title">Lelang Karya Seni<br><em style="font-style:italic;color:var(--terra-light)">Aksara Art House</em></h2>
+        <p data-i18n="auction_hero_sub">Penawaran real-time &middot; Transparan &middot; Terpercaya &middot; Gratis registrasi</p>
       </div>
-      <div class="live-badge">&#9679; Live Now</div>
+      <div class="live-badge" data-i18n="auction_live_badge">&#9679; Live Now</div>
     </div>
   </div>
   <div class="container section-sm">
@@ -5474,6 +5474,22 @@ const TRANSLATIONS = {
     gallery_empty_default:'Coba pilih filter lain atau muat ulang koleksi terbaru.',
     gallery_show_all:'Tampilkan Semua',
     filter_artist_lbl:'Seniman:', filter_artist_all:'Semua Seniman',
+    // Detail room preview
+    room_preview_label:'🏠 Visualisasi di Ruangan',
+    room_living:'Ruang Tamu', room_bedroom:'Kamar Tidur', room_office:'Ruang Kerja', room_dining:'Ruang Makan',
+    // Dimensions
+    dims_label:'↦ Dimensi Karya',
+    dim_width:'Lebar', dim_height:'Tinggi', dim_depth:'Kedalaman', dim_thick:'Tebal',
+    // Support cards
+    supp_orig_title:'Karya Original', supp_orig_desc:'Karya dikirim sebagai lukisan original dan disertai surat keaslian dari studio.',
+    supp_ship_title:'Pengiriman Aman', supp_ship_desc:'Pengemasan memakai lapisan pelindung untuk meminimalkan risiko selama pengiriman.',
+    supp_consult_title:'Konsultasi Seni', supp_consult_desc:'Bisa konsultasi ukuran, karakter ruang, dan penempatan karya sebelum membeli.',
+    // Share
+    share_label:'Bagikan:', share_copy:'&#128279; Salin Link',
+    // Auction page hero
+    auction_hero_title:'Lelang Karya Seni<br><em style="font-style:italic;color:var(--terra-light)">Aksara Art House</em>',
+    auction_hero_sub:'Penawaran real-time &middot; Transparan &middot; Terpercaya &middot; Gratis registrasi',
+    auction_live_badge:'&#9679; Live Now',
     // Detail
     detail_by:'Oleh',
     spec_format:'Format Dimensi', spec_orient:'Orientasi', spec_frame:'Frame', spec_condition:'Kondisi',
@@ -5554,6 +5570,22 @@ const TRANSLATIONS = {
     gallery_empty_default:'Try a different filter or reload the latest collection.',
     gallery_show_all:'Show All',
     filter_artist_lbl:'Artist:', filter_artist_all:'All Artists',
+    // Detail room preview
+    room_preview_label:'🏠 Room Visualisation',
+    room_living:'Living Room', room_bedroom:'Bedroom', room_office:'Office', room_dining:'Dining Room',
+    // Dimensions
+    dims_label:'↦ Artwork Dimensions',
+    dim_width:'Width', dim_height:'Height', dim_depth:'Depth', dim_thick:'Thickness',
+    // Support cards
+    supp_orig_title:'Original Artwork', supp_orig_desc:'Artwork ships as an original painting, accompanied by a certificate of authenticity from the studio.',
+    supp_ship_title:'Secure Delivery', supp_ship_desc:'Protective packaging is used to minimise risk during transit.',
+    supp_consult_title:'Art Consultation', supp_consult_desc:'Consult on sizing, room character, and artwork placement before purchasing.',
+    // Share
+    share_label:'Share:', share_copy:'&#128279; Copy Link',
+    // Auction page hero
+    auction_hero_title:'Art Auction<br><em style="font-style:italic;color:var(--terra-light)">Aksara Art House</em>',
+    auction_hero_sub:'Real-time bidding &middot; Transparent &middot; Trusted &middot; Free registration',
+    auction_live_badge:'&#9679; Live Now',
     // Detail
     detail_by:'By',
     spec_format:'Dimension Format', spec_orient:'Orientation', spec_frame:'Frame', spec_condition:'Condition',
