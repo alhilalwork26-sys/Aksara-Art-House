@@ -3825,6 +3825,28 @@ input:focus, textarea:focus, select:focus {
 .medium-chip:hover { border-color:var(--terra); color:var(--terra); }
 .medium-chip.active { background:var(--terra); border-color:var(--terra); color:#fff; }
 
+/* ─── ARTIST FILTER ──────────────────── */
+.artist-filter-wrap {
+  display:flex; align-items:center; gap:.5rem; flex-wrap:wrap;
+  padding:.2rem 0 .4rem;
+}
+.artist-filter-wrap.hidden { display:none; }
+.artist-filter-select {
+  padding:.28rem .9rem .28rem .6rem;
+  font-size:12px; font-family:var(--fb); font-weight:300;
+  border:1px solid var(--border); border-radius:20px;
+  background:transparent; color:var(--brown);
+  cursor:pointer; outline:none; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238A7A72'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right .55rem center;
+  padding-right:1.6rem;
+  transition:var(--transition);
+}
+.artist-filter-select:hover { border-color:var(--terra); color:var(--terra); }
+.artist-filter-select.active { background-color:var(--terra); border-color:var(--terra); color:#fff;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23fff'/%3E%3C/svg%3E");
+}
+
 /* ─── SHARE ROW ──────────────────────── */
 .share-row {
   display:flex; align-items:center; gap:.55rem; margin-top:1rem;
@@ -4457,6 +4479,13 @@ input:focus, textarea:focus, select:focus {
         <button class="medium-chip" id="mchip-acrylic" onclick="setMediumFilter('Acrylic on Canvas')">Acrylic</button>
         <button class="medium-chip" id="mchip-mixed" onclick="setMediumFilter('Mixed Media')">Mixed Media</button>
       </div>
+      <!-- Artist Filter Row (auto-hidden if only 1 artist) -->
+      <div class="artist-filter-wrap hidden" id="artist-filter-wrap">
+        <span class="medium-filter-lbl" data-i18n="filter_artist_lbl">Seniman:</span>
+        <select class="artist-filter-select" id="artist-filter-select" onchange="setArtistFilter(this.value)">
+          <option value="" data-i18n="filter_artist_all">Semua Seniman</option>
+        </select>
+      </div>
       <div class="filters-wrap" id="filters"></div>
     </div>
     <div class="paintings-grid" id="gallery-grid"></div>
@@ -4934,7 +4963,7 @@ let state = {
   currentPage:'home', prevPage:'gallery',
   currentPainting:null, currentRoom:'living',
   filter:'semua', sort:'newest',
-  gallerySearch:'', priceMin:0, priceMax:Infinity, mediumFilter:'',
+  gallerySearch:'', priceMin:0, priceMax:Infinity, mediumFilter:'', artistFilter:'',
   ckStep:1,
   postAuthAction:null,
   myOrders: [],
@@ -5440,6 +5469,7 @@ const TRANSLATIONS = {
     gallery_empty_avail:'Tidak ada karya berstatus Tersedia saat ini.',
     gallery_empty_default:'Coba pilih filter lain atau muat ulang koleksi terbaru.',
     gallery_show_all:'Tampilkan Semua',
+    filter_artist_lbl:'Seniman:', filter_artist_all:'Semua Seniman',
     // Detail
     detail_by:'Oleh',
     spec_format:'Format Dimensi', spec_orient:'Orientasi', spec_frame:'Frame', spec_condition:'Kondisi',
@@ -5519,6 +5549,7 @@ const TRANSLATIONS = {
     gallery_empty_avail:'No artworks with Available status at this time.',
     gallery_empty_default:'Try a different filter or reload the latest collection.',
     gallery_show_all:'Show All',
+    filter_artist_lbl:'Artist:', filter_artist_all:'All Artists',
     // Detail
     detail_by:'By',
     spec_format:'Dimension Format', spec_orient:'Orientation', spec_frame:'Frame', spec_condition:'Condition',
@@ -5941,6 +5972,21 @@ function renderGallery(stagger=false){
     btn.classList.toggle('active', id===state.mediumFilter || (id==='' && !state.mediumFilter));
   });
 
+  // Build artist filter dropdown (only show when >1 unique artist)
+  const allArtists = [...new Set(PAINTINGS.map(p=>p.artist||'').filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
+  const artistWrap = document.getElementById('artist-filter-wrap');
+  const artistSel = document.getElementById('artist-filter-select');
+  if(allArtists.length > 1 && artistWrap && artistSel){
+    artistWrap.classList.remove('hidden');
+    const prevVal = state.artistFilter || '';
+    artistSel.innerHTML = `<option value="">${t('filter_artist_all')}</option>` +
+      allArtists.map(a=>`<option value="${escapeHtml(a)}"${a===prevVal?' selected':''}>${escapeHtml(a)}</option>`).join('');
+    artistSel.classList.toggle('active', !!state.artistFilter);
+  } else if(artistWrap){
+    artistWrap.classList.add('hidden');
+    state.artistFilter = '';
+  }
+
   const searchQ=(state.gallerySearch||'').trim().toLowerCase();
   const priceMin=state.priceMin||0;
   const priceMax=state.priceMax||Infinity;
@@ -5956,6 +6002,10 @@ function renderGallery(stagger=false){
     // Medium filter
     if(state.mediumFilter){
       if(!(p.medium||'').toLowerCase().includes(state.mediumFilter.toLowerCase())) return false;
+    }
+    // Artist filter
+    if(state.artistFilter){
+      if((p.artist||'')!==state.artistFilter) return false;
     }
     // Search
     if(searchQ){
@@ -5987,7 +6037,7 @@ function renderGallery(stagger=false){
   grid.innerHTML=list.length ? list.map(p=>cardHTML(p)).join('') : `<div class="empty-state" style="grid-column:1/-1;text-align:center;padding:2.5rem 1rem;border:1px solid var(--border);background:var(--warm);border-radius:18px">
     <div style="font-family:var(--fd);font-size:26px;color:var(--brown);margin-bottom:.5rem">${t('gallery_empty_title')}</div>
     <div style="color:var(--muted);line-height:1.7">${emptyMsg}</div>
-    <button class="btn btn-outline" style="margin-top:1rem" onclick="setFilter('semua');clearGallerySearch()">${t('gallery_show_all')}</button>
+    <button class="btn btn-outline" style="margin-top:1rem" onclick="state.artistFilter='';state.mediumFilter='';setFilter('semua');clearGallerySearch()">${t('gallery_show_all')}</button>
   </div>`;
 
   // Stagger animation on cards
@@ -6007,6 +6057,10 @@ function setFilter(f,btn){
 function sortGallery(v){ state.sort=v; renderGallery(true); }
 function setMediumFilter(medium){
   state.mediumFilter=medium;
+  renderGallery(true);
+}
+function setArtistFilter(artist){
+  state.artistFilter=artist;
   renderGallery(true);
 }
 
