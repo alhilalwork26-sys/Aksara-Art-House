@@ -2360,6 +2360,325 @@ body {
   .acb-stat-wrap { flex-direction:column; align-items:flex-start; }
 }
 
+/* ── CORPORATE CLIENTS SECTION ────────────────── */
+.corp-section {
+  padding: 6rem 0 5rem;
+  background: var(--cream);
+  position: relative;
+  overflow: hidden;
+}
+.corp-section::before {
+  content: '';
+  position: absolute;
+  top: -80px; right: -80px;
+  width: 340px; height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(206,108,66,.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.corp-section::after {
+  content: '';
+  position: absolute;
+  bottom: -60px; left: -60px;
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212,168,83,.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+.corp-inner { position: relative; z-index: 1; }
+.corp-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 3.5rem;
+}
+.corp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--terra);
+  margin-bottom: .75rem;
+}
+.corp-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 28px; height: 2px;
+  background: var(--terra);
+  border-radius: 2px;
+}
+.corp-title {
+  font-family: var(--fd);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 400;
+  color: var(--brown);
+  line-height: 1.15;
+}
+.corp-title em { font-style: italic; color: var(--terra); }
+.corp-subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.7;
+  max-width: 320px;
+  margin-top: .5rem;
+}
+.corp-stat-row {
+  display: flex;
+  gap: 2.5rem;
+  flex-shrink: 0;
+}
+.corp-stat {
+  text-align: center;
+}
+.corp-stat-num {
+  font-family: var(--fd);
+  font-size: 36px;
+  color: var(--terra);
+  line-height: 1;
+  font-weight: 400;
+}
+.corp-stat-lbl {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-top: 4px;
+}
+
+/* Featured client cards */
+.corp-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+}
+.corp-card {
+  background: #fff;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 2px 16px rgba(97,59,43,.06);
+  border: 1px solid rgba(97,59,43,.07);
+  transition: transform .4s cubic-bezier(.22,.68,0,1.2), box-shadow .4s ease, border-color .4s ease;
+  cursor: default;
+  opacity: 0;
+  transform: translateY(32px);
+}
+.corp-card.corp-revealed {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity .6s ease, transform .6s cubic-bezier(.22,.68,0,1.2), box-shadow .4s ease, border-color .4s ease;
+}
+.corp-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 16px 48px rgba(97,59,43,.14);
+  border-color: rgba(206,108,66,.25);
+}
+.corp-card-room {
+  height: 200px;
+  position: relative;
+  overflow: hidden;
+}
+.corp-card-room svg {
+  width: 100%; height: 100%;
+  display: block;
+}
+.corp-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(97,59,43,.45) 100%);
+}
+.corp-card-logo {
+  position: absolute;
+  bottom: 14px; left: 18px;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(8px);
+  border-radius: 10px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.12);
+}
+.corp-logo-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+.corp-logo-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--brown);
+  white-space: nowrap;
+  letter-spacing: .02em;
+}
+.corp-card-body {
+  padding: 1.25rem 1.4rem 1.5rem;
+}
+.corp-card-industry {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--terra);
+  margin-bottom: .5rem;
+}
+.corp-card-name {
+  font-family: var(--fd);
+  font-size: 17px;
+  color: var(--brown);
+  margin-bottom: .5rem;
+  font-weight: 400;
+}
+.corp-card-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+.corp-card-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--terra);
+  background: rgba(206,108,66,.08);
+  border: 1px solid rgba(206,108,66,.15);
+  border-radius: 20px;
+  padding: 3px 10px;
+}
+
+/* Animated quote strip */
+.corp-quote-strip {
+  background: linear-gradient(135deg, var(--brown) 0%, #4a2616 100%);
+  border-radius: 20px;
+  padding: 2rem 2.5rem;
+  margin-bottom: 3.5rem;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+.corp-quote-strip::before {
+  content: '\201C';
+  position: absolute;
+  top: -10px; left: 20px;
+  font-family: var(--fd);
+  font-size: 120px;
+  color: rgba(255,255,255,.06);
+  line-height: 1;
+  pointer-events: none;
+}
+.corp-quote-icon {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.corp-quote-text {
+  font-family: var(--fd);
+  font-size: clamp(14px, 2vw, 18px);
+  color: rgba(253,248,244,.9);
+  font-style: italic;
+  line-height: 1.6;
+  flex: 1;
+}
+.corp-quote-author {
+  font-size: 12px;
+  color: rgba(253,248,244,.5);
+  margin-top: .4rem;
+  font-style: normal;
+  font-family: var(--fs);
+}
+
+/* Logo ticker */
+.corp-ticker-label {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+.corp-ticker-wrap {
+  position: relative;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+}
+.corp-ticker-track {
+  display: flex;
+  gap: 0;
+  width: max-content;
+  animation: corpTicker 28s linear infinite;
+}
+.corp-ticker-track:hover { animation-play-state: paused; }
+@keyframes corpTicker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.corp-ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 28px;
+  background: #fff;
+  border: 1px solid rgba(97,59,43,.08);
+  border-radius: 14px;
+  margin-right: 16px;
+  white-space: nowrap;
+  transition: border-color .3s, box-shadow .3s;
+  cursor: default;
+}
+.corp-ticker-item:hover {
+  border-color: rgba(206,108,66,.3);
+  box-shadow: 0 4px 16px rgba(97,59,43,.08);
+}
+.corp-ticker-dot {
+  width: 26px; height: 26px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+.corp-ticker-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--charcoal);
+  letter-spacing: .01em;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .corp-cards { grid-template-columns: 1fr 1fr; }
+  .corp-header { flex-direction: column; align-items: flex-start; }
+  .corp-stat-row { gap: 1.5rem; }
+}
+@media (max-width: 600px) {
+  .corp-cards { grid-template-columns: 1fr; }
+  .corp-quote-strip { flex-direction: column; gap: 1rem; text-align: center; }
+  .corp-section { padding: 4rem 0 3rem; }
+}
+
 .exhibition-section {
   padding:4rem 0;
   border-top:1px solid var(--border);
@@ -3697,6 +4016,220 @@ input:focus, textarea:focus, select:focus {
       <div class="exh-scroll-dots" id="exh-dots"></div>
     </div>
   </div>
+  <!-- Corporate Clients -->
+  <section class="corp-section" id="corp-section">
+    <div class="container corp-inner">
+
+      <!-- Header -->
+      <div class="corp-header">
+        <div>
+          <div class="corp-eyebrow" data-i18n="corp_eyebrow">Corporate Partners</div>
+          <div class="corp-title" data-i18n="corp_title">Dipercaya Oleh<br><em>Perusahaan Terkemuka</em></div>
+          <div class="corp-subtitle" data-i18n="corp_subtitle">Karya kami menghias ruang kerja, lobi hotel, dan ruang eksekutif dari berbagai institusi prestisius Indonesia.</div>
+        </div>
+        <div class="corp-stat-row">
+          <div class="corp-stat">
+            <div class="corp-stat-num">40+</div>
+            <div class="corp-stat-lbl" data-i18n="corp_stat_clients">Klien</div>
+          </div>
+          <div class="corp-stat">
+            <div class="corp-stat-num">12</div>
+            <div class="corp-stat-lbl" data-i18n="corp_stat_cities">Kota</div>
+          </div>
+          <div class="corp-stat">
+            <div class="corp-stat-num">200+</div>
+            <div class="corp-stat-lbl" data-i18n="corp_stat_artworks">Karya Terpasang</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Featured Cards -->
+      <div class="corp-cards" id="corp-cards">
+
+        <!-- Card 1: Hotel -->
+        <div class="corp-card" data-corp-card>
+          <div class="corp-card-room">
+            <svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+              <!-- Room background -->
+              <rect width="400" height="200" fill="#E8DDD5"/>
+              <!-- Wall -->
+              <rect x="0" y="0" width="400" height="140" fill="#F0E8E0"/>
+              <!-- Floor -->
+              <rect x="0" y="140" width="400" height="60" fill="#D4C4B8"/>
+              <!-- Floor reflection lines -->
+              <line x1="0" y1="155" x2="400" y2="155" stroke="#C8B8AC" stroke-width=".5"/>
+              <line x1="0" y1="170" x2="400" y2="170" stroke="#C8B8AC" stroke-width=".5"/>
+              <!-- Sofa -->
+              <rect x="60" y="115" width="180" height="35" rx="6" fill="#8B6B5E"/>
+              <rect x="55" y="108" width="190" height="14" rx="5" fill="#9B7B6E"/>
+              <rect x="55" y="115" width="14" height="30" rx="4" fill="#9B7B6E"/>
+              <rect x="231" y="115" width="14" height="30" rx="4" fill="#9B7B6E"/>
+              <!-- Cushions -->
+              <rect x="75" y="111" width="35" height="20" rx="4" fill="#C4A090" opacity=".7"/>
+              <rect x="120" y="111" width="35" height="20" rx="4" fill="#B89080" opacity=".7"/>
+              <rect x="165" y="111" width="35" height="20" rx="4" fill="#C4A090" opacity=".7"/>
+              <!-- Coffee table -->
+              <rect x="90" y="145" width="120" height="8" rx="3" fill="#7A5E54"/>
+              <rect x="100" y="153" width="5" height="10" fill="#6A5048"/>
+              <rect x="200" y="153" width="5" height="10" fill="#6A5048"/>
+              <!-- Wall art frame -->
+              <rect x="150" y="20" width="90" height="68" rx="3" fill="#5C3D2E"/>
+              <rect x="154" y="24" width="82" height="60" rx="2" fill="#CE6C42" opacity=".85"/>
+              <!-- Abstract art inside frame -->
+              <circle cx="185" cy="54" r="18" fill="rgba(255,255,255,.2)"/>
+              <path d="M160 60 Q185 30 210 60 Q195 75 170 70Z" fill="rgba(255,255,255,.15)"/>
+              <!-- Lamp -->
+              <rect x="295" y="90" width="4" height="55" fill="#8B7060"/>
+              <ellipse cx="297" cy="88" rx="20" ry="12" fill="#F5EDE5"/>
+              <ellipse cx="297" cy="88" rx="16" ry="9" fill="#FAF4EE"/>
+              <!-- Window light -->
+              <rect x="20" y="10" width="80" height="90" rx="4" fill="rgba(255,248,230,.4)"/>
+              <line x1="60" y1="10" x2="60" y2="100" stroke="rgba(255,255,255,.5)" stroke-width="2"/>
+              <line x1="20" y1="55" x2="100" y2="55" stroke="rgba(255,255,255,.5)" stroke-width="2"/>
+              <!-- Warm glow from lamp -->
+              <ellipse cx="297" cy="140" rx="40" ry="12" fill="rgba(255,200,100,.1)"/>
+            </svg>
+            <div class="corp-card-overlay"></div>
+            <div class="corp-card-logo">
+              <div class="corp-logo-icon" style="background:linear-gradient(135deg,#1a3a5c,#2d6aa0)">DW</div>
+              <div class="corp-logo-name">The Dharmawangsa</div>
+            </div>
+          </div>
+          <div class="corp-card-body">
+            <div class="corp-card-industry" data-i18n="corp_ind_hotel">Hospitality · 5-Star Hotel</div>
+            <div class="corp-card-name">The Dharmawangsa Jakarta</div>
+            <div class="corp-card-desc" data-i18n="corp_desc_dw">32 karya oil on canvas menghias koridor, presidential suite, dan lobi utama hotel bintang lima bergengsi di Jakarta Selatan.</div>
+            <div class="corp-card-tag">&#10003; <span data-i18n="corp_tag_installed">32 Karya Terpasang</span></div>
+          </div>
+        </div>
+
+        <!-- Card 2: Office Tower -->
+        <div class="corp-card" data-corp-card>
+          <div class="corp-card-room">
+            <svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+              <!-- Modern office bg -->
+              <rect width="400" height="200" fill="#EEF2F5"/>
+              <!-- Floor -->
+              <rect x="0" y="148" width="400" height="52" fill="#D8DDE2"/>
+              <!-- Concrete wall -->
+              <rect x="0" y="0" width="400" height="148" fill="#F4F6F8"/>
+              <!-- Floor lines -->
+              <line x1="0" y1="162" x2="400" y2="162" stroke="#CDD2D8" stroke-width=".5"/>
+              <!-- Conference table -->
+              <ellipse cx="200" cy="158" rx="130" ry="22" fill="#3D4A5C"/>
+              <ellipse cx="200" cy="155" rx="130" ry="20" fill="#4A5868"/>
+              <!-- Chairs -->
+              <rect x="80" y="145" width="30" height="22" rx="6" fill="#2C3540"/>
+              <rect x="125" y="145" width="30" height="22" rx="6" fill="#2C3540"/>
+              <rect x="170" y="145" width="30" height="22" rx="6" fill="#2C3540"/>
+              <rect x="215" y="145" width="30" height="22" rx="6" fill="#2C3540"/>
+              <rect x="260" y="145" width="30" height="22" rx="6" fill="#2C3540"/>
+              <!-- Minimalist art on wall -->
+              <rect x="130" y="18" width="140" height="90" rx="4" fill="#2C3540"/>
+              <rect x="135" y="23" width="130" height="80" rx="2" fill="#8B7355"/>
+              <!-- Geometric art -->
+              <circle cx="200" cy="63" r="28" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"/>
+              <rect x="180" y="43" width="40" height="40" rx="2" fill="rgba(206,108,66,.5)"/>
+              <line x1="150" y1="63" x2="250" y2="63" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
+              <!-- Window panels -->
+              <rect x="10" y="0" width="60" height="148" fill="rgba(200,220,240,.25)"/>
+              <rect x="330" y="0" width="60" height="148" fill="rgba(200,220,240,.25)"/>
+              <line x1="40" y1="0" x2="40" y2="148" stroke="rgba(255,255,255,.4)" stroke-width="1"/>
+              <line x1="360" y1="0" x2="360" y2="148" stroke="rgba(255,255,255,.4)" stroke-width="1"/>
+              <!-- City skyline glimpse -->
+              <rect x="15" y="60" width="8" height="60" fill="rgba(100,130,160,.3)"/>
+              <rect x="27" y="45" width="10" height="75" fill="rgba(100,130,160,.25)"/>
+              <rect x="41" y="70" width="12" height="55" fill="rgba(100,130,160,.2)"/>
+            </svg>
+            <div class="corp-card-overlay"></div>
+            <div class="corp-card-logo">
+              <div class="corp-logo-icon" style="background:linear-gradient(135deg,#e65c00,#f9d423)">SM</div>
+              <div class="corp-logo-name">Sinarmas Group</div>
+            </div>
+          </div>
+          <div class="corp-card-body">
+            <div class="corp-card-industry" data-i18n="corp_ind_corp">Corporate · Conglomerate</div>
+            <div class="corp-card-name">Sinarmas Group HQ</div>
+            <div class="corp-card-desc" data-i18n="corp_desc_sm">Koleksi eksklusif 18 karya abstrak dan figuratif untuk ruang boardroom, executive floor, dan area resepsi kantor pusat.</div>
+            <div class="corp-card-tag">&#10003; <span data-i18n="corp_tag_sm">18 Karya Terpasang</span></div>
+          </div>
+        </div>
+
+        <!-- Card 3: Resort -->
+        <div class="corp-card" data-corp-card>
+          <div class="corp-card-room">
+            <svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+              <!-- Resort / natural tones -->
+              <rect width="400" height="200" fill="#E5DDD0"/>
+              <!-- Sky view -->
+              <rect x="0" y="0" width="400" height="100" fill="#C5D8E8" opacity=".5"/>
+              <!-- Natural stone wall -->
+              <rect x="0" y="0" width="400" height="145" fill="#EDE4D8"/>
+              <!-- Floor (stone tiles) -->
+              <rect x="0" y="145" width="400" height="55" fill="#C9BEB2"/>
+              <line x1="0" y1="158" x2="400" y2="158" stroke="#BEB3A8" stroke-width=".5"/>
+              <line x1="133" y1="145" x2="133" y2="200" stroke="#BEB3A8" stroke-width=".5"/>
+              <line x1="267" y1="145" x2="267" y2="200" stroke="#BEB3A8" stroke-width=".5"/>
+              <!-- Rattan chair -->
+              <ellipse cx="320" cy="152" rx="28" ry="8" fill="#8B7355"/>
+              <rect x="298" y="115" width="44" height="37" rx="10" fill="#A08060"/>
+              <rect x="293" y="100" width="54" height="22" rx="8" fill="#B09070"/>
+              <rect x="295" y="122" width="8" height="30" rx="4" fill="#8B7355"/>
+              <rect x="337" y="122" width="8" height="30" rx="4" fill="#8B7355"/>
+              <!-- Large nature painting -->
+              <rect x="80" y="15" width="180" height="108" rx="4" fill="#4A3828"/>
+              <rect x="85" y="20" width="170" height="98" rx="2" fill="#5A7A4A"/>
+              <!-- Tropical foliage art -->
+              <ellipse cx="170" cy="69" rx="50" ry="35" fill="#3D6835" opacity=".7"/>
+              <ellipse cx="140" cy="80" rx="35" ry="25" fill="#4A7F40" opacity=".8"/>
+              <ellipse cx="200" cy="55" rx="40" ry="28" fill="#558B48" opacity=".6"/>
+              <circle cx="170" cy="35" rx="15" ry="10" fill="#CE6C42" opacity=".7"/>
+              <circle cx="195" cy="45" rx="10" ry="7" fill="#CE6C42" opacity=".5"/>
+              <!-- Frangipani in vase -->
+              <rect x="50" y="120" width="8" height="30" fill="#8B7060"/>
+              <ellipse cx="54" cy="118" rx="18" ry="10" fill="#F5EEE5"/>
+              <circle cx="48" cy="112" r="7" fill="#FFF0E0"/>
+              <circle cx="60" cy="110" r="6" fill="#FFE8D8"/>
+              <circle cx="54" cy="105" r="7" fill="#FFF0E0"/>
+              <!-- Batik textile on chair -->
+              <rect x="310" y="105" width="20" height="14" rx="3" fill="#CE6C42" opacity=".6"/>
+            </svg>
+            <div class="corp-card-overlay"></div>
+            <div class="corp-card-logo">
+              <div class="corp-logo-icon" style="background:linear-gradient(135deg,#2d6a4f,#52b788)">PL</div>
+              <div class="corp-logo-name">Plataran Resorts</div>
+            </div>
+          </div>
+          <div class="corp-card-body">
+            <div class="corp-card-industry" data-i18n="corp_ind_resort">Hospitality · Luxury Resort</div>
+            <div class="corp-card-name">Plataran Borobudur Resort</div>
+            <div class="corp-card-desc" data-i18n="corp_desc_pl">Koleksi karya bertema budaya Jawa dan flora tropis untuk vila, spa, dan restoran private dining resort mewah Magelang.</div>
+            <div class="corp-card-tag">&#10003; <span data-i18n="corp_tag_pl">24 Karya Terpasang</span></div>
+          </div>
+        </div>
+
+      </div><!-- /corp-cards -->
+
+      <!-- Testimonial quote strip -->
+      <div class="corp-quote-strip" id="corp-quote-strip">
+        <div class="corp-quote-icon">💬</div>
+        <div>
+          <div class="corp-quote-text" data-i18n="corp_quote">"Aksara Art House memahami estetika ruang kami. Setiap karya yang dipilih terasa seperti bagian alami dari desain interior, bukan sekadar dekorasi."</div>
+          <div class="corp-quote-author" data-i18n="corp_quote_author">— Head of Interior Design, The Dharmawangsa Jakarta</div>
+        </div>
+      </div>
+
+      <!-- Logo ticker -->
+      <div class="corp-ticker-label" data-i18n="corp_ticker_label">& Masih Banyak Lagi</div>
+      <div class="corp-ticker-wrap">
+        <div class="corp-ticker-track" id="corp-ticker">
+          <!-- Items doubled for seamless loop -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
   <!-- CTA Banner -->
   <div class="auction-cta-banner">
     <!-- Decorative blobs -->
@@ -4804,6 +5337,18 @@ const TRANSLATIONS = {
     btn_bid_history:'Lihat Riwayat Penawaran', bid_no_history:'Belum ada penawaran',
     // Checkout
     ck_next:'Lanjut →', ck_confirm:'Konfirmasi Pesanan',
+    // Corporate
+    corp_eyebrow:'Corporate Partners', corp_title:'Dipercaya Oleh<br><em>Perusahaan Terkemuka</em>',
+    corp_subtitle:'Karya kami menghias ruang kerja, lobi hotel, dan ruang eksekutif dari berbagai institusi prestisius Indonesia.',
+    corp_stat_clients:'Klien', corp_stat_cities:'Kota', corp_stat_artworks:'Karya Terpasang',
+    corp_ind_hotel:'Hospitality · Hotel Bintang 5', corp_ind_corp:'Korporat · Konglomerat', corp_ind_resort:'Hospitality · Luxury Resort',
+    corp_desc_dw:'32 karya oil on canvas menghias koridor, presidential suite, dan lobi utama hotel bintang lima bergengsi di Jakarta Selatan.',
+    corp_desc_sm:'Koleksi eksklusif 18 karya abstrak dan figuratif untuk ruang boardroom, executive floor, dan area resepsi kantor pusat.',
+    corp_desc_pl:'Koleksi karya bertema budaya Jawa dan flora tropis untuk vila, spa, dan restoran private dining resort mewah Magelang.',
+    corp_tag_installed:'Karya Terpasang', corp_tag_sm:'18 Karya Terpasang', corp_tag_pl:'24 Karya Terpasang',
+    corp_quote:'"Aksara Art House memahami estetika ruang kami. Setiap karya yang dipilih terasa seperti bagian alami dari desain interior, bukan sekadar dekorasi."',
+    corp_quote_author:'— Head of Interior Design, The Dharmawangsa Jakarta',
+    corp_ticker_label:'& Masih Banyak Lagi',
   },
   en: {
     nav_home:'Home', nav_gallery:'Gallery', nav_auction:'Auction', nav_about:'About',
@@ -4871,6 +5416,18 @@ const TRANSLATIONS = {
     btn_bid_history:'View Bid History', bid_no_history:'No bids yet',
     // Checkout
     ck_next:'Next →', ck_confirm:'Confirm Order',
+    // Corporate
+    corp_eyebrow:'Corporate Partners', corp_title:'Trusted By<br><em>Leading Companies</em>',
+    corp_subtitle:'Our artworks adorn office spaces, hotel lobbies, and executive suites of prestigious Indonesian institutions.',
+    corp_stat_clients:'Clients', corp_stat_cities:'Cities', corp_stat_artworks:'Artworks Installed',
+    corp_ind_hotel:'Hospitality · 5-Star Hotel', corp_ind_corp:'Corporate · Conglomerate', corp_ind_resort:'Hospitality · Luxury Resort',
+    corp_desc_dw:'32 oil on canvas artworks adorn the corridors, presidential suite, and main lobby of this prestigious five-star hotel in South Jakarta.',
+    corp_desc_sm:'An exclusive collection of 18 abstract and figurative works for the boardroom, executive floor, and reception area of the headquarters.',
+    corp_desc_pl:'A collection of Javanese culture and tropical flora-themed works for villas, spa, and private dining restaurant at the luxury Magelang resort.',
+    corp_tag_installed:'Artworks Installed', corp_tag_sm:'18 Artworks Installed', corp_tag_pl:'24 Artworks Installed',
+    corp_quote:'"Aksara Art House understands our space\'s aesthetics. Every chosen artwork feels like a natural part of the interior design, not merely decoration."',
+    corp_quote_author:'— Head of Interior Design, The Dharmawangsa Jakarta',
+    corp_ticker_label:'& Many More',
   }
 };
 
@@ -4906,6 +5463,7 @@ function setLang(lang) {
   renderGallery();
   renderAuction();
   renderUpcomingExhibitions();
+  renderCorpTicker();
   renderCartBody();
   // Re-render detail page if currently open
   if(state.currentPage === 'detail' && state.currentPainting) openDetail(state.currentPainting.id);
@@ -4923,6 +5481,67 @@ async function fetchExhibitions(){
     _exhibitions = await res.json();
     renderUpcomingExhibitions();
   } catch(e){ /* silent */ }
+}
+
+// ── CORPORATE CLIENTS ──────────────────────────────────
+const CORP_CLIENTS = [
+  { initials:'DW', name:'The Dharmawangsa', color:'linear-gradient(135deg,#1a3a5c,#2d6aa0)' },
+  { initials:'SM', name:'Sinarmas Group',   color:'linear-gradient(135deg,#e65c00,#f9d423)' },
+  { initials:'PL', name:'Plataran Resorts', color:'linear-gradient(135deg,#2d6a4f,#52b788)' },
+  { initials:'BM', name:'Bank Mandiri',     color:'linear-gradient(135deg,#003087,#0057a8)' },
+  { initials:'HC', name:'Hotel Tentrem',    color:'linear-gradient(135deg,#8B1a1a,#c0392b)' },
+  { initials:'GF', name:'Garudafood',       color:'linear-gradient(135deg,#f39c12,#e67e22)' },
+  { initials:'AL', name:'Alila Hotels',     color:'linear-gradient(135deg,#2c3e50,#4ca1af)' },
+  { initials:'HY', name:'Hyatt Regency',    color:'linear-gradient(135deg,#614385,#516395)' },
+  { initials:'RC', name:'Ritz-Carlton JKT', color:'linear-gradient(135deg,#1c1c1c,#4a4a4a)' },
+  { initials:'AS', name:'Aryaduta Hotels',  color:'linear-gradient(135deg,#c94b4b,#4b134f)' },
+  { initials:'SI', name:'Sido Muncul',      color:'linear-gradient(135deg,#134e5e,#71b280)' },
+  { initials:'MS', name:'MNC Skyvision',    color:'linear-gradient(135deg,#e52d27,#b31217)' },
+];
+
+function renderCorpTicker(){
+  const track = document.getElementById('corp-ticker');
+  if(!track) return;
+  // Double the list for seamless infinite loop
+  const items = [...CORP_CLIENTS, ...CORP_CLIENTS];
+  track.innerHTML = items.map(c => `
+    <div class="corp-ticker-item">
+      <div class="corp-ticker-dot" style="background:${c.color}">${c.initials}</div>
+      <span class="corp-ticker-name">${c.name}</span>
+    </div>`).join('');
+}
+
+function initCorpAnimations(){
+  // Scroll-reveal for cards
+  const cards = document.querySelectorAll('[data-corp-card]');
+  if(!cards.length) return;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if(entry.isIntersecting){
+        const card = entry.target;
+        const idx = Array.from(cards).indexOf(card);
+        setTimeout(() => card.classList.add('corp-revealed'), idx * 140);
+        observer.unobserve(card);
+      }
+    });
+  }, { threshold: 0.15 });
+  cards.forEach(card => observer.observe(card));
+
+  // Quote strip parallax-like entrance
+  const quote = document.getElementById('corp-quote-strip');
+  if(quote){
+    const qObs = new IntersectionObserver((entries) => {
+      if(entries[0].isIntersecting){
+        quote.style.opacity = '1';
+        quote.style.transform = 'translateY(0)';
+        qObs.disconnect();
+      }
+    }, { threshold: 0.2 });
+    quote.style.opacity = '0';
+    quote.style.transform = 'translateY(24px)';
+    quote.style.transition = 'opacity .7s ease .2s, transform .7s cubic-bezier(.22,.68,0,1.2) .2s';
+    qObs.observe(quote);
+  }
 }
 
 function renderUpcomingExhibitions(){
@@ -5127,6 +5746,10 @@ function renderHome(){
   const activeAuctions = AUCTIONS.filter(a => a.status === 'active').length;
   const ctaCount = document.getElementById('cta-auction-count');
   if(ctaCount) ctaCount.textContent = activeAuctions || '—';
+
+  // Corporate clients
+  renderCorpTicker();
+  setTimeout(initCorpAnimations, 120);
 
   refreshScrollAnimations();
 }
