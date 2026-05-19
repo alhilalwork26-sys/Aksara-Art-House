@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAdminToken, verifyAdminToken } from "@/lib/admin-auth";
 import { deleteLegacyValue, isSupabaseConfigured, readLegacyStore, writeLegacyValue } from "@/lib/supabase-rest";
 
 const allowedKeys = new Set([
@@ -15,7 +16,14 @@ function isAllowedKey(key: string) {
   return allowedKeys.has(key);
 }
 
-export async function GET() {
+function isAdmin(request: Request) {
+  return verifyAdminToken(getAdminToken(request) || "");
+}
+
+export async function GET(request: Request) {
+  if (!isAdmin(request)) {
+    return NextResponse.json({ error: "Akses ditolak." }, { status: 401 });
+  }
   try {
     return NextResponse.json({
       configured: isSupabaseConfigured(),
@@ -34,6 +42,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!isAdmin(request)) {
+    return NextResponse.json({ error: "Akses ditolak." }, { status: 401 });
+  }
   try {
     const body = (await request.json()) as { key?: string; value?: string };
     const key = String(body.key || "");
@@ -53,6 +64,9 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!isAdmin(request)) {
+    return NextResponse.json({ error: "Akses ditolak." }, { status: 401 });
+  }
   try {
     const url = new URL(request.url);
     const key = url.searchParams.get("key") || "";
@@ -70,4 +84,3 @@ export async function DELETE(request: Request) {
     );
   }
 }
-

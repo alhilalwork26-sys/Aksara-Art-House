@@ -8,3 +8,4 @@ npm-debug.log*
 tsconfig.tsbuildinfo
 .claude/
 .vercel
+.DS_Store

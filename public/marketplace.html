@@ -18,7 +18,6 @@
 <meta name="twitter:description" content="Koleksi lukisan original dari studio Aksara Art House, Surabaya.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="canonical" href="https://aksara-steel.vercel.app/marketplace.html">
-<script src="/legacy-db-shim.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -4987,11 +4986,11 @@ function deepClone(data){
 }
 
 function loadPaintings(){
-  return deepClone(DEFAULT_PAINTINGS);
+  return [];
 }
 
 function loadAuctions(){
-  return deepClone(DEFAULT_AUCTIONS);
+  return [];
 }
 
 function savePaintings(){ /* data disimpan di Supabase via admin API */ }
@@ -5000,9 +4999,9 @@ function saveAuctions(){ /* data disimpan di Supabase via admin API */ }
 async function fetchPaintingsFromDB(){
   try {
     const res = await fetch('/api/artworks');
-    if(!res.ok) return;
+    if(!res.ok) throw new Error('API karya tidak tersedia.');
     const rows = await res.json();
-    if(!Array.isArray(rows)) return;
+    if(!Array.isArray(rows)) throw new Error('Format data karya tidak valid.');
     PAINTINGS = rows.map(a => {
       const stock = Number(a.stock ?? 1);
       let status = a.status === 'available' ? 'tersedia' : a.status === 'auction' ? 'lelang' : a.status === 'sold' ? 'terjual' : a.status;
@@ -5024,15 +5023,23 @@ async function fetchPaintingsFromDB(){
     renderHome();
     renderGallery();
     renderCartBody();
-  } catch(e){ console.error('Gagal memuat karya dari database:', e); }
+  } catch(e){
+    console.error('Gagal memuat karya dari database:', e);
+    PAINTINGS = [];
+    syncArtworkCollections();
+    renderHome();
+    renderGallery();
+    renderCartBody();
+    showToast('Koleksi belum bisa dimuat dari database. Silakan coba muat ulang halaman.', 'error');
+  }
 }
 
 async function fetchAuctionsFromDB(){
   try {
     const res = await fetch('/api/auctions');
-    if(!res.ok) return;
+    if(!res.ok) throw new Error('API lelang tidak tersedia.');
     const rows = await res.json();
-    if(!Array.isArray(rows)) return;
+    if(!Array.isArray(rows)) throw new Error('Format data lelang tidak valid.');
     AUCTIONS = rows.map(a => ({
       id: a.id,
       paintingId: a.artwork_id,
@@ -5049,7 +5056,11 @@ async function fetchAuctionsFromDB(){
         ts: b.created_at  // store raw timestamp for dynamic timeAgo
       }))
     }));
-  } catch(e){ console.error('Gagal memuat lelang dari database:', e); }
+  } catch(e){
+    console.error('Gagal memuat lelang dari database:', e);
+    AUCTIONS = [];
+    renderAuction();
+  }
 }
 
 async function fetchWishlistFromDB(){

@@ -834,9 +834,13 @@ type VerifiedOrderItem = OrderItemInput & {
 };
 
 async function verifyOrderItems(items: OrderItemInput[]): Promise<VerifiedOrderItem[]> {
+  if (items.some((item) => String(item.artworkId).startsWith("demo-"))) {
+    throw new Error("Item demo tidak bisa diproses sebagai pesanan produksi.");
+  }
+
   const realItems = items.filter((item) => !String(item.artworkId).startsWith("demo-"));
   if (!realItems.length) {
-    return items.map((item) => ({ ...item, stockBefore: item.quantity }));
+    throw new Error("Pesanan harus berisi karya dari database.");
   }
 
   const ids = [...new Set(realItems.map((item) => item.artworkId))];
@@ -848,8 +852,6 @@ async function verifyOrderItems(items: OrderItemInput[]): Promise<VerifiedOrderI
   const artworkById = new Map(artworks.map((artwork) => [artwork.id, artwork]));
 
   return items.map((item) => {
-    if (String(item.artworkId).startsWith("demo-")) return { ...item, stockBefore: item.quantity };
-
     const artwork = artworkById.get(item.artworkId);
     if (!artwork) throw new Error(`Karya "${item.title}" tidak ditemukan.`);
     if (artwork.status !== "available") throw new Error(`"${artwork.title}" belum tersedia untuk dibeli.`);
