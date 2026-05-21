@@ -7,9 +7,8 @@ Website marketplace seni Aksara Art House. Versi saat ini masih berupa HTML, CSS
 - `src/app/page.tsx` - versi Next.js marketplace produksi awal.
 - `src/app/admin/page.tsx` - dashboard admin produksi awal.
 - `src/app/api/orders/route.ts` - endpoint checkout untuk menyimpan pesanan ke Supabase.
-- `index.html` - halaman pembeli: beranda, galeri, detail karya, wishlist, keranjang, checkout, riwayat pesanan, lelang, dan kontak WhatsApp.
-- `admin.html` - panel admin: dashboard, kelola karya, upload foto karya, kelola status pesanan, lelang, pengaturan, ekspor CSV/Excel.
-- `murni-atelier-user-2.html` dan `murni-atelier-admin-2.html` - file import asli yang sudah disalin ke folder proyek.
+- `public/marketplace.html` - halaman pembeli: beranda, galeri, detail karya, wishlist, keranjang, checkout, riwayat pesanan, lelang, dan kontak WhatsApp.
+- `public/admin-panel.html` - panel admin: dashboard, kelola karya, upload foto karya, kelola status pesanan, lelang, pengaturan, ekspor CSV/Excel.
 
 ## Menjalankan Aplikasi Next.js
 
