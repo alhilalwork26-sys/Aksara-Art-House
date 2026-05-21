@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>Aksara Art House</title>
+    <script>
+      (async function () {
+        var targets = ["/marketplace.html", "/public/marketplace.html"];
+        for (var i = 0; i < targets.length; i += 1) {
+          try {
+            var response = await fetch(targets[i], { method: "HEAD", cache: "no-store" });
+            if (response.ok) {
+              window.location.replace(targets[i]);
+              return;
+            }
+          } catch (error) {
+            // Try the next possible static hosting path.
+          }
+        }
+        window.location.replace("/public/marketplace.html");
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Memuat Aksara Art House...</p>
+  </body>
+</html>
