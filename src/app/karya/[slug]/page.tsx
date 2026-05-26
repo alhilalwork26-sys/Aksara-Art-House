@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const url = artworkUrl(artwork);
 
   return {
-    title: `${artwork.title} | Aksara Art House`,
+    title: artwork.title,
     description,
     alternates: { canonical: url },
     openGraph: {
