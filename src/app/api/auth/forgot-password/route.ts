@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     const redirectTo =
       process.env.APP_URL
         ? `${process.env.APP_URL}/marketplace.html`
-        : "https://aksara-steel.vercel.app/marketplace.html";
+        : "https://aksaraarthouse.com/marketplace.html";
 
     const res = await fetch(`${config.url}/auth/v1/recover`, {
       method: "POST",
