@@ -3925,6 +3925,19 @@ input:focus, textarea:focus, select:focus {
   letter-spacing:.02em;
 }
 
+/* Hero tagline under main heading */
+#page-home .hero-tagline {
+  font-family:var(--fd);
+  font-style:italic;
+  font-size:clamp(17px, 2.1vw, 26px);
+  font-weight:300;
+  letter-spacing:.02em;
+  color:rgba(255,255,255,.9);
+  margin:-.2rem 0 1.1rem;
+}
+@media (max-width:720px) {
+  #page-home .hero-tagline { font-size:16px; margin-bottom:.9rem; }
+}
 </style>
 </head>
 <body>
@@ -4005,6 +4018,7 @@ input:focus, textarea:focus, select:focus {
           <div>
             <div class="hero-eyebrow" data-i18n="hero_eyebrow">Original Art Marketplace</div>
             <h1 id="hero-h1" data-i18n="hero_h1">Seni Original<br>Untuk <em>Ruang Hidup</em></h1>
+            <p class="hero-tagline">Mas mBenk in contemporary paintings</p>
             <p class="hero-sub" id="dyn-hero-sub">Koleksi lukisan original Aksara Art House yang siap dipajang, dikoleksi, dan dikirim aman ke seluruh Indonesia.</p>
             <div class="hero-cta">
               <button class="btn btn-primary" data-i18n="hero_cta_gallery" onclick="goPage('gallery')">Jelajahi Koleksi</button>
