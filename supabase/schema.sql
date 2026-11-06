@@ -1,4 +1,4 @@
--- Aksara Art House marketplace production schema
+-- Anima Libera Art marketplace production schema
 -- Target: Supabase / PostgreSQL
 
 create extension if not exists "pgcrypto";

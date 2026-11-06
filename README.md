@@ -1,6 +1,6 @@
-# Aksara Art House Marketplace
+# Anima Libera Art Marketplace
 
-Website marketplace seni Aksara Art House. Versi saat ini masih berupa HTML, CSS, JavaScript, dan `localStorage`, tetapi proyek sudah mulai disiapkan menuju produksi dengan Supabase/Postgres.
+Website marketplace seni Anima Libera Art. Versi saat ini masih berupa HTML, CSS, JavaScript, dan `localStorage`, tetapi proyek sudah mulai disiapkan menuju produksi dengan Supabase/Postgres.
 
 ## Halaman
 

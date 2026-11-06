@@ -1,4 +1,4 @@
--- Optional starter data for Aksara Art House
+-- Optional starter data for Anima Libera Art
 -- Run after supabase/schema.sql if you want demo artworks in the production database.
 
 insert into public.artworks (

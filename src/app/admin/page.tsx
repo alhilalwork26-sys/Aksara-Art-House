@@ -3,7 +3,7 @@ export default function AdminPage() {
     <main style={{ height: "100vh", margin: 0, overflow: "hidden" }}>
       <iframe
         src="/admin-panel.html"
-        title="Aksara Art House Admin"
+        title="Anima Libera Art Admin"
         style={{
           border: 0,
           display: "block",

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Aksara Art House</title>
+<title>Admin — Anima Libera Art</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -444,7 +444,7 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
 <!-- LOGIN SCREEN -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-brand">Aksara <em>Art House</em></div>
+    <div class="login-brand">Anima Libera <em>Art</em></div>
     <div class="login-sub">Panel Admin</div>
     <div class="login-badge">&#128274; Area Terbatas</div>
     <div class="form-group">
@@ -616,7 +616,7 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
     <div class="modal-body">
       <div class="form-group">
         <label>Nama Studio</label>
-        <input type="text" id="set-studio" placeholder="Aksara Art House">
+        <input type="text" id="set-studio" placeholder="Anima Libera Art">
       </div>
       <div class="form-group">
         <label>Nomor WhatsApp Studio (format: 6281...)</label>
@@ -651,11 +651,11 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
         <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Konten Halaman Tentang</div>
         <div class="form-group">
           <label>Paragraf 1 — Deskripsi Studio</label>
-          <textarea id="set-about-p1" rows="3" placeholder="AKSARA ART HOUSE menghadirkan..."></textarea>
+          <textarea id="set-about-p1" rows="3" placeholder="ANIMA LIBERA ART menghadirkan..."></textarea>
         </div>
         <div class="form-group" style="margin-bottom:0">
           <label>Paragraf 2 — Jangkauan &amp; Misi</label>
-          <textarea id="set-about-p2" rows="3" placeholder="Karya-karya Aksara Art House dirancang..."></textarea>
+          <textarea id="set-about-p2" rows="3" placeholder="Karya-karya Anima Libera Art dirancang..."></textarea>
         </div>
       </div>
       <div style="background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:1rem;margin-top:.5rem">
@@ -704,7 +704,7 @@ tbody tr:hover { background:rgba(193,113,75,.04); }
 <!-- SIDEBAR -->
 <div id="sidebar">
   <div class="sidebar-brand">
-    <div class="sidebar-brand-name">Aksara <em>Art House</em></div>
+    <div class="sidebar-brand-name">Anima Libera <em>Art</em></div>
     <div class="sidebar-badge">Admin Panel</div>
   </div>
   <nav class="sidebar-nav">
@@ -1118,7 +1118,7 @@ const DEFAULT_PAINTINGS = [];
 const DEFAULT_AUCTIONS = [];
 
 const DEFAULT_SETTINGS = {
-  studioName: 'Aksara Art House',
+  studioName: 'Anima Libera Art',
   wa: '6281918344549',
   heroSubtitle: 'Karya original yang lahir dari kebebasan berekspresi, untuk kamu yang tak ingin dibatasi.',
   statKarya: '48',
@@ -1867,7 +1867,7 @@ function renderDashboard() {
   document.getElementById('dashboard-hero').innerHTML = `
     <div>
       <h2>Dashboard Operasional</h2>
-      <p>Pantau pekerjaan harian Aksara Art House dari satu layar: pesanan masuk, pembayaran yang perlu dicek, lelang aktif, dan kondisi koleksi marketplace.</p>
+      <p>Pantau pekerjaan harian Anima Libera Art dari satu layar: pesanan masuk, pembayaran yang perlu dicek, lelang aktif, dan kondisi koleksi marketplace.</p>
     </div>
     <div class="dashboard-hero-meta">
       <span class="dashboard-pill">${escapeHtml(syncDate)}</span>
@@ -1896,7 +1896,7 @@ function renderDashboard() {
         <div class="dash-order-id">${escapeHtml(o.order_number || o.id || '-')}</div>
         <div class="td-meta">${escapeHtml(o.date || '')}</div>
       </td>
-      <td><div class="td-title">${escapeHtml(o.name || 'Kolektor Aksara')}</div><div class="td-meta">${escapeHtml(o.wa || o.email || '-')}</div></td>
+      <td><div class="td-title">${escapeHtml(o.name || 'Kolektor Anima Libera')}</div><div class="td-meta">${escapeHtml(o.wa || o.email || '-')}</div></td>
       <td>${fmt(o.total || 0)}</td>
       <td><div class="dash-status-line">${orderStatusChip(o.status)}<span class="td-meta">${escapeHtml(o.paymentStatus || 'waiting_confirmation')}</span></div></td>
     </tr>
@@ -2394,7 +2394,7 @@ function buildInvoiceHTML(o) {
       <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;border-bottom:1px solid var(--border);padding-bottom:1rem;margin-bottom:1rem">
         <div>
           <div style="font-family:var(--fd);font-size:30px;color:var(--brown);line-height:1">Invoice</div>
-          <div style="font-size:13px;color:var(--muted);margin-top:.35rem">Aksara Art House</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:.35rem">Anima Libera Art</div>
         </div>
         <div style="text-align:right;font-size:12px;color:var(--muted);line-height:1.7">
           <strong style="color:var(--brown)">${escapeHtml(o.order_number || o.id)}</strong><br>
@@ -2466,7 +2466,7 @@ function printAdminInvoice() {
   if(!area) return;
   const w = window.open('', '_blank');
   if(!w) { showToast('Pop-up diblokir browser.', 'error'); return; }
-  w.document.write(`<!doctype html><html><head><title>Invoice Aksara Art House</title><style>body{font-family:Arial,sans-serif;color:#3b2a22;padding:28px}.chip{display:inline-block;padding:4px 10px;border:1px solid #ddd;border-radius:999px;font-size:11px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:10px 0}.order-status-badge{font-size:11px}</style></head><body>${area.innerHTML}</body></html>`);
+  w.document.write(`<!doctype html><html><head><title>Invoice Anima Libera Art</title><style>body{font-family:Arial,sans-serif;color:#3b2a22;padding:28px}.chip{display:inline-block;padding:4px 10px;border:1px solid #ddd;border-radius:999px;font-size:11px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:10px 0}.order-status-badge{font-size:11px}</style></head><body>${area.innerHTML}</body></html>`);
   w.document.close();
   w.focus();
   w.print();
@@ -2949,7 +2949,7 @@ function exportOrdersExcel() {
 
   const xls = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
     <head><meta charset="UTF-8"><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
-    <x:Name>Pesanan Aksara Art House</x:Name>
+    <x:Name>Pesanan Anima Libera Art</x:Name>
     <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
     </x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml></head>
     <body>${tbl}</body></html>`;

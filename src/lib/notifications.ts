@@ -66,7 +66,7 @@ export async function notifyOrderCreated(order: AdminOrder, input: CheckoutInput
 
   const customerHtml = `
     <h2>Pesanan ${escapeHtml(order.order_number)} berhasil dibuat</h2>
-    <p>Halo ${escapeHtml(input.customerName)}, terima kasih sudah memesan karya di Aksara Art House.</p>
+    <p>Halo ${escapeHtml(input.customerName)}, terima kasih sudah memesan karya di Anima Libera Art.</p>
     <ul>${itemRows}</ul>
     <p><strong>Total:</strong> ${currency.format(order.total)}</p>
     <p>Kami akan menghubungi Anda untuk konfirmasi pembayaran dan pengiriman.</p>
@@ -83,7 +83,7 @@ export async function notifyOrderCreated(order: AdminOrder, input: CheckoutInput
   await Promise.allSettled([
     sendEmail({
       to: input.customerEmail,
-      subject: `Pesanan ${order.order_number} diterima - Aksara Art House`,
+      subject: `Pesanan ${order.order_number} diterima - Anima Libera Art`,
       html: customerHtml
     }),
     config.adminEmail
@@ -106,7 +106,7 @@ export async function notifyAuctionBidPlaced(input: {
 
   await sendEmail({
     to: config.adminEmail,
-    subject: `Bid baru: ${input.artworkTitle || "Lelang Aksara"}`,
+    subject: `Bid baru: ${input.artworkTitle || "Lelang Anima Libera"}`,
     html: `
       <h2>Penawaran baru masuk</h2>
       <p><strong>Karya:</strong> ${escapeHtml(input.artworkTitle || input.auction.artwork_id)}</p>
@@ -122,7 +122,7 @@ export async function notifyOrderUpdated(order: AdminOrder) {
 
   await sendEmail({
     to: order.customer_email,
-    subject: `Update pesanan ${order.order_number} - Aksara Art House`,
+    subject: `Update pesanan ${order.order_number} - Anima Libera Art`,
     html: `
       <h2>Status pesanan diperbarui</h2>
       <p>Halo ${escapeHtml(order.customer_name)}, status pesanan Anda sekarang:</p>
@@ -148,7 +148,7 @@ export async function notifyAuctionFinalized(input: {
     <p>Halo ${escapeHtml(input.winnerName || "Kolektor")}, Anda memenangkan lelang karya <strong>${escapeHtml(input.artworkTitle)}</strong>.</p>
     <p><strong>Nominal akhir:</strong> ${currency.format(input.amount)}</p>
     <p><strong>Nomor invoice:</strong> ${escapeHtml(input.order.order_number)}</p>
-    <p>Silakan lanjutkan konfirmasi pembayaran dan pengiriman dengan tim Aksara Art House.</p>
+    <p>Silakan lanjutkan konfirmasi pembayaran dan pengiriman dengan tim Anima Libera Art.</p>
   `;
 
   const adminHtml = `
@@ -163,7 +163,7 @@ export async function notifyAuctionFinalized(input: {
     input.winnerEmail
       ? sendEmail({
           to: input.winnerEmail,
-          subject: `Anda memenangkan lelang ${input.artworkTitle} - Aksara Art House`,
+          subject: `Anda memenangkan lelang ${input.artworkTitle} - Anima Libera Art`,
           html: winnerHtml
         })
       : Promise.resolve(),

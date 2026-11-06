@@ -3,7 +3,7 @@ import { getAdminToken, verifyAdminToken } from "@/lib/admin-auth";
 import { readSiteSetting, writeSiteSetting } from "@/lib/supabase-rest";
 
 const DEFAULT_CONTACT = {
-  studioName: "Aksara Art House",
+  studioName: "Anima Libera Art",
   wa: "6281918344549",
   heroSubtitle: "Karya original yang lahir dari kebebasan berekspresi, untuk kamu yang tak ingin dibatasi.",
   statKarya: "48",

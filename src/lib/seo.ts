@@ -44,7 +44,7 @@ export function artworkDescription(artwork: Artwork) {
 
   return [
     artwork.description,
-    `${artwork.title} oleh ${artwork.artist || "Aksara Art House"}`,
+    `${artwork.title} oleh ${artwork.artist || "Anima Libera Art"}`,
     details.length ? details.join(" · ") : "",
     `Status: ${artworkStatusLabel(artwork.status)}.`
   ]

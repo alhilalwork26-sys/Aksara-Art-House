@@ -144,7 +144,7 @@ export function RabWorkspace() {
       <div className="rab-shell">
         <header className="rab-hero">
           <div className="rab-hero-copy">
-            <div className="rab-kicker">Aksara Art House</div>
+            <div className="rab-kicker">Anima Libera Art</div>
             <input
               className="rab-title-input"
               value={title}
