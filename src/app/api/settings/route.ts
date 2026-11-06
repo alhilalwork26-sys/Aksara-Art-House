@@ -5,7 +5,7 @@ import { readSiteSetting, writeSiteSetting } from "@/lib/supabase-rest";
 const DEFAULT_CONTACT = {
   studioName: "Anima Libera Art",
   wa: "6281918344549",
-  heroSubtitle: "Karya original yang lahir dari kebebasan berekspresi, untuk kamu yang tak ingin dibatasi.",
+  heroSubtitle: "Ekspresi seni kontemporer untuk jiwa yang merdeka.",
   statKarya: "48",
   statPameran: "12",
   statKolektor: "200+",
