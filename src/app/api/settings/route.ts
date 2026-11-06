@@ -5,7 +5,7 @@ import { readSiteSetting, writeSiteSetting } from "@/lib/supabase-rest";
 const DEFAULT_CONTACT = {
   studioName: "Aksara Art House",
   wa: "6281918344549",
-  heroSubtitle: "Koleksi original oil on canvas, acrylic, dan mixed media dari studio Aksara Art House — karya yang lahir dari jiwa, untuk menghiasi ruang Anda.",
+  heroSubtitle: "Karya original yang lahir dari kebebasan berekspresi, untuk kamu yang tak ingin dibatasi.",
   statKarya: "48",
   statPameran: "12",
   statKolektor: "200+",
