@@ -20,7 +20,7 @@
 <link rel="canonical" href="https://aksaraarthouse.com/marketplace.html">
 <script defer src="/analytics.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@300;400;500&family=Pinyon+Script&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════
    RESET & ROOT
@@ -3925,18 +3925,85 @@ input:focus, textarea:focus, select:focus {
   letter-spacing:.02em;
 }
 
-/* Hero tagline under main heading */
+/* Hero tagline under main heading: signature name + refined serif with hairlines */
 #page-home .hero-tagline {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.55em;
+  margin:.2rem auto 1.5rem;
+  color:#fff;
+  line-height:1;
+}
+#page-home .hero-tagline::before,
+#page-home .hero-tagline::after {
+  content:"";
+  width:clamp(28px, 5vw, 64px);
+  height:1px;
+  background:linear-gradient(90deg, transparent, rgba(233,165,132,.9));
+}
+#page-home .hero-tagline::after {
+  background:linear-gradient(90deg, rgba(233,165,132,.9), transparent);
+}
+#page-home .hero-tagline-name {
+  font-family:'Pinyon Script', var(--fd);
+  font-size:clamp(30px, 3.6vw, 48px);
+  font-weight:400;
+  color:var(--terra-light);
+  letter-spacing:0;
+  text-shadow:0 2px 18px rgba(0,0,0,.35);
+  transform:translateY(-.06em);
+}
+#page-home .hero-tagline-rest {
   font-family:var(--fd);
   font-style:italic;
-  font-size:clamp(17px, 2.1vw, 26px);
   font-weight:300;
-  letter-spacing:.02em;
-  color:rgba(255,255,255,.9);
-  margin:-.2rem 0 1.1rem;
+  font-size:clamp(17px, 1.9vw, 24px);
+  letter-spacing:.06em;
+  color:rgba(255,255,255,.92);
+  text-shadow:0 2px 14px rgba(0,0,0,.35);
 }
 @media (max-width:720px) {
-  #page-home .hero-tagline { font-size:16px; margin-bottom:.9rem; }
+  #page-home .hero-tagline { flex-direction:column; gap:.15em; margin-bottom:1.2rem; }
+  #page-home .hero-tagline::before, #page-home .hero-tagline::after { display:none; }
+  #page-home .hero-tagline-name { font-size:34px; transform:none; }
+  #page-home .hero-tagline-rest { font-size:16px; }
+}
+/* Small signature tagline under the nav logo */
+.nav-brand {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  line-height:1.05;
+}
+.nav-brand-name {
+  display:block;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.nav-brand-tag {
+  display:block;
+  margin-top:3px;
+  font-family:var(--fd);
+  font-style:italic;
+  font-weight:400;
+  font-size:13px;
+  letter-spacing:.04em;
+  text-transform:none;
+  color:rgba(253,248,244,.78);
+  white-space:nowrap;
+}
+.nav-brand-tag-name {
+  font-family:'Pinyon Script', var(--fd);
+  font-style:normal;
+  font-size:17px;
+  letter-spacing:0;
+  color:var(--terra-light);
+}
+@media (max-width:720px) {
+  .nav-brand-tag { font-size:10.5px; margin-top:1px; letter-spacing:.02em; white-space:normal; line-height:1.05; }
+  .nav-brand-tag-name { display:block; font-size:14px; }
 }
 </style>
 </head>
@@ -3961,7 +4028,7 @@ input:focus, textarea:focus, select:focus {
 <!-- ═══ NAVBAR ═══ -->
 <nav id="navbar">
   <div class="nav-inner">
-    <div class="nav-brand" onclick="goPage('home')">Anima Libera <em>Art</em></div>
+    <div class="nav-brand" onclick="goPage('home')"><span class="nav-brand-name">Anima Libera <em>Art</em></span><span class="nav-brand-tag"><span class="nav-brand-tag-name">Mas mBenk</span> in contemporary paintings</span></div>
     <div class="nav-center">
       <button class="nav-link active" id="nl-home" data-i18n="nav_home" onclick="goPage('home')">Beranda</button>
       <button class="nav-link" id="nl-gallery" data-i18n="nav_gallery" onclick="goPage('gallery')">Galeri</button>
@@ -4017,8 +4084,8 @@ input:focus, textarea:focus, select:focus {
         <div class="hero-copy">
           <div>
             <div class="hero-eyebrow" data-i18n="hero_eyebrow">Contemporary Art &middot; Medium Lidi</div>
-            <h1 id="hero-h1" data-i18n="hero_h1">Ekspresi Seni Kontemporer<br>Untuk <em>Jiwa yang Merdeka</em></h1>
-            <p class="hero-sub" id="dyn-hero-sub">Karya original yang lahir dari kebebasan berekspresi, untuk kamu yang tak ingin dibatasi.</p>
+            <h1 id="hero-h1" data-i18n="hero_h1">Mas mBenk<br>in contemporary paintings</h1>
+            <p class="hero-sub" id="dyn-hero-sub">Ekspresi seni kontemporer untuk jiwa yang merdeka.</p>
             <div class="hero-cta">
               <button class="btn btn-primary" data-i18n="hero_cta_gallery" onclick="goPage('gallery')">Jelajahi Koleksi</button>
               <button class="btn btn-secondary" data-i18n="hero_cta_auction" onclick="goPage('auction')">Ikut Lelang</button>
@@ -5418,7 +5485,7 @@ const TRANSLATIONS = {
     nav_home:'Beranda', nav_gallery:'Galeri', nav_auction:'Lelang', nav_about:'Tentang',
     nav_login:'Masuk', nav_login_register:'Masuk / Daftar',
     hero_eyebrow:'Contemporary Art &middot; Medium Lidi',
-    hero_h1:'Ekspresi Seni Kontemporer<br>Untuk <em>Jiwa yang Merdeka</em>',
+    hero_h1:'Mas mBenk<br>in contemporary paintings',
     hero_cta_gallery:'Jelajahi Koleksi', hero_cta_auction:'Ikut Lelang', hero_cta_consult:'&#9742; Konsultasi',
     stat_karya:'Karya', stat_pameran:'Pameran', stat_kolektor:'Kolektor', stat_tahun:'Tahun',
     badge_latest:'&#9733; Koleksi Terbaru', section_featured:'Karya Pilihan', btn_view_all:'Lihat Semua →',
@@ -5514,7 +5581,7 @@ const TRANSLATIONS = {
     nav_home:'Home', nav_gallery:'Gallery', nav_auction:'Auction', nav_about:'About',
     nav_login:'Sign In', nav_login_register:'Sign In / Register',
     hero_eyebrow:'Contemporary Art &middot; Lidi Medium',
-    hero_h1:'Contemporary Art Expression<br>For <em>Free Spirits</em>',
+    hero_h1:'Mas mBenk<br>in contemporary paintings',
     hero_cta_gallery:'Browse Collection', hero_cta_auction:'Join Auction', hero_cta_consult:'&#9742; Consult',
     stat_karya:'Artworks', stat_pameran:'Exhibitions', stat_kolektor:'Collectors', stat_tahun:'Years',
     badge_latest:'&#9733; Latest Collection', section_featured:'Featured Works', btn_view_all:'View All →',
