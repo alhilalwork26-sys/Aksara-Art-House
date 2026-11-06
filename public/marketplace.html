@@ -3969,6 +3969,42 @@ input:focus, textarea:focus, select:focus {
   #page-home .hero-tagline-name { font-size:34px; transform:none; }
   #page-home .hero-tagline-rest { font-size:16px; }
 }
+/* Small signature tagline under the nav logo */
+.nav-brand {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  line-height:1.05;
+}
+.nav-brand-name {
+  display:block;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.nav-brand-tag {
+  display:block;
+  margin-top:3px;
+  font-family:var(--fd);
+  font-style:italic;
+  font-weight:400;
+  font-size:13px;
+  letter-spacing:.04em;
+  text-transform:none;
+  color:rgba(253,248,244,.78);
+  white-space:nowrap;
+}
+.nav-brand-tag-name {
+  font-family:'Pinyon Script', var(--fd);
+  font-style:normal;
+  font-size:17px;
+  letter-spacing:0;
+  color:var(--terra-light);
+}
+@media (max-width:720px) {
+  .nav-brand-tag { font-size:10.5px; margin-top:1px; letter-spacing:.02em; white-space:normal; line-height:1.05; }
+  .nav-brand-tag-name { display:block; font-size:14px; }
+}
 </style>
 </head>
 <body>
@@ -3992,7 +4028,7 @@ input:focus, textarea:focus, select:focus {
 <!-- ═══ NAVBAR ═══ -->
 <nav id="navbar">
   <div class="nav-inner">
-    <div class="nav-brand" onclick="goPage('home')">Anima Libera <em>Art</em></div>
+    <div class="nav-brand" onclick="goPage('home')"><span class="nav-brand-name">Anima Libera <em>Art</em></span><span class="nav-brand-tag"><span class="nav-brand-tag-name">Mas mBenk</span> in contemporary paintings</span></div>
     <div class="nav-center">
       <button class="nav-link active" id="nl-home" data-i18n="nav_home" onclick="goPage('home')">Beranda</button>
       <button class="nav-link" id="nl-gallery" data-i18n="nav_gallery" onclick="goPage('gallery')">Galeri</button>
