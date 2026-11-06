@@ -20,7 +20,7 @@
 <link rel="canonical" href="https://aksaraarthouse.com/marketplace.html">
 <script defer src="/analytics.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@300;400;500&family=Pinyon+Script&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════
    RESET & ROOT
@@ -3925,18 +3925,49 @@ input:focus, textarea:focus, select:focus {
   letter-spacing:.02em;
 }
 
-/* Hero tagline under main heading */
+/* Hero tagline under main heading: signature name + refined serif with hairlines */
 #page-home .hero-tagline {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.55em;
+  margin:.2rem auto 1.5rem;
+  color:#fff;
+  line-height:1;
+}
+#page-home .hero-tagline::before,
+#page-home .hero-tagline::after {
+  content:"";
+  width:clamp(28px, 5vw, 64px);
+  height:1px;
+  background:linear-gradient(90deg, transparent, rgba(233,165,132,.9));
+}
+#page-home .hero-tagline::after {
+  background:linear-gradient(90deg, rgba(233,165,132,.9), transparent);
+}
+#page-home .hero-tagline-name {
+  font-family:'Pinyon Script', var(--fd);
+  font-size:clamp(30px, 3.6vw, 48px);
+  font-weight:400;
+  color:var(--terra-light);
+  letter-spacing:0;
+  text-shadow:0 2px 18px rgba(0,0,0,.35);
+  transform:translateY(-.06em);
+}
+#page-home .hero-tagline-rest {
   font-family:var(--fd);
   font-style:italic;
-  font-size:clamp(17px, 2.1vw, 26px);
   font-weight:300;
-  letter-spacing:.02em;
-  color:rgba(255,255,255,.9);
-  margin:-.2rem 0 1.1rem;
+  font-size:clamp(17px, 1.9vw, 24px);
+  letter-spacing:.06em;
+  color:rgba(255,255,255,.92);
+  text-shadow:0 2px 14px rgba(0,0,0,.35);
 }
 @media (max-width:720px) {
-  #page-home .hero-tagline { font-size:16px; margin-bottom:.9rem; }
+  #page-home .hero-tagline { flex-direction:column; gap:.15em; margin-bottom:1.2rem; }
+  #page-home .hero-tagline::before, #page-home .hero-tagline::after { display:none; }
+  #page-home .hero-tagline-name { font-size:34px; transform:none; }
+  #page-home .hero-tagline-rest { font-size:16px; }
 }
 </style>
 </head>
@@ -4018,6 +4049,7 @@ input:focus, textarea:focus, select:focus {
           <div>
             <div class="hero-eyebrow" data-i18n="hero_eyebrow">Contemporary Art &middot; Medium Lidi</div>
             <h1 id="hero-h1" data-i18n="hero_h1">Ekspresi Seni Kontemporer<br>Untuk <em>Jiwa yang Merdeka</em></h1>
+            <p class="hero-tagline"><span class="hero-tagline-name">Mas mBenk</span><span class="hero-tagline-rest">in contemporary paintings</span></p>
             <p class="hero-sub" id="dyn-hero-sub">Karya original yang lahir dari kebebasan berekspresi, untuk kamu yang tak ingin dibatasi.</p>
             <div class="hero-cta">
               <button class="btn btn-primary" data-i18n="hero_cta_gallery" onclick="goPage('gallery')">Jelajahi Koleksi</button>
