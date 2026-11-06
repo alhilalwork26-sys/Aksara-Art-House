@@ -37,7 +37,7 @@ export default async function InvoicePage({ params }: PageProps) {
         <header style={{ display: "flex", justifyContent: "space-between", gap: 24, borderBottom: "1px solid #e7ddd5", paddingBottom: 22 }}>
           <div>
             <h1 style={{ margin: 0, fontSize: 38, fontWeight: 500 }}>Invoice</h1>
-            <p style={{ margin: "8px 0 0", color: "#8b7a70" }}>Aksara Art House</p>
+            <p style={{ margin: "8px 0 0", color: "#8b7a70" }}>Anima Libera Art</p>
           </div>
           <div style={{ textAlign: "right", lineHeight: 1.7, color: "#8b7a70" }}>
             <strong style={{ color: "#3d2a22" }}>{order.order_number}</strong><br />

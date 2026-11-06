@@ -3,7 +3,7 @@ export default function HomePage() {
     <main style={{ height: "100vh", margin: 0, overflow: "hidden" }}>
       <iframe
         src="/marketplace.html"
-        title="Aksara Art House Marketplace"
+        title="Anima Libera Art Marketplace"
         style={{
           border: 0,
           display: "block",

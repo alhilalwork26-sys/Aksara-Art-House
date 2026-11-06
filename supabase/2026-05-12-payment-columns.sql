@@ -1,4 +1,4 @@
--- Aksara Art House — payment proof columns
+-- Anima Libera Art — payment proof columns
 -- Jalankan di Supabase SQL Editor untuk mengaktifkan kolom pembayaran khusus.
 
 alter table public.orders

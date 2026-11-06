@@ -1,5 +1,5 @@
 -- ============================================================
--- Aksara Art House — Feature Migration
+-- Anima Libera Art — Feature Migration
 -- Reviews, Promo Codes, Order Tracking, Stock Management
 -- Jalankan di Supabase SQL Editor
 -- ============================================================

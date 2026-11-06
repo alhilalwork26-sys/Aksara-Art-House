@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!artwork) {
     return {
-      title: "Karya Tidak Ditemukan | Aksara Art House",
+      title: "Karya Tidak Ditemukan | Anima Libera Art",
       robots: { index: false, follow: true }
     };
   }
@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: artwork.title,
       description,
       url,
-      siteName: "Aksara Art House",
+      siteName: "Anima Libera Art",
       type: "website",
       images: artwork.image_url ? [{ url: artwork.image_url, alt: artwork.title }] : undefined,
       locale: "id_ID"
@@ -69,7 +69,7 @@ export default async function ArtworkSeoPage({ params }: PageProps) {
     name: artwork.title,
     image: artwork.image_url ? [artwork.image_url] : undefined,
     description: artworkDescription(artwork),
-    brand: { "@type": "Brand", name: "Aksara Art House" },
+    brand: { "@type": "Brand", name: "Anima Libera Art" },
     category: artwork.category || "Original Artwork",
     material: artwork.medium || undefined,
     offers: {
@@ -81,7 +81,7 @@ export default async function ArtworkSeoPage({ params }: PageProps) {
       itemCondition: "https://schema.org/NewCondition",
       seller: {
         "@type": "ArtGallery",
-        name: "Aksara Art House",
+        name: "Anima Libera Art",
         url: SITE_URL,
         address: "Jl. Penjaringan Asri VII No.43, Penjaringan Sari, Kec. Rungkut, Surabaya, Jawa Timur 60297"
       }
@@ -92,7 +92,7 @@ export default async function ArtworkSeoPage({ params }: PageProps) {
     <main className="artwork-seo-page">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <nav className="artwork-seo-nav" aria-label="Navigasi">
-        <Link href="/marketplace.html">Aksara Art House</Link>
+        <Link href="/marketplace.html">Anima Libera Art</Link>
         <div>
           <Link href="/marketplace.html#gallery">Koleksi</Link>
           <Link href="/marketplace.html#auction">Lelang</Link>
@@ -112,14 +112,14 @@ export default async function ArtworkSeoPage({ params }: PageProps) {
         </div>
 
         <article className="artwork-seo-copy">
-          <p className="artwork-seo-eyebrow">Karya Original Aksara Art House</p>
+          <p className="artwork-seo-eyebrow">Karya Original Anima Libera Art</p>
           <h1>{artwork.title}</h1>
-          <p className="artwork-seo-artist">{artwork.artist || "Aksara Art House"}</p>
+          <p className="artwork-seo-artist">{artwork.artist || "Anima Libera Art"}</p>
           <div className="artwork-seo-price">{formatRupiah(artwork.price)}</div>
           <div className={`artwork-seo-status status-${artwork.status}`}>{artworkStatusLabel(artwork.status)}</div>
 
           <p className="artwork-seo-description">
-            {artwork.description || "Karya original Aksara Art House yang siap menjadi titik fokus ruang dan koleksi pribadi Anda."}
+            {artwork.description || "Karya original Anima Libera Art yang siap menjadi titik fokus ruang dan koleksi pribadi Anda."}
           </p>
 
           <dl className="artwork-seo-specs">
@@ -144,7 +144,7 @@ export default async function ArtworkSeoPage({ params }: PageProps) {
           <div className="artwork-seo-actions">
             {isAvailable ? <Link className="artwork-seo-primary" href={marketplaceHref}>Beli di Marketplace</Link> : null}
             {isAuction ? <Link className="artwork-seo-primary" href="/marketplace.html#auction">Ikut Lelang</Link> : null}
-            <a className="artwork-seo-secondary" href={`https://wa.me/6281918344549?text=${encodeURIComponent(`Halo Aksara Art House, saya tertarik dengan karya "${artwork.title}".`)}`}>Konsultasi WhatsApp</a>
+            <a className="artwork-seo-secondary" href={`https://wa.me/6281918344549?text=${encodeURIComponent(`Halo Anima Libera Art, saya tertarik dengan karya "${artwork.title}".`)}`}>Konsultasi WhatsApp</a>
           </div>
         </article>
       </section>
